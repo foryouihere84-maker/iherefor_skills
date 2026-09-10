@@ -17,7 +17,7 @@ __pycache__/
 # iherefor-html-otherui 测试工程：工具生成物、构建产物与 Xcode 用户数据
 iherefor-html-otherui/testUIProject/.ihereforUI/
 iherefor-html-otherui/testUIProject/build/
-iherefor-html-otherui/testUIProject/testUIProject.xcodeproj/xcuserdata/
+iherefor-html-otherui/testUIProject/testUIProject.xcodeproj/**/xcuserdata/
 
 # lanhu-mcp-server：嵌套 git 仓库（避免 embedded repository 警告）
 iherefor-html-otherui/lanhu-mcp-server/.git/
