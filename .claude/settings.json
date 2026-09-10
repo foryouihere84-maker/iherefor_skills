@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -RIn \"frontmatter\\\\|^---$\\\\|skill\\\\|superpower\\\\|loader\\\\|command\" \"/Users/niukou/Desktop/iherefor_skills/.claude/worktrees/agent-a28750d99a8302523/quickStudy\")",
+      "Bash(git -C \"/Users/niukou/Desktop/iherefor_skills/.claude/worktrees/agent-a2546cac2ec2c8bc4\" ls-tree -r --name-only HEAD)",
+      "Bash(git -C \"/Users/niukou/Desktop/iherefor_skills/.claude/worktrees/agent-a2546cac2ec2c8bc4\" status --short)",
+      "Bash(git -C \"/Users/niukou/Desktop/iherefor_skills/.claude/worktrees/agent-a28750d99a8302523\" status --short --branch)",
+      "Bash(git -C \"/Users/niukou/Desktop/iherefor_skills/.claude/worktrees/agent-a28750d99a8302523\" log --oneline -n 10)",
+      "Bash(git -C \"/Users/niukou/Desktop/iherefor_skills/.claude/worktrees/agent-a28750d99a8302523\" ls-tree -r --name-only HEAD)",
+      "Bash(git -C \"/Users/niukou/Desktop/iherefor_skills\" ls-tree -r --name-only HEAD)",
+      "Bash(grep -RIn \"^---$\" \"/Users/niukou/Desktop/iherefor_skills/.claude/worktrees/agent-a28750d99a8302523/quickStudy\")",
+      "Bash(find /var/folders/w3/rrn3js2n3wvgb5rhryhdtspw0000gn/T/skills-use-RmoBbi/brainstorming -maxdepth 3 -type f)",
+      "Read(//private/var/folders/w3/rrn3js2n3wvgb5rhryhdtspw0000gn/T/skills-use-RmoBbi/brainstorming/**)",
+      "Read(//var/folders/w3/rrn3js2n3wvgb5rhryhdtspw0000gn/T/skills-use-RmoBbi/brainstorming/**)",
+      "Bash(git -C /Users/niukou/Desktop/iherefor_skills status --short --branch)"
+    ]
+  }
+}

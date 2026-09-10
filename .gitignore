@@ -1,0 +1,23 @@
+# macOS
+.DS_Store
+
+# 通用：语言依赖、虚拟环境与编译缓存
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+
+# 环境变量（含密钥，禁止提交）
+.env
+.env.local
+
+# 本地工具运行缓存（非源码）
+.claude/worktrees/
+
+# iherefor-html-otherui 测试工程：工具生成物、构建产物与 Xcode 用户数据
+iherefor-html-otherui/testUIProject/.ihereforUI/
+iherefor-html-otherui/testUIProject/build/
+iherefor-html-otherui/testUIProject/testUIProject.xcodeproj/xcuserdata/
+
+# lanhu-mcp-server：嵌套 git 仓库（避免 embedded repository 警告）
+iherefor-html-otherui/lanhu-mcp-server/.git/

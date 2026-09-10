@@ -1,0 +1,4 @@
+interface:
+  display_name: "Lanhu HTML to Native UI"
+  short_description: "将 Lanhu HTML 页面落地为多种 iOS 与 Android 原生 UI 代码"
+  default_prompt: "使用 Lanhu HTML/CSS/JS 作为视觉基准，生成并验证目标平台原生 UI 代码。"
