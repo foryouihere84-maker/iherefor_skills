@@ -25,6 +25,7 @@ run() {
 
 run "compare_reference 比例阈值与尺寸校验" "$PY" scripts/tests/test_compare_reference.py
 run "render_reference 动画禁用注入生效"   "$PY" scripts/tests/test_render_injection.py
+run "render_reference 基准与设备同源"     "$PY" scripts/tests/test_reference_same_source.py
 run "check_lanhu_mcp 注册入口一致性"       "$PY" scripts/tests/test_check_lanhu_mcp.py
 run "discover_xcode_environment 设备探测"  "$PY" scripts/tests/test_discover_xcode.py
 run "validate_run 产物契约校验"           "$PY" scripts/tests/test_validate_run.py
