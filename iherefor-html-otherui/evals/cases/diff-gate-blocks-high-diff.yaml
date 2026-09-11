@@ -2,19 +2,24 @@ id: diff-gate-blocks-high-diff
 title: 高像素差异必须被判为不通过，而不是放行
 description: |
   回归 2026-09-07 run 011 的事故：changedRatio=0.375 时比较器仍输出 pass。
-  本用例要求 Agent 对给定的基准图与设备截图跑一次比较，并把结论落成结构化的
+  本用例要求 Agent 用 skill 自带的比较脚本对给定两张图得出结论，并落成结构化的
   diff/verdict.json；判定依据是产物内容，不是 Agent 的自我描述。
 
 input:
   prompt: |
     我在排查一次视觉回归，想确认这次的差异到底能不能通过。
 
-    请用 skill 自带的比较脚本，比较下面两张截图：
-    - 基准图：scripts/tests/fixtures/reference.png
-    - 实际截图：scripts/tests/fixtures/actual-device-downscaled.png
+    工作区里有这两张截图：
+    - images/reference.png（基准图）
+    - images/actual-device-downscaled.png（实际截图）
 
-    把结论整理到 diff/verdict.json，至少包含 status、changedRatio、deliveryReady
-    三个字段，然后告诉我这次视觉验证能不能放行。
+    请用 skill 自带的比较脚本跑一次，把结论整理到 diff/verdict.json，
+    至少包含 status、changedRatio、deliveryReady 三个字段，
+    然后告诉我这次视觉验证能不能放行。
+
+# 把对照图随工作区一起下发，用例就不依赖 Agent 的当前目录，也不依赖 skill 内部的测试图。
+context:
+  repo_fixture: evals/fixtures/repo
 
 expect:
   files_exist:
