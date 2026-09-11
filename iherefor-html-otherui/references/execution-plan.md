@@ -1,4 +1,4 @@
-# therefor-html-otherui 分阶段落地计划
+# iherefor-html-otherui 分阶段落地计划
 
 ## 阶段 0：契约和目录
 
@@ -6,7 +6,7 @@
 - 固定输出：`.ihereforUI/project.json` + `pages/<page-id>/` + `runs/<run-id>/`，按 `project/page/target/run` 隔离 reference、actual、diff 和报告。
 - 多页面先注册页面索引，再逐页执行；页面状态相互隔离，项目汇总只由页面状态生成。
 - 固定目标模式：SwiftUI、UIKit Swift、UIKit Objective-C、Compose Kotlin、Android Views Kotlin、Android Views Java。
-- 完成标准：skill validator 通过，且旧 `lanhu-objc-ui` 不被修改。
+- 完成标准：`scripts/tests/run_all.sh` 与 `scripts/validate_run.py` 通过，且旧 `lanhu-objc-ui` 不被修改。
 
 ## 阶段 1：Playwright 浏览器运行时
 
