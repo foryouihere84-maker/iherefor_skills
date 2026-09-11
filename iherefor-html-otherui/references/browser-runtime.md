@@ -19,7 +19,21 @@ node scripts/render_reference.mjs --input /path/to/design-code --output /path/to
 node scripts/inspect_page.mjs --input /path/to/design-code --output /path/to/run/page-inspection.json
 ```
 
-如果 Playwright 管理的 Chromium 尚未下载，可通过 `--executable /Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome` 或 `PLAYWRIGHT_EXECUTABLE_PATH` 使用已安装的 Chrome；正式回归仍应固定浏览器版本。
+```bash
+npm install                       # 安装 playwright 包
+npx playwright install chromium   # 下载固定版本的 Chromium（正式回归必须走这一步）
+```
+
+两个脚本共用 `scripts/browser-launch.mjs` 决定用哪个浏览器，优先级是：
+
+1. `--executable <path>` 或 `PLAYWRIGHT_EXECUTABLE_PATH` —— 复用本机 Chrome，仅作应急兜底；
+2. 完整 Chromium 构建（Playwright 的 `chromium` 通道）—— 默认路径，就是 `npx playwright install chromium` 装的那一份；
+3. Playwright 默认的 headless 布局（`chromium-headless-shell`）。
+
+第 3 项是 Playwright 1.49+ 单独分发的一份浏览器：只装了第 2 项时，默认 launch 会直接抛
+`Executable doesn't exist`，看起来像脚本坏了，实际只是少一份二进制。因此脚本显式走第 2 项，
+只有该通道确实缺失才退回第 3 项；与浏览器缺失无关的启动错误会原样抛出，不会被吞掉。
+用已安装的 Chrome 兜底时不会指定通道。正式回归仍应固定浏览器版本，并记录在 `browser-meta.json` 的 `browser` 字段里。
 
 `render_reference.mjs` 只写入截图、`page-facts.json` 和 `browser-meta.json`；`inspect_page.mjs` 只写入只读页面摘要。两者都不会创建或修改原生 UI 源文件。
 

@@ -5,6 +5,7 @@
 默认值只是应急兜底，正式流程请用 --viewport-from 指向本次 run 的 runtime-device.json。
 */
 import { createRequire } from 'module';
+import { launchChromium } from './browser-launch.mjs';
 const require = createRequire(import.meta.url);
 const fs = require('fs');
 const path = require('path');
@@ -43,7 +44,7 @@ let playwright; try { playwright = require('playwright'); } catch (_) { console.
 (async () => {
   const entry = fs.statSync(input).isDirectory() ? path.join(input, 'index.html') : input;
   const executablePath = arg('--executable', process.env.PLAYWRIGHT_EXECUTABLE_PATH || undefined);
-  const browser = await playwright.chromium.launch({ headless: true, executablePath });
+  const browser = await launchChromium(playwright.chromium, executablePath);
   const page = await browser.newPage({ viewport, deviceScaleFactor: scale });
   await page.goto(`file://${entry}`, { waitUntil: 'load' });
   const result = await page.evaluate(() => ({ url: location.href, title: document.title, bodyText: document.body.innerText, htmlLang: document.documentElement.lang || null, links: Array.from(document.querySelectorAll('link')).map(x => ({ rel:x.rel, href:x.href })), scripts: Array.from(document.scripts).map(x => x.src || 'inline'), interactive: Array.from(document.querySelectorAll('a,button,input,select,textarea,[role="button"],[onclick],[tabindex]')).map((e,i) => ({ index:i, tag:e.tagName.toLowerCase(), text:(e.innerText||e.value||'').trim(), id:e.id||null, ariaLabel:e.getAttribute('aria-label'), rect:(() => { const r=e.getBoundingClientRect(); return {x:r.x,y:r.y,width:r.width,height:r.height}; })() })) }));

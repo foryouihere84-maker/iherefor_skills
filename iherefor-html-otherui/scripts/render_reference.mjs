@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /* Deterministic Lanhu HTML renderer. Requires Playwright (npm i playwright). */
 import { createRequire } from 'module';
+import { launchChromium } from './browser-launch.mjs';
 const require = createRequire(import.meta.url);
 const fs = require('fs');
 const path = require('path');
@@ -44,7 +45,7 @@ async function main() {
   /* 与设备截图比对时只能截视口：整页截图（document 高度）与设备屏幕不是同一坐标系。 */
   const fullPage = process.argv.includes('--full-page');
   const executablePath = arg('--executable', process.env.PLAYWRIGHT_EXECUTABLE_PATH || undefined);
-  const browser = await playwright.chromium.launch({ headless: true, executablePath });
+  const browser = await launchChromium(playwright.chromium, executablePath);
   const context = await browser.newContext({ viewport: vp, deviceScaleFactor: scale, reducedMotion: 'reduce', locale: arg('--locale', 'en-US'), timezoneId: arg('--timezone', 'Asia/Shanghai') });
   const consoleMessages = [], failedRequests = [];
   const page = await context.newPage();
