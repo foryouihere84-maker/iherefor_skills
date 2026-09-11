@@ -1,0 +1,9 @@
+{
+  "name": "iherefor-html-otherui-runtime",
+  "version": "0.0.0",
+  "private": true,
+  "description": "iherefor-html-otherui skill 的确定性渲染与截图脚本运行时依赖，仅本地使用，不发布。",
+  "devDependencies": {
+    "playwright": "^1.63.0"
+  }
+}

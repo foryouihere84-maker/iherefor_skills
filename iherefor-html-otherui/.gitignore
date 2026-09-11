@@ -1,0 +1,19 @@
+# 运行时依赖（由 requirements.txt / package.json 安装，不入库）
+.runtime/
+node_modules/
+
+# Python 缓存
+__pycache__/
+*.pyc
+
+# 构建与浏览器缓存
+DerivedData/
+build/
+
+# skill 中间产物（事实、截图、diff 与报告）
+.ihereforUI/
+.lanhu-cache/
+.lanhu-mcp-status.json
+
+# macOS
+.DS_Store
