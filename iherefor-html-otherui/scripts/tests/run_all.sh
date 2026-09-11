@@ -28,6 +28,7 @@ run "render_reference 动画禁用注入生效"   "$PY" scripts/tests/test_rende
 run "check_lanhu_mcp 注册入口一致性"       "$PY" scripts/tests/test_check_lanhu_mcp.py
 run "discover_xcode_environment 设备探测"  "$PY" scripts/tests/test_discover_xcode.py
 run "validate_run 产物契约校验"           "$PY" scripts/tests/test_validate_run.py
+run "init_ui_workspace 目录与索引"        "$PY" scripts/tests/test_init_ui_workspace.py
 
 printf '\n----------------------------------------\n'
 if [ "$failed" -eq 0 ]; then
