@@ -11,7 +11,7 @@
 5. 资源映射写入页面 `source/assets-manifest.json` 和目标 run 的 `resource-policy.json`，包含来源、目标路径、语义名、scale/density 和是否复用。
 6. 复制/转换到目标工程后才标记 `verified=true`；缺失、重复或命名冲突阻塞交付。
 
-资源接入还必须验证显示 frame 来自页面 `canvasTransform.coordinateMapper`。每个图片记录 Lanhu frame、目标 frame、scaleX/scaleY 和 contentMode/scaleType；自然尺寸只用于资源审计，不能直接用于布局。
+资源接入还必须验证显示 frame 来自页面 `canvasTransform.coordinateMapper`。图片 frame、`contentMode`/`scaleType`/`ContentScale` 与 alpha 内容 bounds 的硬约束以 `SKILL.md` 的「图片缩放硬约束」一节为准，本文件不再重复；每张图片仍必须在 `resource-policy.json` 中记录 Lanhu frame、目标 mapped frame、scaleX/scaleY 与最终截图 frame。
 
 ## 生产文件命名（强制）
 
