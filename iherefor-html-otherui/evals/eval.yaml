@@ -10,6 +10,13 @@ skills:
   # 安装到 Agent Engine 的被测 Skill；相对本文件所在 Skill 根目录。
   - source: local_path
     path: .
+    # evals/ 由 skill-up 强制排除，不会被安装给被测 Agent。
+    # 下面三个目录与这 6 个用例无关，排除后每个用例少拷约 170MB；
+    # 保留 .runtime（Pillow）与 scripts/，比较脚本才能直接跑。
+    exclude:
+      - testUIProject/**
+      - lanhu-mcp-server/**
+      - node_modules/**
 
 engine:
   # 执行 prompt 的 Agent Engine。
@@ -32,8 +39,15 @@ cases:
     # 默认前置检查，用例可按需覆盖。
     expect:
       exit_code: 0
+    # 把判分依据从工作区带回报告，便于事后复核判分是否合理。
+    # evals/ 本身永远不会安装给被测 Agent（skill-up 强制排除），所以这不构成泄题。
+    collect_artifacts:
+      - "diff/**"
+      - "resource-policy.json"
 
 report:
   # 运行后产出的报告格式。
   # 可选：json | junit | html。
   formats: [json, html]
+  # 额外保留会话记录，用例失败时可以直接看到 Agent 到底做了什么。
+  artifacts: [transcript]
