@@ -2,6 +2,8 @@
 
 `.ihereforUI` 是 iherefor-html-otherui 的唯一中间产物根目录。不要把多个页面的 facts、截图、diff 或计划混放在工程根目录，也不要用 `latest.json` 覆盖历史运行。
 
+**字段级契约以 [artifact-contract.md](artifact-contract.md) 为准**；本文件只描述目录生命周期、索引与查找规则。机器校验：`python3 scripts/validate_run.py --run <run-dir>`。
+
 ## 目录契约
 
 ```text
@@ -12,19 +14,29 @@
 │   └── integration-plan.json    # 项目级接入计划
 ├── pages/
 │   └── <page-id>/
-│       ├── page.json             # 页面元数据、HTML 入口、状态
-│       ├── source/               # HTML/CSS/JS/资源的只读快照或 manifest
+│       ├── page.json             # 页面元数据、HTML 入口、implementationPaths、状态
+│       ├── source/               # HTML/CSS/JS/资源的只读快照
+│       │   ├── manifest.json      # 文件清单、sha256、image_id、版本、来源 URL
 │       │   └── assets-manifest.json
-│       ├── reference/            # 当前批准的基准截图、page-facts、browser-meta
-│       ├── plans/                # 页面实现计划、接入计划和 unsupported 清单
+│       ├── reference/            # 当前「已批准」的冻结基准
+│       │   ├── reference.png
+│       │   ├── page-facts.json
+│       │   ├── browser-meta.json
+│       │   └── approved.json
+│       ├── plans/                # 页面实现计划、接入计划、unsupported 清单
+│       │   ├── ui-implementation-plan.json
+│       │   └── integration-plan.json
 │       ├── runs/
 │       │   └── <run-id>/         # 不可变的一次执行
 │       │       ├── run.json
-│       │       ├── ios-environment.json
+│       │       ├── review.json
+│       │       ├── delivery-gate.json
+│       │       ├── ui-implementation-plan.json
 │       │       ├── resource-policy.json
+│       │       ├── runtime-device.json
+│       │       ├── ios-environment.json   # 仅 iOS 目标模式
 │       │       ├── actual/       # 各目标模式截图和日志
-│       │       ├── diff/         # 整页/区域 diff 与摘要
-│       │       └── review.json
+│       │       └── diff/         # 整页/区域 diff 与摘要
 │       └── status.json           # 页面级交付状态
 ├── reports/
 │   ├── project-status.json       # 跨页面汇总
@@ -84,6 +96,7 @@
 ## 查找规则
 
 - 看项目：读 `.ihereforUI/project.json`，再读 `.ihereforUI/reports/project-status.json`。
+- 校验一次 run：`python3 scripts/validate_run.py --run <run-dir>`；不合规的 run 不得参与交付判定，`deliveryReady` 不得手写覆盖。
 - 看单页：只读该页 `page.json`、`status.json`、`reference/approved.json` 和最新 run 的 `run.json`、`review.json`。
 - 看历史：按 run ID 进入 `runs/<run-id>/`，禁止依赖文件修改时间猜“最新”。
 - 删除或重做页面：只能把页面状态改为 `archived`；不要删除 runs，除非用户明确要求清理历史。
