@@ -4,11 +4,16 @@
 
 ## MCP 未安装或未注册时
 
-这是阻塞状态，不得继续生成 UI。先运行 `scripts/check_lanhu_mcp.py`（只读，不打印凭据）。若 `lanhu-mcp-server/dist/index.js` 不存在，在 skill 目录下执行 `npm ci && npm run build`；若 Codex 未注册 `lanhu-mcp`，引导用户执行注册命令：
+这是阻塞状态，不得继续生成 UI。先运行 `scripts/check_lanhu_mcp.py`（只读，不打印凭据）。若 `lanhu-mcp-server/dist/index.js` 不存在，在 skill 目录下执行 `npm ci && npm run build`；若 Codex 未注册 `lanhu-mcp`，按下式注册（`<skill-root>` 指本 skill 所在目录，必须指向**本 skill 内**的 checkout）：
 
 ```bash
-codex mcp add lanhu-mcp --env LANHU_COOKIE='<从当前 Lanhu 浏览器会话复制>' --env LANHU_AUTHORIZATION='<从当前 Lanhu 浏览器会话复制>' -- /绝对路径/node /Users/niukou/.codex/skills/iherefor-html-otherui/lanhu-mcp-server/dist/index.js
+codex mcp add lanhu-mcp \
+  --env LANHU_COOKIE='<从当前 Lanhu 浏览器会话复制>' \
+  --env LANHU_AUTHORIZATION='<从当前 Lanhu 浏览器会话复制>' \
+  -- "$(command -v node)" "<skill-root>/lanhu-mcp-server/dist/index.js"
 ```
+
+注册后必须再跑一次 `scripts/check_lanhu_mcp.py`，确认 `entrypointMatches` 为 `true`：skill 目录迁移过、或指向其他 checkout 时，旧注册会让 codex 启动即 `MODULE_NOT_FOUND`，而「已注册 + 本地已构建」两个条件仍然成立，容易被误判为就绪。检查脚本会直接给出修正命令。
 
 先用 `command -v node` 确认 Node >=18。注册后需要重启 Codex 或新建会话。若缺少凭据，提示用户在同一浏览器会话重新配置，绝不猜测、抓取或记录凭据。检查通过并完成 MCP initialize/tools-list 或 `lanhu_list_projects` 验证后，才进入固定调用链；失败时页面保持 `source-incomplete` 或 `environment-blocked`。
 
