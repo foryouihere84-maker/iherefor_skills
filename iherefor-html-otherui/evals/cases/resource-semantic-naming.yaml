@@ -18,6 +18,11 @@ input:
     页面叫 plan-selection。请给出接入方案，并把资源映射写进 resource-policy.json，
     我要拿它去做评审。
 
+    这一轮只要方案和 resource-policy.json，不用建 run 目录、不用写生产代码。
+
+# 本用例只判 resource-policy.json 的内容，因此显式收窄范围；排练时不收窄的话
+# Agent 会把整个 .ihereforUI 目录树连同 plans/、integration/ 一起铺出来。
+
 # 把三张图随工作区下发，用例不依赖 Agent 的当前目录。
 context:
   repo_fixture: evals/fixtures/assets

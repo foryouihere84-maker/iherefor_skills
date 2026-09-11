@@ -16,6 +16,11 @@ input:
 
     代码要能直接进生产工程，别只给个大概。
 
+    这一轮我只要代码和关键决策，不用建工程、不用编译运行；但请先按 skill 的规范确认约束。
+
+# 本用例只判回答文本，因此显式收窄范围，理由同 click-handler-naming：不收窄的话
+# Agent 会按完整闭环去搭 Sources/Tests/verification 并真编译。
+
 judge:
   type: rule_based
   success:

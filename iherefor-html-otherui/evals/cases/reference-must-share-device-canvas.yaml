@@ -12,6 +12,8 @@ input:
     现在我要给 Lanhu 导出的 index.html 生成视觉基准截图，请问命令怎么写？
     顺便说明一下为什么这么取参数，以及基准图跟设备截图之间需要满足什么关系。
 
+    只要把命令和理由讲清楚，不用真的去渲染（这里也没有 index.html）。
+
 judge:
   type: rule_based
   success:

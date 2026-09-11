@@ -34,8 +34,11 @@ cases:
     - evals/cases/scripts-must-not-generate-source.yaml
   # 所有用例继承的默认约束。
   defaults:
-    timeout_seconds: 300
-    max_turns: 8
+    # 这个 skill 会让 Agent 走完整闭环（建工程、编译、跑起来截图），
+    # 300s/8 轮实测不够：排练时两个用例都自然膨胀成完整工程构建。
+    # 上限放宽到 900s/16 轮，避免把「做慢了」误判成「做错了」。
+    timeout_seconds: 900
+    max_turns: 16
     # 默认前置检查，用例可按需覆盖。
     expect:
       exit_code: 0
