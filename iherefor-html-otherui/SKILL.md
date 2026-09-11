@@ -147,20 +147,19 @@ Agent 直接维护目标工程中的 canonical UI 源码。脚本禁止生成、
 
 ## 输出证据
 
-多页面任务必须先在项目根创建 `.ihereforUI`，并遵循页面/运行隔离契约。详细目录、生命周期、索引和恢复规则见 [references/project-management.md](references/project-management.md)。可用 `scripts/init_ui_workspace.py` 初始化项目索引；它只创建中间产物目录，不修改生产源码。
+多页面任务必须先在项目根创建 `.ihereforUI`。产物结构以 [references/artifact-contract.md](references/artifact-contract.md) 为唯一事实来源，生命周期、索引和恢复规则见 [references/project-management.md](references/project-management.md)。可用 `scripts/init_ui_workspace.py` 初始化目录与索引；它只创建中间产物目录，不修改生产源码。
 
-每个页面、每个目标模式、每次运行至少产出：
+每个页面、每个目标模式、每次运行至少产出（缺一即不合规）：
 
-- `manifest.json`
-- `reference/`：HTML 页面截图和浏览器运行参数
-- `ui-implementation-plan.json`
-- `assets/`：页面实际使用的本地资源和映射
+- `run.json`、`review.json`、`delivery-gate.json`
+- `ui-implementation-plan.json`、`resource-policy.json`
+- `runtime-device.json`；iOS 目标另需 `ios-environment.json`
 - `actual/`：目标 App 截图、编译/测试日志
-- `diff/`：像素 diff、差异摘要和阈值
-- `visual-review.json`
-- `delivery-gate.json`
+- `diff/`：整页与区域差异摘要（含阈值与两张输入图的像素尺寸）
 
-这些文件应位于 `.ihereforUI/pages/<page-id>/runs/<run-id>/`；页面批准基准位于该页 `reference/`，跨页面汇总位于 `.ihereforUI/reports/`。禁止把多个页面的产物放在同一目录、覆盖历史 run，或以聊天上下文代替索引。
+页面级冻结基准（`reference/reference.png`、`page-facts.json`、`browser-meta.json`、`approved.json`）与跨页面汇总（`.ihereforUI/reports/`）不放在 run 目录内。`visual-review.json`、`manifest.json` 和 run 级 `assets/` 已废弃，映射关系见契约。
+
+每次写完 run 必须用 `scripts/validate_run.py --run <run-dir>` 自检；`deliveryReady` 只由闸门脚本推导，不得手写覆盖。禁止把多个页面的产物放在同一目录、覆盖历史 run，或以聊天上下文代替索引。
 
 ## 参考资料
 
