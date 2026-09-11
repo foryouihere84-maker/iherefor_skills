@@ -12,7 +12,7 @@
 6. **重新验证**：重新 build、test、运行目标设备（通过运行时 API 读取真实 bounds）、截图，并生成新的 diff。失败时保留完整日志，状态为 `fail` 或 `not-run`，不能伪造通过。
 7. **记录证据**：新 run 必须保存 before/after、diff summary（整页和受影响区域）、runtime-device、修改原因、实际修改文件和下一步动作。`review.json` 要有 `parentRunId`，形成迭代链。
 8. **回归检查**：修复局部区域后，仍需检查整页、顶部/底部系统区域、图片映射和至少一个文本/容器区域，防止局部修复破坏其他区域。
-9. **重新交付判断**：只有 build、tests、visualDiff、资源和 unsupported 闸门全部通过才将页面状态设为 `ready`；否则保持 `needs-review`。用户再次判定不合格时，从第 1 步创建下一 run，永远不覆盖历史证据。
+9. **重新交付判断**：写入本轮 `delivery-gate.json` 后运行 `scripts/validate_run.py --run <run-dir>`；只有 7 项闸门全部为 `pass` 且 `unsupported.count == reviewedCount` 才可将页面状态设为 `ready`，否则保持 `needs-review`。`deliveryReady` 由契约推导，不得手写覆盖。用户再次判定不合格时，从第 1 步创建下一 run，永远不覆盖历史证据。
 
 ## `review.json` 最小结构
 
