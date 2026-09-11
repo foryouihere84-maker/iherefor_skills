@@ -1,0 +1,8 @@
+{
+  "page": "plan-selection",
+  "mappings": [
+    {"source": "img_0.png", "target": "img_0"},
+    {"source": "img_1.png", "target": "img_1"},
+    {"source": "img_2.png", "target": "img_2"}
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "page": "plan-selection",
+  "mappings": [
+    {"source": "img_0.png", "target": "plan_selection_hero_collage"},
+    {"source": "img_1.png", "target": "plan_selection_close_icon"},
+    {"source": "img_2.png", "target": "plan_selection_card_background"}
+  ]
+}

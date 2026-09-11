@@ -1,0 +1,5 @@
+Image("plan_selection_hero_collage")
+    .resizable()
+    .scaledToFill()
+    .frame(width: 205.6, height: 205.6)
+    .clipped()

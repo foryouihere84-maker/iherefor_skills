@@ -38,14 +38,32 @@ iherefor-html-otherui 的 skill-up 评测套件。它测的**不是脚本能不�
 
 ## 运行
 
+套件分两层，**下面那层完全不需要 Agent Engine 凭据**：
+
 ```bash
+# 第 1 层：判分器自检（零凭据、零 LLM，已接入 scripts/tests/run_all.sh 与 CI）
+python3 evals/harness/selfcheck.py
+
+# 第 2 层：真实 Agent 执行（需要引擎凭据）
 skill-up validate evals/eval.yaml          # 校验配置，不需要凭据
 skill-up run evals/eval.yaml --dry-run     # 看会跑哪些用例，不需要凭据
 skill-up run evals/eval.yaml               # 真跑，需要引擎凭据
 ```
 
-先用 `--include-case-name <id>` 跑单例确认链路，再全量——避免判分脚本或工作区语义跟预期
-不一致时一次性烧掉全部额度。
+第 1 层用每个用例自带的两份样本（`fixtures/golden/<case-id>/{pass,fail}/`）验证判分器本身：
+`pass` 样本必须判过、`fail` 样本必须判挂。它保证的是**判分逻辑有效**——一个永远返回 PASS 的
+判分器，或者一条谁都满足不了的断言，在这里会立刻暴露。没有这层，判分器的错误只能等到花额度
+真跑时才发现，而那时看到的"用例失败"分不清是 Agent 做错了还是判分写错了。
+
+也可以单独判任意一次执行结果：
+
+```bash
+python3 evals/harness/run_case.py --case evals/cases/<id>.yaml \
+    --workspace <工作区> --message <最终回答文件>
+```
+
+第 2 层跑之前先用 `--include-case-name <id>` 跑单例确认链路，再全量——避免判分脚本或工作区
+语义跟预期不一致时一次性烧掉全部额度。
 
 ## 先排练，再花额度
 
@@ -76,7 +94,10 @@ skill-up run evals/eval.yaml               # 真跑，需要引擎凭据
 
 1. 写 `evals/cases/<id>.yaml`，**文件名即用例 ID**，别忘了把它加进 `eval.yaml` 的 `cases.files`。
 2. 优先用 `expect`（零成本门槛）挡一道，再用 `judge` 判质量。
-3. 判分脚本放 [`fixtures/scripts/`](fixtures/scripts/)，必须可执行（`chmod +x`），
+3. **必须同时补一对样本**：`fixtures/golden/<id>/pass/` 与 `fixtures/golden/<id>/fail/`，
+   各放一个 `answer.md` 和该场景需要的工作区文件。缺样本会被 `selfcheck.py` 直接判失败，
+   这样新用例不会带着未验证的判分器进仓库。
+4. 判分脚本放 [`fixtures/scripts/`](fixtures/scripts/)，必须可执行（`chmod +x`），
    退出码 `0` = PASS；CI 会校验语法与可执行位。
-4. 加完至少跑一次 `skill-up validate` 与 `--dry-run`。
-5. 判分脚本写完先用手工构造的合规/违规输入各跑一遍。
+5. 跑 `python3 evals/harness/selfcheck.py`，确认新用例的 pass 样本判过、fail 样本判挂。
+6. 最后再跑一次 `skill-up validate` 与 `--dry-run`。
