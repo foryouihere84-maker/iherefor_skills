@@ -1,0 +1,13 @@
+{
+  "platform": "iOS Simulator",
+  "device": "iPhone 17",
+  "udid": "006735BF-E25E-4629-8405-3CCE87156171",
+  "source": "runtime NSLog from UIScreen and UIView bounds",
+  "screenBoundsPoints": {"width": 402, "height": 874},
+  "rootViewBoundsPoints": {"width": 402, "height": 874},
+  "scaleX": 1.02290076,
+  "scaleY": 1.02582160,
+  "screenshotPixels": {"width": 1206, "height": 2622},
+  "screenshotScale": 3,
+  "evidence": "actual/runtime.log"
+}

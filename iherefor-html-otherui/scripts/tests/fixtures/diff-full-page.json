@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "reference": "/Users/niukou/.codex/skills/iherefor-html-otherui/testUIProject/.ihereforUI/pages/plan-selection/runs/20260907-150000-objc-011/reference/reference.png",
+  "actual": "/Users/niukou/.codex/skills/iherefor-html-otherui/testUIProject/.ihereforUI/pages/plan-selection/runs/20260907-150000-objc-011/actual/ios-objective-c-reference-size.png",
+  "threshold": 12,
+  "status": "pass",
+  "width": 786,
+  "height": 1704,
+  "changedPixels": 502263,
+  "totalPixels": 1339344,
+  "changedRatio": 0.37500671970755833
+}
