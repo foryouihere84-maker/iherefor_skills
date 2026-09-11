@@ -166,6 +166,10 @@ Agent 直接维护目标工程中的 canonical UI 源码。脚本禁止生成、
 
 每次写完 run 必须用 `scripts/validate_run.py --run <run-dir>` 自检；`deliveryReady` 只由闸门脚本推导，不得手写覆盖。禁止把多个页面的产物放在同一目录、覆盖历史 run，或以聊天上下文代替索引。
 
+## 人工验收入口
+
+skill 根目录的 `index.html` 是一个纯静态差异查看器（无需服务器、无外部依赖）：用浏览器打开后选择包含 `.ihereforUI` 的项目目录，它会递归扫描各页面各 run 的 `diff/*.json`，并排展示 reference 与 actual 截图、差异数值与闸门状态。这是用户判定「合格 / 不合格」的入口；判定不合格后的修复流程见 [references/feedback-loop.md](references/feedback-loop.md)。
+
 ## 参考资料
 
 - 浏览器启动、隔离 session、字体/资源稳定化和截图契约：`references/browser-runtime.md`
