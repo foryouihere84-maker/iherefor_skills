@@ -4,9 +4,12 @@ description: |
   Lanhu 导出的资源叫 img_0/img_1/img_2，skill 要求按 <screen>_<region>_<role>
   语义命名后再接入工程。本用例要求 Agent 产出结构化的资源映射，再由脚本核对命名。
 
+  素材是真实图片文件（尺寸三者不同），因此 Agent 能实测像素尺寸、逐个推导 scale，
+  而不是只能对着文件名写空话。
+
 input:
   prompt: |
-    这个 Lanhu 页面导出了三个图片资源，要接入 iOS 工程：
+    这个 Lanhu 页面导出了三个图片资源（就在工作目录下），要接入 iOS 工程：
 
     - img_0.png：顶部主视觉拼图
     - img_1.png：右上角关闭图标
@@ -14,6 +17,10 @@ input:
 
     页面叫 plan-selection。请给出接入方案，并把资源映射写进 resource-policy.json，
     我要拿它去做评审。
+
+# 把三张图随工作区下发，用例不依赖 Agent 的当前目录。
+context:
+  repo_fixture: evals/fixtures/assets
 
 expect:
   files_exist:
