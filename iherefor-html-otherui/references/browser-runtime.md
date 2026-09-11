@@ -15,7 +15,7 @@ Browser Use、Stagehand、Steel 等可用于独立实验，但不是本 skill �
 运行时需要 Node.js 和 Playwright 包。依赖应安装到工作区或统一 skill runtime，不要把浏览器二进制散落复制到每个页面项目：
 
 ```bash
-node scripts/render_reference.mjs --input /path/to/design-code --output /path/to/run/reference --viewport 393x852 --scale 2
+node scripts/render_reference.mjs --input /path/to/design-code --output /path/to/page/reference --viewport-from /path/to/run/runtime-device.json
 node scripts/inspect_page.mjs --input /path/to/design-code --output /path/to/run/page-inspection.json
 ```
 
@@ -46,7 +46,9 @@ python3 scripts/compare_reference.py --reference reference/reference.png --actua
 }
 ```
 
-具体 viewport 必须来自 Lanhu 页面设计尺寸或任务参数，不能硬编码为单一 iPhone 尺寸。
+具体 viewport 与 deviceScaleFactor 必须取自目标设备的运行时尺寸：`runtime-device.json` 的 `screenBoundsPoints` 与 `screenshotScale`。这样基准图与目标 App 截图的像素尺寸一致，像素 diff 才有证据效力。`--viewport WxH --scale N` 只是无设备时的应急手段，使用后必须在 run 中记录「未与设备同源」这一事实与原因。
+
+`render_reference.mjs` 默认只截视口（`fullPage: false`）：设备截图是屏幕，不是整页文档，两者坐标系不同。需要整页长图供人工阅读时显式加 `--full-page`，但该图不得作为 diff 的 reference。
 
 ## 稳定化要求
 

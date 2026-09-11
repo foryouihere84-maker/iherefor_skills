@@ -115,9 +115,14 @@ iOS 必须显式处理 `edgesForExtendedLayout`、`extendedLayoutIncludesOpaqueB
 
 ## 强制 Agent loop
 
-### 1. 发现与基准
+### 1. 发现、设备探测与参考基准
 
-确认 Lanhu HTML 入口、CSS/JS 相对路径、资源目录、目标 viewport 和页面状态。使用 Playwright 运行页面，保存基准截图，并记录 console、network、字体和资源错误。
+1. 确认 Lanhu HTML 入口、CSS/JS 相对路径、资源目录和页面状态。
+2. 按目标模式探测运行时设备尺寸（iOS 见 [references/ios-environment.md](references/ios-environment.md)，Android 用 `WindowMetricsCalculator`），写入本次 run 的 `runtime-device.json`。**没有设备尺寸就不允许渲染基准图。**
+3. 用 Playwright 以设备点尺寸与设备 scale 渲染 HTML：`node scripts/render_reference.mjs --input <source> --output <page>/reference --viewport-from <run>/runtime-device.json`。基准图默认是视口截图；`--full-page` 只用于人工阅读，不参与像素比对。
+4. 记录 console、network、字体和资源错误，并把 `reference.png`、`page-facts.json`、`browser-meta.json` 写入页面级 `reference/`。
+
+四步都完成后才进入第 2 步。基准图与目标 App 截图像素尺寸不一致时，diff 结果不具证据效力，禁止用缩放/裁剪后的派生图凑尺寸。
 
 ### 2. 页面事实表
 
