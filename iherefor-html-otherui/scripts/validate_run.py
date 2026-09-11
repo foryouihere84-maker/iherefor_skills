@@ -11,6 +11,7 @@
 """
 import argparse
 import json
+import struct
 import sys
 from pathlib import Path
 
@@ -31,6 +32,23 @@ BASE_REQUIRED = (
 )
 GATE_KEYS = ('reference', 'browser', 'sourceAssets', 'implementation', 'build', 'tests', 'visualDiff')
 RUN_REQUIRED_KEYS = ('schemaVersion', 'runId', 'pageId', 'targetMode', 'status', 'referenceBaseline')
+
+# 降采样/裁剪派生图的文件名特征：一旦出现在 diff 输入里，比较结果就不再是原始证据。
+DERIVED_MARKERS = ('reference-size', 'reference_size', 'resized', 'rescale', 'scaled',
+                   'downscaled', 'down-sample', 'thumbnail', 'thumb', '-copy', '-resize')
+
+
+def png_size(path):
+    """从 PNG 头读取像素尺寸，不依赖 Pillow。"""
+    try:
+        with open(path, 'rb') as handle:
+            head = handle.read(24)
+    except OSError:
+        return None
+    if len(head) < 24 or head[:8] != b'\x89PNG\r\n\x1a\n':
+        return None
+    width, height = struct.unpack('>II', head[16:24])
+    return {'width': width, 'height': height}
 
 
 def load_json(path):
@@ -110,6 +128,54 @@ def validate(run_dir):
                 )
             if gate.get('deliveryReady') is False and not gate.get('blockingReasons'):
                 violations.append('deliveryReady=false 时必须在 blockingReasons 中说明原因')
+
+    # 基准必须与目标设备截图同源：点尺寸来自运行时 API，像素尺寸必须一致
+    page_dir = run_dir.parent.parent
+    baseline = page_dir / 'reference' / 'reference.png'
+    device_size = None
+    device_path = run_dir / 'runtime-device.json'
+    if device_path.is_file():
+        device, error = load_json(device_path)
+        if device is None:
+            violations.append(f'runtime-device.json 解析失败：{error}')
+        else:
+            candidate = device.get('screenshotPixels')
+            if not isinstance(candidate, dict) or not candidate.get('width') or not candidate.get('height'):
+                violations.append('runtime-device.json 缺少 screenshotPixels')
+            else:
+                device_size = candidate
+
+    if not baseline.is_file():
+        violations.append('缺少页面级已批准基准：reference/reference.png')
+    elif device_size:
+        size = png_size(baseline)
+        if size is None:
+            violations.append('reference/reference.png 不是可解析的 PNG')
+        elif size['width'] != device_size['width'] or size['height'] != device_size['height']:
+            violations.append(
+                f"基准图与设备截图不同源：reference.png {size['width']}x{size['height']} "
+                f"vs screenshotPixels {device_size['width']}x{device_size['height']}"
+            )
+
+    # diff 输入必须是已批准基准与本次 run 的原始截图，禁止降采样/裁剪派生图
+    diff_dir = run_dir / 'diff'
+    if diff_dir.is_dir():
+        for summary_path in sorted(diff_dir.glob('*.json')):
+            summary, error = load_json(summary_path)
+            if summary is None:
+                violations.append(f'{summary_path.name} 解析失败：{error}')
+                continue
+            for key in ('reference', 'actual'):
+                value = summary.get(key)
+                if not value:
+                    continue
+                candidate = Path(value)
+                if any(marker in candidate.name.lower() for marker in DERIVED_MARKERS):
+                    violations.append(f'{summary_path.name} 的 {key} 使用了派生图：{candidate.name}')
+                if key == 'reference' and baseline.is_file() and candidate.resolve() != baseline.resolve():
+                    violations.append(f'{summary_path.name} 的 reference 不是已批准基准：{value}')
+                if key == 'actual' and run_dir not in candidate.resolve().parents:
+                    violations.append(f'{summary_path.name} 的 actual 不在本次 run 目录内：{value}')
 
     payload = {
         'schemaVersion': 1,
