@@ -1,0 +1,69 @@
+name: iherefor-html-otherui 脚本回归
+
+# 只跑确定性脚本用例（不调用 LLM、不需要 Lanhu 凭据），因此可以放在每次 push/PR 上。
+on:
+  push:
+    paths:
+      - "iherefor-html-otherui/**"
+      - ".github/workflows/skill-scripts.yml"
+  pull_request:
+    paths:
+      - "iherefor-html-otherui/**"
+      - ".github/workflows/skill-scripts.yml"
+
+# 同一分支的重复推送只保留最新一次运行。
+concurrency:
+  group: skill-scripts-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  regression:
+    # 必须用 macOS：discover_xcode_environment 用例依赖真实 xcrun/devicectl。
+    runs-on: macos-15
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: iherefor-html-otherui
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: iherefor-html-otherui/package-lock.json
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 安装依赖
+        run: |
+          set -euo pipefail
+          python3 -m venv .runtime/venv
+          .runtime/venv/bin/pip install --quiet --disable-pip-version-check -r requirements.txt
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: 校验 judge 脚本
+        run: |
+          set -euo pipefail
+          # 只依赖 bash：既查语法，也查可执行位是否在提交里保留（丢失会让 skill-up 直接报错）。
+          for script in evals/fixtures/scripts/*.sh; do
+            bash -n "$script"
+            test -x "$script" || { echo "缺少可执行位：$script"; exit 1; }
+          done
+
+      - name: 脚本回归
+        run: bash scripts/tests/run_all.sh
+
+      - name: 上传失败现场
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: regression-logs
+          if-no-files-found: ignore
+          path: |
+            iherefor-html-otherui/scripts/tests/**/*.log
+            iherefor-html-otherui/scripts/tests/**/*.json
