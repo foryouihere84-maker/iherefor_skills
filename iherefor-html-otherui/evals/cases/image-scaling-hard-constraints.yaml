@@ -1,0 +1,25 @@
+id: image-scaling-hard-constraints
+title: 图片必须显式映射尺寸，不能依赖 intrinsic size
+description: |
+  skill 的硬约束：图片外框与内容绘制区域必须使用 mapper 计算出的尺寸，
+  SwiftUI 下必须 .resizable() 后再显式 .frame，并明确 scaledToFill/scaledToFit。
+
+input:
+  prompt: |
+    把这段 HTML 里的主视觉图落成 SwiftUI 代码：
+
+    <img class="hero" src="img/img_1.png"
+         style="width:201px;height:201px;object-fit:cover" />
+
+    背景信息：Lanhu 画布宽 393，目标设备 402x874 点，资源已放进 Assets，
+    名字是 plan_selection_hero_collage。
+
+    代码要能直接进生产工程，别只给个大概。
+
+judge:
+  type: rule_based
+  success:
+    - output_contains:
+        all: [".resizable()", ".frame("]
+    - output_matches:
+        all: ["(?i)scaledToFill|scaledToFit"]

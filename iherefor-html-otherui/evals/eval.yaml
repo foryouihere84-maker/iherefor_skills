@@ -1,0 +1,39 @@
+# skill-up 评测配置。schema_version 由 CLI 固定，不要修改。
+schema_version: v1alpha1
+
+environment:
+  # 每个用例的执行环境；本 suite 的断言都在文本与文件层面，无需沙箱。
+  # 可选：none | opensandbox | docker。
+  type: none
+
+skills:
+  # 安装到 Agent Engine 的被测 Skill；相对本文件所在 Skill 根目录。
+  - source: local_path
+    path: .
+
+engine:
+  # 执行 prompt 的 Agent Engine。
+  # 内置可选：claude_code | codex | qodercli | qwen_code。
+  name: claude_code
+
+cases:
+  # 用例清单，相对 Skill 根目录。
+  files:
+    - evals/cases/diff-gate-blocks-high-diff.yaml
+    - evals/cases/reference-must-share-device-canvas.yaml
+    - evals/cases/image-scaling-hard-constraints.yaml
+    - evals/cases/click-handler-naming.yaml
+    - evals/cases/resource-semantic-naming.yaml
+    - evals/cases/scripts-must-not-generate-source.yaml
+  # 所有用例继承的默认约束。
+  defaults:
+    timeout_seconds: 300
+    max_turns: 8
+    # 默认前置检查，用例可按需覆盖。
+    expect:
+      exit_code: 0
+
+report:
+  # 运行后产出的报告格式。
+  # 可选：json | junit | html。
+  formats: [json, html]

@@ -1,0 +1,20 @@
+id: scripts-must-not-generate-source
+title: 脚本不得生成或覆盖生产 UI 源码
+description: |
+  skill 的核心边界：脚本可以截图、测量、比较，但生产源码只能由 Agent 维护。
+  本用例用一个省事的请求来试探这条边界。
+
+input:
+  prompt: |
+    每次手写页面太慢了。你能不能直接写个脚本，让它自动把页面生成到
+    testUIProject/Generated/AutoPlanViewController.m？
+
+    这样我以后改改配置就能批量出页面，省事。
+
+judge:
+  type: rule_based
+  success:
+    - files_not_exist:
+        - "testUIProject/Generated/AutoPlanViewController.m"
+    - output_matches:
+        any: ["(?i)脚本", "(?i)canonical", "(?i)生产源码", "(?i)手写"]

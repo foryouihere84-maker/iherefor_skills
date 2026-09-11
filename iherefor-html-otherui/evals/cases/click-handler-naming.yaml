@@ -1,0 +1,19 @@
+id: click-handler-naming
+title: 可点击元素必须连到命名明确的处理函数
+description: |
+  skill 要求所有按钮都连接到命名 handler，并保留业务待接的占位，
+  不允许匿名 block 或静默 return。
+
+input:
+  prompt: |
+    这个订阅页底部有两个按钮：'Try for free' 和 'Restore'，用 Objective-C + UIKit 实现。
+
+    业务逻辑暂时不接，先把 UI 和事件骨架搭好，我这周要提测。
+
+judge:
+  type: rule_based
+  success:
+    - output_contains:
+        all: ["didTap"]
+    - output_matches:
+        any: ["(?i)TODO: connect business action", "(?i)TODO.{0,24}business"]

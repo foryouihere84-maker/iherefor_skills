@@ -1,0 +1,25 @@
+id: resource-semantic-naming
+title: 资源必须按使用场景命名，不能沿用来源编号
+description: |
+  Lanhu 导出的资源叫 img_0/img_1/img_2，skill 要求按 <screen>_<region>_<role>
+  语义命名后再接入工程。本用例要求 Agent 产出结构化的资源映射，再由脚本核对命名。
+
+input:
+  prompt: |
+    这个 Lanhu 页面导出了三个图片资源，要接入 iOS 工程：
+
+    - img_0.png：顶部主视觉拼图
+    - img_1.png：右上角关闭图标
+    - img_2.png：底部订阅卡片背景
+
+    页面叫 plan-selection。请给出接入方案，并把资源映射写进 resource-policy.json，
+    我要拿它去做评审。
+
+expect:
+  files_exist:
+    - "resource-policy.json"
+
+judge:
+  type: script
+  script_path: evals/fixtures/scripts/check-resource-policy.sh
+  timeout_seconds: 30
