@@ -45,6 +45,8 @@ SELFCHECK = ROOT / "evals" / "harness" / "selfcheck.py"
 # 变异的目标不一定是被测源码，也可以是**素材**（fixture 本身就是要被检查的对象）。
 GOLDEN_COMPARISON = (ROOT / "evals" / "fixtures" / "golden"
                      / "same-size-needs-region-evidence" / "pass" / "diff" / "comparison.json")
+# 文档也是被检查的对象：标题是锚点的来源，改标题不改引用就会产生断链。
+CONTRACT_DOC = ROOT / "references" / "artifact-contract.md"
 
 # 测试要用带 Pillow 的解释器（test_validate_run 会造 PNG）。
 #
@@ -144,6 +146,14 @@ PROBES = [
     ("fixture 里又出现钉死机器的绝对路径", GOLDEN_COMPARISON, SELFCHECK,
      '  "reference": "images/reference.png",',
      '  "reference": "/Users/probe/Desktop/somewhere/images/reference.png",'),
+    # ---- 文档链接与锚点检查（变异改的是标题，被检查的是别处对它的引用）----
+    #
+    # 这条探针模拟的是**最容易被当成安全操作的那个动作**：改一个章节标题的用词。
+    # 文件在、内容在、读起来毫无问题，只有照着链接点过去的人才发现跳不到 ——
+    # 所以它必须由自检兜住，而不是靠人记得「刚才好像改过标题」。
+    ("章节改名后引用锚点不跟着改", CONTRACT_DOC, SELFCHECK,
+     "### 布局关系与控件尺寸的约束口径（强制）",
+     "### 布局关系与控件尺寸的约束口径（原则）"),
 ]
 
 

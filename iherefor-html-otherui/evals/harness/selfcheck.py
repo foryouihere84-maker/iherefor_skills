@@ -132,8 +132,80 @@ def check_fixture_portability() -> list:
     return problems
 
 
+# 本 skill 自己撰写的文档面（fixture 素材与第三方子项目不算：那里的相对路径指向
+# 被测工作区，本来就不该在本仓库里存在，查了只会制造假告警）。
+DOC_GLOBS = (os.path.join("*.md"), os.path.join("references", "**", "*.md"),
+             os.path.join("evals", "*.md"))
+MD_LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
+MD_HEADING = re.compile(r"^#{1,6}\s+(.+?)\s*$", re.MULTILINE)
+FENCED = re.compile(r"^```.*?^```", re.MULTILINE | re.DOTALL)
+
+
+def _anchor_slug(heading: str) -> str:
+    """按 GitHub 的规则把标题折成锚点：小写、去标点、空格转连字符。
+
+    中文标题必须一起支持 —— 本仓库的锚点大多是中文的，只认 ASCII 就等于没查。
+    """
+    text = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", heading)  # 链接只留文字
+    text = re.sub(r"[`*]", "", text)
+    text = re.sub(r"[^\w\- ]", "", text.lower(), flags=re.UNICODE)
+    return text.strip().replace(" ", "-")
+
+
+def check_doc_links() -> list:
+    """文档里的相对链接与锚点必须真的可达。
+
+    这是又一类**不会让任何测试变红**的缺陷：链接文字读起来完整，锚点看着也像那么回事，
+    只有真正去点的人（也就是照着 skill 干活的 agent）才发现跳不过去 ——
+    而它最常见的触发条件恰恰是「重命名章节」这种本来很安全的整理动作。
+    锚点断裂比文件缺失更隐蔽：文件在、标题在，只是 slug 对不上（改一个标点就够了）。
+
+    只查本 skill 自己撰写的文档（``DOC_GLOBS``），不查 fixture 素材与第三方子项目：
+    那些文档里的相对路径指向被测工作区，本就不该在本仓库里存在。
+    """
+    problems = []
+    seen = set()
+    for pattern in DOC_GLOBS:
+        for path in sorted(SKILL_ROOT.glob(pattern)):
+            if not path.is_file() or path in seen:
+                continue
+            seen.add(path)
+            body = FENCED.sub("", path.read_text(encoding="utf-8"))
+            rel = path.relative_to(SKILL_ROOT)
+            anchored = {}  # 目标文件 -> 可用的锚点集合（按需懒加载）
+
+            for match in MD_LINK.finditer(body):
+                target = match.group(1)
+                if target.startswith(("http://", "https://", "mailto:")):
+                    continue
+                file_part, _, anchor = target.partition("#")
+                if not file_part:
+                    linked, link_rel = path, rel
+                else:
+                    linked = (path.parent / file_part).resolve()
+                    link_rel = file_part
+                    # 目录也是一种合法目标（`[fixtures](fixtures/repo/)`）—— 只认文件
+                    # 会把这类链接全部误报，而假告警会训练出「看到告警就忽略」的习惯。
+                    if not (linked.is_file() or linked.is_dir()):
+                        problems.append(f"{rel}: 链接指向不存在的文件 {target}")
+                        continue
+                if not anchor:
+                    continue
+                if linked.suffix.lower() != ".md":
+                    continue
+                if linked not in anchored:
+                    text = FENCED.sub("", linked.read_text(encoding="utf-8"))
+                    anchored[linked] = {_anchor_slug(h) for h in MD_HEADING.findall(text)}
+                if anchor not in anchored[linked]:
+                    problems.append(
+                        f"{rel}: 锚点 #{anchor} 在 {link_rel} 里不存在 —— "
+                        "重命名章节后要把引用一起改掉")
+    return problems
+
+
 def check_judge_scripts() -> list:
     """判分脚本必须存在、且带可执行位。
+
 
     可执行位这条约定写在 `evals/README.md` 里，但**判分器是用 ``bash <path>`` 调用的**，
     所以少一个 ``+x`` 在测试里永远看不出来 —— 又一个静默缺陷。它只会在人手动
@@ -199,6 +271,7 @@ def main() -> int:
         ("repo_fixture 分层与存在性", check_fixture_layout()),
         ("fixture 不含机器绝对路径", check_fixture_portability()),
         ("判分脚本存在且可执行", check_judge_scripts()),
+        ("文档链接与锚点可达", check_doc_links()),
     )
     print(f"{'用例':<34} {'fixture':<12}")
     print("-" * 62)
@@ -229,7 +302,7 @@ def main() -> int:
         return 1
     print(f"判分器自检通过：{len(ids)} 个用例 × pass/fail 双向共 {len(ids) * 2} 项全部如预期，"
           "且每个 repo_fixture 都按两层结构摆放、fixture 里没有钉死机器绝对路径、"
-          "每个判分脚本都存在且可执行")
+          "每个判分脚本都存在且可执行、文档里的相对链接与锚点都可达")
     return 0
 
 
