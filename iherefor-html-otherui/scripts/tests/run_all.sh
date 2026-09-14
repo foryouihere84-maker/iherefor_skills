@@ -36,9 +36,13 @@ run() {
   fi
 }
 
-run "compare_reference 比例阈值与尺寸校验" "$PY" scripts/tests/test_compare_reference.py
+run "compare_reference 结构/纹理/填充三分与尺寸校验" "$PY" scripts/tests/test_compare_reference.py
+run "audit_alignment 位移/比例真值还原"    "$PY" scripts/tests/test_audit_alignment.py
+run "audit_fonts 字体链替换检出与拒绝猜测" "$PY" scripts/tests/test_audit_fonts.py
+run "layout_proportions 比例规格与禁止字面量" "$PY" scripts/tests/test_layout_proportions.py
 run "render_reference 动画禁用注入生效"   "$PY" scripts/tests/test_render_injection.py
 run "render_reference 基准与设备同源"     "$PY" scripts/tests/test_reference_same_source.py
+run "render_reference 文本元素事实归属"   "$PY" scripts/tests/test_page_facts_text_elements.py
 if command -v node >/dev/null 2>&1; then
   run "browser-launch 启动回退策略"        node scripts/tests/test_browser_launch.mjs
 else
@@ -49,6 +53,8 @@ run "discover_xcode_environment 设备探测"  "$PY" scripts/tests/test_discover
 run "validate_run 产物契约校验"           "$PY" scripts/tests/test_validate_run.py
 run "init_ui_workspace 目录与索引"        "$PY" scripts/tests/test_init_ui_workspace.py
 run "文档与脚本参数漂移"                  "$PY" scripts/tests/test_doc_commands.py
+# 变异探针会临时改写被测源码，因此**不进本套件**（跑法见 evals/README.md）；
+# 它证明的是「上面这些断言不是空的」，改完校验器后应手动跑一次。
 # 评测判分器自检：零凭据、零 LLM，保证每个用例的判分器都有「必须过／必须挂」两份样本。
 run "评测判分器自检（无需引擎凭据）"       "$PY" evals/harness/selfcheck.py
 
