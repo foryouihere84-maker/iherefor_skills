@@ -36,7 +36,7 @@ cases:
     - evals/cases/click-handler-naming.yaml
     - evals/cases/resource-semantic-naming.yaml
     - evals/cases/scripts-must-not-generate-source.yaml
-    - evals/cases/layout-must-follow-design-proportions.yaml
+    - evals/cases/layout-sizes-constant-positions-parent-relative.yaml
   # 所有用例继承的默认约束。
   defaults:
     # 这个 skill 会让 Agent 走完整闭环（建工程、编译、跑起来截图），

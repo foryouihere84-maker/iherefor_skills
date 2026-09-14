@@ -65,33 +65,42 @@ Lanhu 画布只有一个尺寸：`lanhuY = 132` 换算成 `132 * 1.0229 = 135.02
 
 `scripts/layout_proportions.py` 由事实表与设备尺寸生成这份声明与「探针设备上算出来的绝对值」
 清单；`scripts/check_layout_proportions.py` 按声明逐条核对源码，**计划驱动而非正则扫描** ——
-只有被声明为 `proportional` 的关系才要求比例表达，避免把圆角 12、边距 16 这类合法设计常量误报。
+每一类 `kind` 有它自己的判据（`fixed` 的值得来自设计稿、`pinned` 不带比例系数、
+`proportional` 才要求比例表达），这样才不会把圆角 12、边距 16、按钮高 44
+这些**本来就该写成字面量**的设计常量误报成违规。
 
-> **口径提醒（当前实现落后于上面这条规范，别当成已经做到）**
-> `layout_proportions.py` 目前对**非文字元素一律产出 `height/width: proportional`**，
-> 且所有位置关系都写死 `of: "root"`；`kind` 也只有 `proportional` / `intrinsic` 两档。
-> `fixed` / `pinned` 两类与「基准为直接父视图」**尚未实现**，另一前提是
-> `page-facts.json` 目前不含父子层级字段（只有扁平的 `index`）。
-> 缺口清单与改动范围见 [references/sizing-and-positioning.md](references/sizing-and-positioning.md#8-与当前实现的差距尚未实现不要当成已经做到)。
-> 该改动属**契约级变更**（同时触及检查器、evals 样本、回归用例与探针），必须一次改完，
-> 不允许留下「文档说固定、脚本仍要求比例」的自相矛盾 —— 那会让每一条告警都失去可信度。
+> **口径状态（`schemaVersion 3` 起已落地，不再有「规范领先于实现」的缺口）**
+> 生成端、检查端、回归用例、变异探针与 evals 样本已同批改完：
+> `page-facts.json` 带 `parentIndex` / `parentHops` / `positioningContextIndex`；
+> `layout_proportions.py` 产出 `model: "fixed-size-parent-relative-position"`，每个区域带
+> `basis` / `parentIndex` / `parent`，`kind` 五档齐全；
+> `check_layout_proportions.py` 按 `kind` 逐类判据核对，并把「声明 `fixed` / `pinned` 的值
+> 却被当成违规」列为反向错误。
+> **拿到 `schemaVersion < 3` 的产物说明它还是旧的一轴口径**（非文字元素一律 `proportional`、
+> 位置一律 `of: "root"`、`kind` 只有两档），不能当作本契约的样例。
+> 这类改动属**契约级变更**，必须一次改完 —— 不允许留下「文档说固定、脚本仍要求比例」的
+> 自相矛盾，那会让每一条告警都失去可信度。落地推演与归入表见
+> [references/sizing-and-positioning.md](references/sizing-and-positioning.md)。
 
 ```bash
-# 第 2 步：生成比例规格（rect 的坐标空间由 rectInReference == rect*dpr 自动判定，判不出就拒绝继续）
+# 第 2 步：生成布局约束规格（rect 的坐标空间由 rectInReference == rect*dpr 自动判定，判不出就拒绝继续）
 python3 scripts/layout_proportions.py --page-facts <page>/reference/page-facts.json \
     --target-mode ios-uikit-objective-c --output <run>/plans/layout-proportions.json
 
-# 实现完成后：核对源码是否真的按比例写（只校验计划用 --plan-only）
+# 实现完成后：核对源码是否真的照计划声明的方式实现（只校验计划用 --plan-only）
 python3 scripts/check_layout_proportions.py --plan <run>/ui-implementation-plan.json \
     --source <原生源码根>
 
-# 交付前：连同布局比例一起判（不给 --source 就只告警，不假装验证过）
+# 交付前：连同布局约束一起判（不给 --source 就只告警，不假装验证过）
 python3 scripts/validate_run.py --run <run-dir> --source <原生源码根>
 ```
 
 判定分两档，理由是要**准**而不是要响：数值 > 48pt 的字面量不可能是手选的设计常量，判违规；
 ≤ 48pt 时与常见设计常量无法区分，只列进 `ambiguousLiterals` 待人工确认，不计入违规。
-源码里等于「探针设备推导值」的绝对值、以及「计划声明了比例却一处比例原语都没有」都会被拦下。
+但两档之外还有更硬的一层判据 —— **计划怎么声明，源码就得怎么实现**：声明 `proportional`
+的位置写成探针设备上的绝对值、声明 `pinned` 的贴边却带上比例系数、声明 `intrinsic` 却不给
+理由，都会被拦下；反过来，声明 `fixed` 的尺寸和声明 `pinned` 的内边距本来就该写成字面量，
+报成违规才是错。
 
 ### 比例模型与 `fit` 策略必须一致
 
@@ -188,12 +197,12 @@ python3 scripts/canvas_map.py --self-test
 
 实现计划必须包含 `canvasTransform.policy`、`canvasTransform.coordinateMapper.forward` 与 `canvasTransform.coordinateMapper.inverse`；禁止各组件自行手调比例或混用 Lanhu px、UIKit pt、Android dp 和截图 px。缺少 `inverse` 时分析代码只能自己反解，而手写反解正是「多乘一层 scaleY」的来源。
 
-实现计划还必须包含 `layoutProportions`：每个区域的 `ratios` 与逐条 `relations`（`kind` 为 `proportional` 或 `intrinsic`），以及 `forbiddenLiterals` 清单。`canvasTransform` 与 `layoutProportions` 分工不同，不要互相替代：
+实现计划还必须包含 `layoutProportions`：每个区域的 `basis` / `parentIndex` 与逐条 `relations`（`kind` 为 `fixed` / `pinned` / `proportional` / `intrinsic` / `centered` 之一），以及 `forbiddenLiterals` 清单。`canvasTransform` 与 `layoutProportions` 分工不同，不要互相替代：
 
 - `canvasTransform` 是**测量用**的桥 —— 把 Lanhu 坐标换算到设备点和截图像素，供审计与 diff 使用；
-- `layoutProportions` 是**实现用**的规格 —— 告诉原生代码每条关系该写成哪个比例。
+- `layoutProportions` 是**实现用**的规格 —— 告诉原生代码每条关系该按哪一类 `kind` 写、基准是哪一级父视图。
 
-拿 `canvasTransform` 算出的绝对值去写约束，就是把测量桥当成了实现规格，这正是比例契约要禁止的动作。
+拿 `canvasTransform` 算出的绝对值去写约束，就是把测量桥当成了实现规格，这正是布局约束契约要禁止的动作。
 
 ## 顶部系统区域与安全区
 
@@ -345,11 +354,11 @@ skill 根目录的 `index.html` 是一个纯静态差异查看器（无需服务
 |---|---|---|
 | `scripts/canvas_map.py` | 唯一的坐标换算入口，正向 + 逆向 + 默认 `fit` 策略；`to_ratios` / `axis_deviation` 给出比例形式与模型偏差 | 任何需要换算坐标的分析之前；改坐标逻辑后跑 `--self-test` |
 | `scripts/render_reference.mjs` | 确定性渲染基准图与事实表（含 `rectInReference`、`alphaBounds`、`textMetrics`、运行时字体） | 第 1 步建立基准 |
-| `scripts/layout_proportions.py` | 把事实表位置转成 `layoutProportions` 比例规格，并列出「探针设备推导值」禁止清单 | 第 2 步写实现计划时；缺它就没法核对「有没有写成固定 pt」 |
-| `scripts/check_layout_proportions.py` | 计划驱动地核对源码是否按比例表达；`--plan-only` 只校验计划 | 实现完成后、交付前；改了布局代码就要重跑 |
+| `scripts/layout_proportions.py` | 把事实表位置转成 `layoutProportions` 约束规格（尺寸是常量、位置相对直接父视图），并列出「探针设备推导值」禁止清单 | 第 2 步写实现计划时；缺它就没法核对「有没有写成探针设备上的固定 pt」 |
+| `scripts/check_layout_proportions.py` | 计划驱动地核对源码有没有照计划声明的 `kind` 实现；`--plan-only` 只校验计划 | 实现完成后、交付前；改了布局代码就要重跑 |
 | `scripts/compare_reference.py` | 像素比较，输出结构/纹理/填充三分与区域明细 | 每次截图后 |
 | `scripts/audit_alignment.py` | 元素级对齐审计，区分「基准不可信」与「App 不对」 | 每次截图后；尺寸一致也必须跑 |
 | `scripts/audit_fonts.py` | 字体链审计：逐元素比对「CSS 声明的族」与「运行时实际用上的族」，判出静默字体替换 | 每次截图后；`alignment.json` 说「问题在 App 侧」时更要跑 |
-| `scripts/validate_run.py` | run 产物契约校验，交叉核对闸门与证据；带 `--source` 时连同布局比例一起判 | 每次写完 run |
+| `scripts/validate_run.py` | run 产物契约校验，交叉核对闸门与证据；带 `--source` 时连同布局约束一起判 | 每次写完 run |
 
 脚本级回归见 `scripts/tests/run_all.sh`（不需要 LLM，CI 每次跑）；Agent 行为红线见 `evals/README.md`。

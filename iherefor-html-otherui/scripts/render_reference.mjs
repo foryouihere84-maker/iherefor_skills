@@ -113,6 +113,24 @@ const COLLECT_FACTS = `(scroll) => {${SHARED_PRELUDE}
     }
     return { index: null, hops };
   };
+  /* 绝对定位元素还有第二个基准：**最近的建立了坐标系的可见祖先**。
+   * CSS 里 absolute 的坐标原点是最新的 position !== static 的祖先，不是 DOM 父；
+   * 而原生实现里子视图一律相对直接父视图的 bounds 定位，没有「定位祖先」这个概念。
+   * 两者必须分开记，否则遇到「中间夹一层 static 的孙元素被 absolute」就会算错原点：
+   * 实测这页面上 3 个 absolute 元素的定位祖先恰好都等于可见祖先（Lanhu 导出的容器
+   * 大多自带 position: relative），但那是这一页的巧合，不能当假设。
+   * 不可见的 positioned 祖先要跳过继续找 —— 实现侧不会为不可见层建视图，锚不到它。 */
+  const nearestPositionedVisibleAncestor = (e) => {
+    let p = e.parentElement;
+    while (p && p !== document.body && p !== document.documentElement) {
+      if (getComputedStyle(p).position !== 'static') {
+        const found = visibleIndex.get(p);
+        if (found !== undefined) return found;
+      }
+      p = p.parentElement;
+    }
+    return null;
+  };
   return visibleEls.map((e, index) => {
     const r = e.getBoundingClientRect(), s = getComputedStyle(e);
     const text = (e.innerText || '').trim();
@@ -146,6 +164,13 @@ const COLLECT_FACTS = `(scroll) => {${SHARED_PRELUDE}
       role: e.getAttribute('role'), ariaLabel: e.getAttribute('aria-label'),
       src: e.tagName === 'IMG' ? (e.currentSrc || e.src) : null,
     };
+    // 绝对定位元素才有第二个基准（见上面的 nearestPositionedVisibleAncestor）：
+    //   number = 最近「可见且建立了坐标系」的祖先下标（可能不等于 parentIndex）
+    //   null   = 没有这样的祖先，坐标原点就是视口 / 画布
+    // 非 absolute/fixed 元素不写这个字段：缺字段表示「不适用」，与 null（基准是视口）不同。
+    if (s.position === 'absolute' || s.position === 'fixed') {
+      facts.positioningContextIndex = nearestPositionedVisibleAncestor(e);
+    }
     // 文本度量：用 Range 量**真实排版结果**，这是判断字体替换是否成立的唯一依据。
     // 不信任 document.fonts.check()——它对不存在的字体族也返回 true（见 browser-meta
     // 的 fontProbeNote），所以「CSS 声明了什么」不能当作「渲染用了什么」。
@@ -391,7 +416,7 @@ async function main() {
   }
 
   const facts = {
-    schemaVersion: 2,
+    schemaVersion: 3,
     title: await page.title(), url: page.url(),
     viewport: { width: vp.width, height: vp.height, devicePixelRatio: scale,
                 scrollX: scroll.x, scrollY: scroll.y },
@@ -399,12 +424,19 @@ async function main() {
     coordinateSpace: {
       note: 'rect 是 CSS px（视口相对）；rectInReference 是 reference.png 的像素坐标 = (rect + scroll) * devicePixelRatio',
       rectInReferenceFormula: '(rect + viewport.scroll) * viewport.devicePixelRatio',
+      parentNote: 'parentIndex 是最近可见祖先在 elements 里的下标（同一套 visible 过滤 + 同一套下标编号）；'
+                + 'null 表示直接父视图就是整屏画布，即实现计划里 of:"root" 的适用场景。'
+                + 'parentHops 是到该祖先之间跳过的不可见层数，>0 说明层级被折叠过。'
+                + 'positioningContextIndex 只出现在 absolute/fixed 元素上：它是最近「可见且 position!==static」'
+                + '的祖先下标（CSS 下坐标原点所在），可能不等于 parentIndex；null 表示原点即视口。'
+                + '缺该字段表示该元素不是绝对定位，「不适用」与 null 语义不同。'
+                + 'schemaVersion 3 起才有这些字段；读不到时不得假设层级已知。',
     },
     referenceImage,
     textMetricsNote: 'textMetrics.advanceWidth 是排版宽度（CSS px），字体被替换时必然变化；用它判断 fallback，不要用 CSS 声明的 fontFamily',
     elements,
   };
-  const meta = { schemaVersion: 2, entry, viewport: vp, scale, viewportSource: derived ? `runtime-device:${path.resolve(runtimeDevice)}` : 'cli', fullPage, screenshotPixels: { width: vp.width * scale, height: vp.height * scale }, browser: await browser.version(), capturedAt: new Date().toISOString(), styleInjection, console: consoleMessages, failedRequests, fontMeasurement, fontMeasurementCoverage: { textElements: textMarkInfo.marked.length, measured: measuredCount }, fontJoin, fontProbe, images: await page.evaluate(() => Array.from(document.images).map(i => ({ src:i.currentSrc || i.src, complete:i.complete, naturalWidth:i.naturalWidth, naturalHeight:i.naturalHeight }))) };
+  const meta = { schemaVersion: 3, entry, viewport: vp, scale, viewportSource: derived ? `runtime-device:${path.resolve(runtimeDevice)}` : 'cli', fullPage, screenshotPixels: { width: vp.width * scale, height: vp.height * scale }, browser: await browser.version(), capturedAt: new Date().toISOString(), styleInjection, console: consoleMessages, failedRequests, fontMeasurement, fontMeasurementCoverage: { textElements: textMarkInfo.marked.length, measured: measuredCount }, fontJoin, fontProbe, images: await page.evaluate(() => Array.from(document.images).map(i => ({ src:i.currentSrc || i.src, complete:i.complete, naturalWidth:i.naturalWidth, naturalHeight:i.naturalHeight }))) };
   fs.writeFileSync(path.join(output, 'page-facts.json'), JSON.stringify(facts, null, 2));
   fs.writeFileSync(path.join(output, 'browser-meta.json'), JSON.stringify(meta, null, 2));
   await browser.close();

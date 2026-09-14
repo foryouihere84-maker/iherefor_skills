@@ -80,15 +80,71 @@ PROBES = [
      '    return bool(element.get("text")) and height <= TEXT_BLOCK_MAX_HEIGHT_PT',
      "    return False"),
     ("不区分位置轴（丢掉 xRatio/yRatio）", PLAN, LAYOUT_TEST,
-     '("xRatio", "yRatio", "centerXRatio", "centerYRatio",\n'
-     '                        "widthRatio", "heightRatio")},',
-     '("centerXRatio", "centerYRatio", "widthRatio", "heightRatio")},'),
+     '            "ratios": ratios,',
+     '            "ratios": {k: v for k, v in ratios.items()\n'
+     '                        if k in ("centerXRatio", "centerYRatio",\n'
+     '                                 "widthRatio", "heightRatio")},'),
     ("违规不再给出应使用的比例", CHECK, LAYOUT_TEST,
      '"expectedRatio": best.get("ratioInstead"),',
      '"expectedRatio": None,'),
     ("合规也算失败（恒挂）", CHECK, LAYOUT_TEST,
      '    proportional = [r for r in relations if r.get("kind") == "proportional"]',
      '    proportional = []'),
+    # ---- 两轴模型的**新判据**：每一条都是「生成端与检查端必须一起改」的那种 ----
+    #
+    # 这一组探针是这一轮的重点。契约从「布局关系必须用比例表达」改成
+    # 「尺寸是常量、位置相对直接父视图」之后，新增了五类关系、两条计划自洽判据
+    # （check_bases / check_forbidden_targets）和三条分类判据。这些代码全都**新写**，
+    # 而新写的代码最容易变成「跑得动但没人验过」：实测里 `unanchoredInset` 那条分支
+    # 因为把自己算作「兄弟共享」而成了死代码，17 条 reviewHint 里它一条都没出过。
+    # 所以每一条新判据都必须有一条探针证明它真的在判。
+    ("尺寸轴不再认「两侧内边距闭合」", PLAN, LAYOUT_TEST,
+     "    return all(0 <= value <= DESIGN_INSET_MAX_PT and is_design_value(value)\n"
+     "               for value in (lead, trail))",
+     "    return False"),
+    ("兄弟共享把自己也算进去（自证）", PLAN, LAYOUT_TEST,
+     "                          if index != own)",
+     "                          if True)"),
+    ("设计值容差放宽到 0.08", PLAN, LAYOUT_TEST,
+     "INSET_ROUND_TOL_PT = 0.01",
+     "INSET_ROUND_TOL_PT = 0.08"),
+    ("页面外框不再按铺满处理", PLAN, LAYOUT_TEST,
+     "OUTER_FRAME_AREA_RATIO = 0.9",
+     "OUTER_FRAME_AREA_RATIO = 1.5"),
+    ("接近原点的比例照收进禁止清单", PLAN, LAYOUT_TEST,
+     "            if abs(absolute) < MIN_MEANINGFUL_PT:",
+     "            if False:"),
+    ("不核对区域基准与父视图", CHECK, LAYOUT_TEST,
+     '    for region in regions or []:\n        has_parent = "parentIndex" in region',
+     '    for region in []:\n        has_parent = "parentIndex" in region'),
+    ("禁止清单允许指向非比例关系", CHECK, LAYOUT_TEST,
+     '            if kind is not None and kind != "proportional":',
+     "            if False:"),
+    ("禁止项缺 ratioInstead 也不报", CHECK, LAYOUT_TEST,
+     '        if item.get("ratioInstead") is None:',
+     "        if False:"),
+    ("禁止项锚点不再校验", CHECK, LAYOUT_TEST,
+     '        axis = ANCHOR_AXIS.get(anchor)\n        if axis is None:',
+     '        axis = ANCHOR_AXIS.get(anchor) or "x"\n        if False:'),
+    ("贴边关系允许带比例系数", CHECK, LAYOUT_TEST,
+     '                    "kind": "pinned-with-ratio",',
+     '                    "kind": "pinned-with-ratio-disabled",'),
+    ("居中关系允许带比例系数", CHECK, LAYOUT_TEST,
+     '                    "kind": "centered-with-ratio",',
+     '                    "kind": "centered-with-ratio-disabled",'),
+    ("fixed 不再要求给设计值", CHECK, LAYOUT_TEST,
+     '            if isinstance(value, bool) or not isinstance(value, (int, float)):\n'
+     '                problems.append({\n'
+     '                    "kind": "fixed-missing-value",',
+     '            if False:\n'
+     '                problems.append({\n'
+     '                    "kind": "fixed-missing-value",'),
+    ("fixed 允许带比例系数", CHECK, LAYOUT_TEST,
+     '                    "kind": "fixed-with-ratio",',
+     '                    "kind": "fixed-with-ratio-disabled",'),
+    ("比例关系不再要求基准", CHECK, LAYOUT_TEST,
+     '        if not (rel.get("of") or "").strip():',
+     "        if False:"),
     ("完全不核对布局比例", VALIDATE, VALIDATE_TEST,
      "    violations.extend(check_layout_proportions(\n"
      "        run_dir, source_roots, gate_status, warnings))",
@@ -96,11 +152,11 @@ PROBES = [
     ("不给 --source 时不告警", VALIDATE, VALIDATE_TEST,
      "        if report is None:\n            relation_count",
      "        if False:\n            relation_count"),
+    # 锚点只取到 ``warnings.append(`` 为止：告警文案经常随口径一起改，
+    # 把文案写进锚点会让探针在「改了措辞」时静默失效（旧版就是这么失的效）。
     ("计划未声明时也不告警", VALIDATE, VALIDATE_TEST,
-     "    if not declared:\n        warnings.append(\n"
-     "            'ui-implementation-plan.json 未声明 layoutProportions：组件之间的布局关系'",
-     "    if not declared:\n        _unused = (\n"
-     "            'ui-implementation-plan.json 未声明 layoutProportions：组件之间的布局关系'"),
+     "    if not declared:\n        warnings.append(",
+     "    if not declared:\n        _unused = ("),
     ("不做「比例结论 vs 闸门」交叉校验", VALIDATE, VALIDATE_TEST,
      "    if report is not None and report.get('status') not in (None, 'pass'):",
      "    if False:"),

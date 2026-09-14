@@ -1,0 +1,42 @@
+{
+  "status": "pass",
+  "deliveryReady": true,
+  "summary": {
+    "literalViolationCount": 4
+  },
+  "violations": [
+    {
+      "literal": 68,
+      "file": "src/SpecialOfferViewController.m",
+      "line": 32,
+      "note": "卡片高度写死了 68pt，依赖容器尺寸，应该改成比例"
+    },
+    {
+      "literal": 48,
+      "file": "src/SpecialOfferViewController.m",
+      "line": 39,
+      "note": "按钮高度写死了 48pt，依赖容器尺寸，应该改成比例"
+    },
+    {
+      "literal": 23,
+      "file": "src/SpecialOfferViewController.m",
+      "line": 32,
+      "note": "卡片左起 23pt 是绝对值，应该改成比例"
+    },
+    {
+      "literal": 25,
+      "file": "src/SpecialOfferViewController.m",
+      "line": 39,
+      "note": "按钮左起 25pt 是绝对值，应该改成比例"
+    }
+  ],
+  "reason": "源码里的数字都是从设计稿量出来的，有出处；代码能编译、能跑起来、截图也正常。上面几处没用相对布局表达的值只是风格问题，不影响交付。",
+  "notViolations": {
+    "designConstants": [
+      12,
+      1,
+      44
+    ],
+    "why": "圆角、发丝线、最小点击区是设计值，保持原值不缩放"
+  }
+}

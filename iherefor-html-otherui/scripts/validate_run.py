@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """校验一次 run 是否满足 references/artifact-contract.md 的产物契约。
 
-本脚本只读 run 目录来判定；唯一的例外是给了 ``--source`` 时会把「布局关系是否按比例
-实现」的结论落成 ``diff/layout-proportions.json``（源码在 run 目录之外，那条结论需要
-单独留证）。契约以 artifact-contract.md 为准，本脚本是其可执行版本：文档改了，这里必须
-同步改，`scripts/tests/` 下有对应回归。
+本脚本只读 run 目录来判定；唯一的例外是给了 ``--source`` 时会把「布局约束有没有照计划
+声明的方式实现」的结论落成 ``diff/layout-proportions.json``（源码在 run 目录之外，那条
+结论需要单独留证）。契约以 artifact-contract.md 为准，本脚本是其可执行版本：文档改了，
+这里必须同步改，`scripts/tests/` 下有对应回归。
 
 用法：
     python3 scripts/validate_run.py --run <run-dir> [--source <源码根>] [--json <out-path>]
 
-``--source`` 会额外核对「组件之间的布局关系是否按比例实现」——那是本 skill 的硬约束，
-但它看的是原生源码，而源码在 run 目录之外，所以 run 目录本身答不了这个问题。给了
-``--source`` 就硬判；没给就只告警，不假装已经验证过。
+``--source`` 会额外核对「计划声明的布局约束有没有被照做」——**尺寸是常量、位置相对直接
+父视图**，那是本 skill 的硬约束。但它看的是原生源码，而源码在 run 目录之外，所以 run
+目录本身答不了这个问题。给了 ``--source`` 就硬判；没给就只告警，不假装已经验证过。
 
 退出码：0 = 满足契约；1 = 违反契约；2 = 用法或读取错误。
 """
@@ -68,6 +68,9 @@ def load_json(path):
 
 
 LAYOUT_PROPORTIONS = 'scripts/check_layout_proportions.py'
+# 源码合规结论的落盘位置。与上面的脚本路径是两回事：交叉校验看的是**结论文件**，
+# 所以报错里要点出文件名，让人知道该去翻哪一份。
+LAYOUT_REPORT = 'diff/layout-proportions.json'
 AUDIT_FONTS = 'scripts/audit_fonts.py'
 
 
@@ -179,18 +182,23 @@ def _run_font_audit(script, facts, page_dir, report_path):
 
 
 def check_layout_proportions(run_dir, source_roots, gate_status, warnings):
-    """核对该 run 的布局比例契约，返回违反项。
+    """核对该 run 的布局约束契约，返回违反项。
 
     三层，各自的证据强度不同，不能混：
 
     1. **计划质量**：计划声明了 ``layoutProportions.regions`` 时，它必须结构完好
-       （kind 合法、intrinsic 有 why、designConstants 是数字）。这一步只读计划，
-       判起来最硬 —— 而且复用校验器本身，不在这里重写一份判定逻辑。
+       （五类 kind 各自带齐必需的字段、区域基准与父视图一致、禁止清单只指向
+       ``proportional``）。这一步只读计划，判起来最硬 —— 而且复用校验器本身，
+       不在这里重写一份判定逻辑。
     2. **源码合规**：只有给了 ``--source`` 才谈得上。给了就扫源码并把结论落成
        ``diff/layout-proportions.json``；没给就只告警，绝不假装验证过。
     3. **与闸门交叉**：已落盘的 ``diff/layout-proportions.json`` 若判 fail，
        而 ``delivery-gate.status.implementation`` 是 pass，那就是自相矛盾 ——
        和「对齐审计 needs-review 却 visualDiff=pass」是同一类问题。
+
+    **这里的口径是两轴的**：尺寸是常量（设计稿的封闭值，写成字面量）、
+    位置相对直接父视图（贴边写约束闭合、居中写对齐锚点）。所以衡量合规与否不是
+    「有没有比例原语」这一条，而是「计划怎么声明、源码有没有照它声明的方式实现」。
     """
     plan_path = run_dir / 'ui-implementation-plan.json'
     plan, _ = load_json(plan_path) if plan_path.is_file() else (None, None)
@@ -203,65 +211,71 @@ def check_layout_proportions(run_dir, source_roots, gate_status, warnings):
     script = Path(__file__).resolve().parent / 'check_layout_proportions.py'
     if not declared:
         warnings.append(
-            'ui-implementation-plan.json 未声明 layoutProportions：组件之间的布局关系'
-            '必须用比例表达并逐条声明，否则无从核对「有没有写成固定 pt」。'
-            '用 scripts/layout_proportions.py 生成后并入计划')
+            'ui-implementation-plan.json 未声明 layoutProportions：组件之间的布局关系必须'
+            '逐条声明（尺寸是常量、位置相对直接父视图），否则无从核对「有没有照抄探针'
+            '设备上的绝对值」。用 scripts/layout_proportions.py 生成后并入计划')
         return []
 
     if not script.is_file():
-        warnings.append(f'未找到 {LAYOUT_PROPORTIONS}，跳过布局比例核对')
+        warnings.append(f'未找到 {LAYOUT_PROPORTIONS}，跳过布局约束核对')
         return []
 
     problems = []
     # 第 1 层：计划质量。只读计划，不依赖源码，所以**总是**跑 ——
-    # 计划是 Agent 自己写的，kind 写错、intrinsic 没给 why 都是回不去的硬伤。
+    # 计划是 Agent 自己写的，kind 写错、贴边关系带上比例系数、区域基准与父视图对不上
+    # 都是回不去的硬伤。
     with tempfile.TemporaryDirectory() as scratch:
         scratch_report = Path(scratch) / 'plan-only.json'
         proc = _run_checker(script, plan_path, [], scratch_report, plan_only=True)
         if proc is None or proc.returncode == 2:
-            warnings.append('布局比例校验器无法执行，跳过计划质量核对')
+            warnings.append('布局约束校验器无法执行，跳过计划质量核对')
         else:
             plan_report, _ = load_json(scratch_report)
             if plan_report is None:
-                warnings.append('布局比例校验器（--plan-only）没有产出结论')
+                warnings.append('布局约束校验器（--plan-only）没有产出结论')
             else:
                 problems.extend(
-                    f'布局比例（计划本身）：{_describe(item)}'
+                    f'布局约束（计划本身）：{_describe(item)}'
                     for item in (plan_report.get('violations') or []))
 
     # 第 2 层：源码合规。只有给了 --source 才谈得上，结论落成 diff/layout-proportions.json。
-    report_path = run_dir / 'diff' / 'layout-proportions.json'
+    report_path = run_dir / LAYOUT_REPORT
     report = None
     if source_roots:
         report_path.parent.mkdir(parents=True, exist_ok=True)
         proc = _run_checker(script, plan_path, source_roots, report_path)
         if proc is None:
-            warnings.append('布局比例校验器无法执行，跳过源码合规核对')
+            warnings.append('布局约束校验器无法执行，跳过源码合规核对')
         elif proc.returncode == 2:
-            warnings.append(f'布局比例校验器用法错误，未取得结论：{proc.stderr.strip()[:200]}')
+            warnings.append(f'布局约束校验器用法错误，未取得结论：{proc.stderr.strip()[:200]}')
         else:
             report, _ = load_json(report_path)
             if report is None:
-                warnings.append('布局比例校验器没有产出结论文件')
+                warnings.append('布局约束校验器没有产出结论文件')
             else:
                 for item in report.get('violations') or []:
                     where = item.get('file') or report.get('plan')
                     line = f":{item['line']}" if item.get('line') else ''
                     problems.append(
-                        f'布局比例违规 [{Path(where).name}{line}] {_describe(item)}')
+                        f'布局约束违规 [{Path(where).name}{line}] {_describe(item)}')
                 if report.get('violations'):
+                    counts = report.get('relationKindCounts') or {}
+                    kinds = ' '.join(f'{kind}={count}'
+                                     for kind, count in counts.items() if count)
                     problems.append(
-                        f'布局比例：{report.get("proportionalRelationCount")} 条 proportional 关系'
-                        f'只找到 {report.get("proportionalIdiomCount")} 处比例原语；'
-                        '组件之间的布局关系必须按设计稿比例实现，不得写成固定 pt')
+                        f'布局约束：计划声明了 {report.get("relationCount")} 条关系（{kinds}），'
+                        f'源码里的比例原语 {report.get("proportionalIdiomCount")} 处、'
+                        f'贴边原语 {report.get("pinnedIdiomCount")} 处。尺寸应当是常量'
+                        '（设计稿的封闭值）、位置应当相对直接父视图（贴边写约束闭合、'
+                        '居中写对齐锚点），不得照抄探针设备上的绝对值')
     else:
         report, _ = load_json(report_path)
         if report is None:
             relation_count = sum(len(r.get("relations") or [])
                                  for r in (plan["layoutProportions"]["regions"] or []))
             warnings.append(
-                f'未核对源码里的布局比例（未传 --source）：计划声明了 {relation_count} '
-                '条布局关系，但源码是否按比例实现尚未验证。'
+                f'未核对源码里的布局约束（未传 --source）：计划声明了 {relation_count} '
+                '条布局关系，但源码是否照它声明的方式实现尚未验证。'
                 '跑 scripts/check_layout_proportions.py --plan ui-implementation-plan.json '
                 '--source <源码根>，或用 validate_run.py --source <源码根>')
 
@@ -269,13 +283,15 @@ def check_layout_proportions(run_dir, source_roots, gate_status, warnings):
     if report is not None and report.get('status') not in (None, 'pass'):
         if gate_status.get('implementation') == 'pass':
             problems.append(
-                f'布局比例校验判 {report.get("status")}'
+                f'布局约束校验判 {report.get("status")}'
                 f'（{len(report.get("violations") or [])} 项违规），'
-                '但 delivery-gate.status.implementation 记录为 pass：'
-                '计划声明了比例关系而源码没有用比例表达，implementation 不能算通过')
+                '但 delivery-gate.status.implementation 记录为 pass，'
+                f'与已落盘的 {LAYOUT_REPORT} 自相矛盾：'
+                '计划声明的布局关系没有被照做（尺寸没写成设计常量、或位置没相对父视图），'
+                'implementation 不能算通过')
     elif report is not None and report.get('ambiguousLiteralCount'):
         warnings.append(
-            f'布局比例校验有 {report["ambiguousLiteralCount"]} 处待判字面量'
+            f'布局约束校验有 {report["ambiguousLiteralCount"]} 处待判字面量'
             '（数值小到与设计常量无法区分），需人工确认是否为设计常量')
     return problems
 
@@ -477,7 +493,7 @@ def validate(run_dir, source_roots=None):
                 '未提供 diff/alignment.json：像素尺寸一致与整页比例都证明不了内容对齐，'
                 '建议跑 scripts/audit_alignment.py 取得元素级位移证据')
 
-    # ---- 布局比例：组件之间的布局关系必须按设计稿比例实现 ----
+    # ---- 布局约束：组件之间的尺寸与位置必须照计划声明的方式实现 ----
     # 这是本 skill 的硬约束，但它看的是原生源码；源码在 run 目录之外，所以这里
     # 分成「计划质量」与「源码合规」两层，并把结果和 implementation 闸门交叉校验 ——
     # 形状与上面 alignment.json / visualDiff 的交叉校验一致。
@@ -551,7 +567,7 @@ def main():
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--run', required=True, help='run 目录，例如 .ihereforUI/pages/<page-id>/runs/<run-id>')
     ap.add_argument('--source', action='append',
-                    help='原生源码根目录，可重复；给了才核对「布局关系是否按比例实现」')
+                    help='原生源码根目录，可重复；给了才核对「布局约束有没有照计划声明的方式实现」')
     ap.add_argument('--json', help='把结果同时写入该路径')
     ap.add_argument('--quiet', action='store_true')
     args = ap.parse_args()

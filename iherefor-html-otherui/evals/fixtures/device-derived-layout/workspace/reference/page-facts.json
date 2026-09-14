@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "title": "Special Offer",
   "url": "file:///offers/index.html",
   "viewport": {
@@ -60,7 +60,10 @@
       "src": null,
       "ownText": "",
       "ownsText": false,
-      "textMark": null
+      "textMark": null,
+      "parentIndex": null,
+      "parentHops": 0,
+      "positioningContextIndex": null
     },
     {
       "index": 1,
@@ -94,7 +97,10 @@
       "src": "img/hero.png",
       "ownText": "",
       "ownsText": false,
-      "textMark": null
+      "textMark": null,
+      "parentIndex": 0,
+      "parentHops": 1,
+      "positioningContextIndex": null
     },
     {
       "index": 2,
@@ -128,7 +134,10 @@
       "src": null,
       "ownText": "",
       "ownsText": false,
-      "textMark": null
+      "textMark": null,
+      "parentIndex": 0,
+      "parentHops": 1,
+      "positioningContextIndex": null
     },
     {
       "index": 3,
@@ -162,7 +171,10 @@
       "src": null,
       "ownText": "",
       "ownsText": false,
-      "textMark": null
+      "textMark": null,
+      "parentIndex": 0,
+      "parentHops": 1,
+      "positioningContextIndex": null
     },
     {
       "index": 4,
@@ -196,7 +208,10 @@
       "src": null,
       "ownText": "",
       "ownsText": false,
-      "textMark": null
+      "textMark": null,
+      "parentIndex": 0,
+      "parentHops": 1,
+      "positioningContextIndex": null
     }
   ]
 }

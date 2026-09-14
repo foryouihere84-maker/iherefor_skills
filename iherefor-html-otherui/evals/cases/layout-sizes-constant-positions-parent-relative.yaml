@@ -1,0 +1,70 @@
+id: layout-sizes-constant-positions-parent-relative
+title: 布局必须做到「尺寸是常量、位置相对直接父视图」，不得照抄探针设备上的绝对坐标
+description: |
+  回归本 skill 最重要的一条硬约束。设计稿只有一个尺寸（Lanhu 画布 393x852），
+  实机是 402x874。把设计稿量出来的值直接当绝对坐标写进约束，就把它钉死在探针设备上了 ——
+  换台设备就是错的，而它「有出处、算过」，比一眼可疑的魔数更难发现。
+
+  素材是一个已经「通过」自检的 iOS 实现：`implementation` 闸门记 pass、
+  `deliveryReady` 记 true。源码里 `CGRectMake(0, 0, 393, 321)`、
+  `SpecialOfferOffersLocalRect(23, 495, 347, 68)`、`CGRectMake(25, 741, 352, 48)`
+  全是绝对 frame，一处比例原语都没有。
+
+  **本用例同时考召回与精度，而两轴口径让精度这一侧更硬。** 计划声明的关系里：
+
+  - `hero.height`、`offers.y`、`cta.y`、`legal.x/y` 是 `proportional` —— 源码里的
+    `321 / 495 / 741 / 83 / 801` 就是只在这台设备上成立的铁证，必须被点名；
+  - `offers.height = 68`、`cta.height = 48` 是 **`fixed`**：设计稿给的控件尺寸；
+  - `offers.x = 23`、`cta.x = 25` 是 **`pinned` 的固定内边距**（贴父边 + 间距），
+    `offers.width` 是两侧各 23pt 的闭合；
+  - 圆角 12、发丝线 1、最小点击区 44 是设计常量。
+
+  后三类都是**应当照字面量写进代码**的值。把它们报成「依赖容器尺寸、应该比例化」，
+  正是这条红线最典型的错误理解 —— 所以判分两头都查：漏掉大数值是漏报，
+  把应当写的常量报成违规是误报，两头都算不过。
+
+  判分只看产物，不看 Agent 的自述。
+input:
+  prompt: |
+    这个 run 自己记的是已交付：`delivery-gate.json` 里 implementation=pass、
+    deliveryReady=true。
+
+    但我怀疑它的布局有问题。这个页面的设计稿是 393x852，实机是 402x874。
+    请核对：**布局有没有做到「尺寸是常量、位置相对直接父视图」？**
+    也就是：控件尺寸是不是设计稿给出的固定值（不随容器缩放），
+    位置是不是相对**直接父视图**用约束表达的（贴边写约束闭合、居中写对齐锚点），
+    而不是把某一台设备上量出来的绝对坐标抄进代码。
+
+    工作区里有：
+    - reference/page-facts.json —— 页面事实表（元素位置与父子层级）
+    - src/SpecialOfferViewController.m —— 本次的 iOS 实现
+    - delivery-gate.json —— 该 run 的交付闸门
+
+    请用 skill 自带的脚本得出证据，并把结论落到文件里，不要只写在回答里：
+
+    - `diff/layout-proportions.json` —— 布局约束校验器的**原始产出**（用 `--output`
+      落盘），不要手工总结成段落；
+    - `diff/layout-verdict.json`，至少包含：
+      - `status`：`"fail"` 或 `"pass"`
+      - `deliveryReady`：`true` 或 `false`
+      - `violations`：数组，每项至少含 `literal`（数值）与 `file`
+      - `reason`：一句话说明判据
+
+    注意区分这几类数字：
+    - 圆角、描边、最小点击区（12 / 1 / 44）—— 设计常量，保持原值不缩放，**不是**违规；
+    - 控件自身的尺寸（卡片高、按钮高）—— 同样是设计稿给的常量，照原值写，**不是**违规；
+    - 「贴父边的固定间距」（如卡片左起 23pt）—— 应当写成「贴父边 + 固定间距」的
+      约束常量，**不是**违规；
+    - 只在 402x874 上成立的绝对坐标 —— 换算产物，换台设备即失效，**是**违规。
+
+    不要把源码改掉，只出结论。
+context:
+  repo_fixture: evals/fixtures/device-derived-layout/workspace
+expect:
+  files_exist:
+    - "diff/layout-proportions.json"
+    - "diff/layout-verdict.json"
+judge:
+  type: script
+  script_path: evals/fixtures/scripts/check-layout-proportions.sh
+  timeout_seconds: 60

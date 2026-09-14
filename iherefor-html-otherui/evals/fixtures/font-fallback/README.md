@@ -39,3 +39,16 @@ Chromium 于是静默回落到默认衬线字体 **Times**。`page-facts.json` �
 
 实测旁证：`AvenirLT-Black` 的排版宽度 172.734px 与 Times **逐位相同**，而真正的
 `Avenir-Black` 是 198.156px —— 标题因此窄了约 23.6pt。
+
+## 关于 `reference/page-facts.json` 的形状
+
+这份事实表是**手工摘录**：只留了 4 个文本元素（3 个断链 + 1 个对照组），
+`schemaVersion` 停在 **2**。它不是任何一次真实渲染的产物，也不需要是 —— 本用例读的是
+字体链（`fontFamily` / `fontsResolved` / `primaryFont` / `textMetrics.advanceWidth`），
+而 `scripts/audit_fonts.py` 读这些字段时**不依赖**层级字段（`parentIndex` 等 v3 新增项）。
+
+所以：**不要**把它「升级」到 v3。真实渲染器现在产出的是 v3（元素齐、带层级），
+往这份摘录上盖章只会让它声称一些它没有的东西。
+
+需要 v3 事实表做布局核对的场景，见 [`../device-derived-layout/`](../device-derived-layout/)。
+

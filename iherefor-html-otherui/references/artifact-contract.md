@@ -55,20 +55,28 @@ pages/<page-id>/
 事实表与浏览器元数据属于**基准**，因此放在页面级而不是 run 级：重新渲染不会自动替换
 已批准基准，只有显式批准才写入 `approved.json`。
 
-### `page-facts.json`（schemaVersion 2）
+### `page-facts.json`（schemaVersion 3）
 
 v1 只存了 CSS px 的 `rect` 与 CSS **声明**的 `fontFamily`，于是任何像素级比对都得自己
 把 CSS px 换算到基准图像素 —— 每写一次就多一次错的机会。v2 把「元素在基准图里应该出现
-在哪」直接算好：
+在哪」直接算好。**v3 补上父子层级**：布局约束要「相对直接父视图」表达，而这件事在 v2 的事实表里
+根本无从判断 —— 元素只有绝对 `rect`，谁是它的父视图没有记。
+
+v3 起每个元素都带 `parentIndex` / `parentHops` / `positioningContextIndex`
+（绝对定位元素才带最后一项）。**读不到这些字段时不得假设层级已知** ——
+那意味着这是一份 v2 时代的事实表，任何「相对父视图」的推算都会退化成「相对整屏画布」。
 
 ```json
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "title": "Special Offer",
   "url": "file:///…/index.html",
   "viewport": {"width": 393, "height": 852, "devicePixelRatio": 2, "scroll": {"x": 0, "y": 0}},
   "documentSize": {"width": 393, "height": 852},
-  "coordinateSpace": "css-px-viewport-relative",
+  "coordinateSpace": {
+    "note": "rect 是 CSS px（视口相对）；rectInReference 是 reference.png 的像素坐标",
+    "parentNote": "parentIndex 是最近可见祖先在 elements 里的下标；null 表示直接父视图就是整屏画布；parentHops 是中间跳过的不可见层数；positioningContextIndex 只出现在 absolute/fixed 元素上，null 表示坐标原点即视口；缺该字段表示元素不是绝对定位"
+  },
   "referenceImage": {"path": "reference.png", "width": 786, "height": 1704,
                      "alphaBounds": {"x": 0, "y": 0, "width": 786, "height": 1704}},
   "elements": [
@@ -84,6 +92,8 @@ v1 只存了 CSS px 的 `rect` 与 CSS **声明**的 `fontFamily`，于是任何
       "ownText": "Yearly",
       "ownsText": true,
       "textMark": "12",
+      "parentIndex": 4,
+      "parentHops": 2,
       "rect": {"x": 20, "y": 310, "width": 353, "height": 190},
       "rectInReference": {"x": 40, "y": 620, "width": 706, "height": 380},
       "style": {"fontFamily": "\"PingFang SC\", sans-serif", "fontSize": "16px",
@@ -115,8 +125,8 @@ v1 只存了 CSS px 的 `rect` 与 CSS **声明**的 `fontFamily`，于是任何
 }
 ```
 
-**字段以实际渲染产物为准。** 上面的清单由 `scripts/tests/test_page_facts_schema.py` 与实际渲染结果
-逐字段核对：契约里承诺的字段，渲染器必须真的产出。
+**字段以实际渲染产物为准。** 上面的清单由 `scripts/tests/test_page_facts_text_elements.py`
+与实际渲染结果逐字段核对：契约里承诺的字段，渲染器必须真的产出。
 
 | 字段 | 用途 |
 |---|---|
@@ -142,7 +152,7 @@ v1 只存了 CSS px 的 `rect` 与 CSS **声明**的 `fontFamily`，于是任何
 
 **不要用 `document.fonts.check()` 判断 fallback**：它对未安装的字体族同样返回 `true`。
 
-`browser-meta.json`（schemaVersion 2）相关字段：
+`browser-meta.json`（schemaVersion 3）相关字段：
 
 | 字段 | 内容 |
 |---|---|
@@ -152,6 +162,11 @@ v1 只存了 CSS px 的 `rect` 与 CSS **声明**的 `fontFamily`，于是任何
 | `fontProbe` | `document.fonts` 的 `FontFace` 列表与 `probeNote`（记录 `check()` 不可用这件事） |
 | `images[].alphaBounds` | 每张图片的非透明内容 bounds |
 | `referenceImage` | `reference.png` 自己的 alpha bounds |
+
+`browser-meta.json` 的 v3 与 v2 **字段完全一样**，变的只有版本号：一次渲染同时产出两份文件，
+层级是加在 `page-facts.json` 上的。版本号跟涨是为了让「这份基准是哪一代渲染器采的」
+一眼可辨 —— 看到 v2 的 `browser-meta.json` 就说明配套的 `page-facts.json` 里也读不到
+`parentIndex`。
 
 **`glyphCount` 是子树的字形数，不是该元素自身文字的字符数**。对叶子文本元素
 `glyphCount == charCount` 成立；对内部还嵌着文本的元素，它是整棵子树的合计。断言前先看
@@ -310,17 +325,24 @@ Lanhu 坐标的分析代码都得自己反解，而手写反解正是「多乘�
 
 ### 布局关系与控件尺寸的约束口径（强制）
 
-**设计稿里组件之间的布局关系，实现时必须表达为比例，不得写成固定 pt 值。**
+**尺寸是常量，位置是约束。** 组件尺寸照设计稿的封闭值写死（按钮高 44pt 就写 44），
+不随容器缩放；位置相对**直接父视图**表达 —— 贴边写约束闭合、居中写对齐锚点，
+**确属成比例关系时才用比例**。
 
-Lanhu 画布只有一个尺寸。把 `lanhuY = 132` 换算成 `132 * 1.0229 = 135.02pt` 再写进约束，
-等于把这个关系钉死在探针设备上。换一台设备，`135.02` 就是错的 —— 而它「有出处、算过」，
-比一眼可疑的魔数更难被发现。
+反过来那句同样成立：把位置写成某一台设备上量出来的绝对坐标（`lanhuY = 132` 换算成
+`132 * 1.0229 = 135.02pt` 再敲进约束），等于把这个关系钉死在探针设备上。换一台设备，
+`135.02` 就是错的 —— 而它「有出处、算过」，比一眼可疑的魔数更难被发现。
 
-#### 哪些关系比例化，哪些不
+> 两轴各自的可选类别（尺寸轴：`fixed` / `pinned` / `intrinsic` / `proportional`；
+> 位置轴：`pinned` / `centered` / `proportional`）见
+> [sizing-and-positioning.md](sizing-and-positioning.md) 与
+> [`layoutProportions`](#ui-implementation-planjson-的-layoutproportions)。
+
+#### 哪些量用哪一类关系
 
 判据只有一个：**这个量的正确性是否依赖于容器尺寸？**
 
-> **范围边界（重要）**：这条比例约束管的是**位置与间距**，**不管控件尺寸**。
+> **范围边界（重要）**：这条约束管的是**位置与容器的闭合关系**，**不管控件自身的尺寸**。
 > 控件尺寸（按钮、文字、图标）必须与设计稿保持固定的绝对大小，不随屏幕或容器比例缩放；
 > 位置基准是**直接父视图**而不是页面根。这两条与完整的三分类判据见
 > [sizing-and-positioning.md](sizing-and-positioning.md) —— 该文是本节的权威展开，
@@ -371,72 +393,118 @@ Lanhu 画布只有一个尺寸。把 `lanhuY = 132` 换算成 `132 * 1.0229 = 13
 #### `ui-implementation-plan.json` 的 `layoutProportions`
 
 由 `scripts/layout_proportions.py` 从 `page-facts.json` 生成。**字段以实际产物为准**，下面是
-真实结构（数值取自 402×874 探针设备上的 plan-selection 页面）：
+真实结构（数值取自 402×874 探针设备上的 Special Offer 页；原始素材在评测套件里，
+路径 `evals/fixtures/device-derived-layout/` —— 那个目录不会装到被测工程上，
+所以这里只写路径不做链接）：
 
 ```json
 {
-  "model": "proportional",
+  "model": "fixed-size-parent-relative-position",
   "basis": "viewport",
   "axisPolicy": "per-axis",
   "basisSize": {"width": 402, "height": 874},
   "regions": [
     {
-      "region": "text-wrapper_19",
-      "index": 35,
+      "region": "offers",
+      "index": 2,
+      "parentIndex": 0,
+      "parent": "page",
+      "basis": "parent",
       "kindSource": "proposed",
-      "ratios": {"xRatio": 0.206468, "yRatio": 0.916476,
-                 "centerXRatio": 0.495025, "centerYRatio": 0.925629,
-                 "widthRatio": 0.577114, "heightRatio": 0.018307},
+      "ratios": {"xRatio": 0.058524, "yRatio": 0.580986,
+                 "widthRatio": 0.882952, "heightRatio": 0.079812,
+                 "centerXRatio": 0.5, "centerYRatio": 0.620892},
       "relations": [
-        {"id": "text-wrapper_19.x", "kind": "proportional", "axis": "x",
-         "ratio": 0.495025, "of": "root",
-         "note": "用中心比例而非左边缘比例：居中元素在容器宽度变化时中心不动"},
-        {"id": "text-wrapper_19.y", "kind": "proportional", "axis": "y",
-         "ratio": 0.925629, "of": "root", "note": "同上"},
-        {"id": "text-wrapper_19.width", "kind": "proportional", "axis": "width",
-         "ratio": 0.577114, "of": "root"},
-        {"id": "text-wrapper_19.height", "kind": "intrinsic",
-         "why": "盒子高度 16pt 且子树含文本，判为文字块：高度来自字体"}
+        {"id": "offers.x", "axis": "x", "of": "page", "ofIndex": 0,
+         "kind": "pinned", "edge": "leading", "inset": 23.0,
+         "note": "贴父边 + 固定间距：这是约束闭合，不是比例"},
+        {"id": "offers.y", "axis": "y", "of": "page", "ofIndex": 0,
+         "kind": "proportional", "ratio": 0.580986,
+         "note": "确属随父容器成比例变化的位置关系；基准是父视图，不是整页"},
+        {"id": "offers.width", "axis": "width", "of": "page", "ofIndex": 0,
+         "kind": "pinned", "edges": ["leading", "trailing"],
+         "insets": {"leading": 23.0, "trailing": 23.0}, "inset": 23.0,
+         "why": "两侧各留 23pt 内边距：值由内边距闭合，随父容器伸缩，而内边距本身是设计常量"},
+        {"id": "offers.height", "axis": "height", "of": "page", "ofIndex": 0,
+         "kind": "fixed", "value": 68}
       ],
-      "nativeIdiom": ["[text-wrapper_19] centerXAnchor.constraint(equalTo: self.view.widthAnchor, multiplier: 0.495025)   // text-wrapper_19.x"]
+      "nativeIdiom": [
+        "[offers] leadingAnchor.constraint(equalTo: page.leadingAnchor, constant: 23)   // offers.x 贴边约束，不是比例",
+        "[offers] centerYAnchor.constraint(equalTo: page.heightAnchor, multiplier: 0.580986)   // offers.y",
+        "[offers] heightAnchor.constraint(equalToConstant: 68)   // offers.height 设计值，不随容器缩放"
+      ]
+    },
+    {
+      "region": "legal",
+      "index": 4,
+      "parentIndex": 0,
+      "parent": "page",
+      "basis": "parent",
+      "relations": [
+        {"id": "legal.x", "axis": "x", "of": "page", "ofIndex": 0,
+         "kind": "proportional", "ratio": 0.211196},
+        {"id": "legal.width", "axis": "width", "of": "page", "ofIndex": 0,
+         "kind": "intrinsic",
+         "why": "盒子宽度 232pt 且子树含文本，判为文字块：尺寸来自字体"}
+      ]
     }
   ],
   "forbiddenLiterals": [
-    {"relation": "text-wrapper_19.centerX", "deviceDerivedPt": 199.0,
-     "why": "探针设备视口 402x874 上的绝对值，换台设备即失效，不得写成字面量。用中心锚点时写这个绝对值是错的",
-     "ratioInstead": 0.495025},
-    {"relation": "text-wrapper_19.leading", "deviceDerivedPt": 83.0,
-     "why": "…用 leading/左边缘锚点时写这个绝对值是错的", "ratioInstead": 0.206468}
+    {"relation": "offers.top", "deviceDerivedPt": 495.0,
+     "why": "探针设备视口 402x874 上的绝对值，换台设备即失效，不得写成字面量",
+     "ratioInstead": 0.580986},
+    {"relation": "legal.leading", "deviceDerivedPt": 83.0,
+     "why": "…用 leading/左边缘锚点时写这个绝对值是错的", "ratioInstead": 0.211196}
   ],
-  "designConstants": [8, 12, 16, 24, 44]
+  "designConstantCandidates": {
+    "pinnedInsets": [16.0, 23.0, 25.0],
+    "note": "贴边内边距与 fixed 尺寸都是应当写的设计值；把内边距填进 designConstants，fixed 尺寸由 kind=fixed 的 value 自带"
+  }
 }
 ```
 
-四条规则，每一条都对应一次踩坑：
+五条规则，每一条都对应一次踩坑：
 
-1. **`relations[].kind` 必填。** `proportional` 的关系必须用比例表达；`intrinsic` 的必须给出
-   `why`。`intrinsic` 不带 `axis` —— 它不是「某个轴上的位置」，而是「这个量由内容决定」。
-2. **`ratios` 同时给边缘与中心两套。** 实现侧两种锚点都会用到（`leading`/`top` 与
+1. **`relations[].kind` 必填，而且决定判据。** 尺寸轴四类 —— `fixed`（必须给 `value`：设计稿的
+   封闭值，实现时**写字面量**）、`pinned`（必须给 `edges`：贴父边/占满/等分闭合，**不得带比例
+   系数**）、`intrinsic`（必须给 `why`，不带 `axis`）、`proportional`；位置轴三类 —— `pinned`
+   （贴边 + 固定 `inset`）、`centered`（对齐锚点）、`proportional`（必须给 `ratio` 与 `of`）。
+   `fixed` 带上 `ratio`、`pinned` 带上 `multiplier` 都是自相矛盾，校验器直接判死。
+2. **`basis` 与关系里的 `of` 必须指向直接父视图。** 事实表 v3 的 `parentIndex` 给出了层级：
+   有父视图时 `basis` 就该是 `"parent"`、`of` 写父区域名；只有 `parentIndex` 为 `null`
+   （直接父即整屏画布）才用 `of: "root"`。两者对不上会被判 `basis-mismatch` —— 单页单设备上
+   两种写法给出的坐标**完全一样**，父容器一变尺寸就分道扬镳。
+3. **`ratios` 同时给边缘与中心两套。** 实现侧两种锚点都会用到（`leading`/`top` 与
    `centerX`/`centerY`），只给中心比例会让「按左边缘对齐」这个最常见的写法没有可用的比例。
-3. **`forbiddenLiterals` 必须同量纲配对。** 绝对值与 `ratioInstead` 必须指同一个量：中心比例
-   配中心点绝对值，边缘比例配左/上边缘绝对值。曾经把左边缘的绝对值（多为 0）配给了中心比例，
-   写成「0pt → 0.4888」—— 开发者照做会把元素放错半个身位，**这条「指导」本身就是错的**。
+4. **`forbiddenLiterals` 只收 `proportional` 的关系。** `fixed` 的 `value` 与 `pinned` 的
+   `inset` 都是**应当原样写进代码**的设计值，列进去等于要求实现者不要按设计稿做
+   （校验器的 `forbidden-targets-non-proportional` 就是拦这个）。条目还必须**同量纲配对**：
+   中心比例配中心点绝对值（`legal.centerX` → 0.506361），边缘比例配左/上边缘绝对值
+   （`legal.leading` → 0.211196）。曾经把左边缘的绝对值（多为 0）配给中心比例，写成
+   「0pt → 0.4888」—— 开发者照做会把元素放错半个身位，**这条「指导」本身就是错的**。
    `|pt| < 1` 的条目不入清单：`0` 在任何设备上都成立，列进去只会让每个 `0` 都报一次警。
-4. **`designConstants` 是可复核的豁免**，只能放数字（标准边距、圆角）。它不是「随手写个数字
-   就放行」：豁免值会原样写进校验结果，审阅者看得到。
+5. **`designConstantCandidates` 是可复核的提示，`designConstants` 才是豁免。** 前者由生成端
+   汇总贴边内边距（省得 Agent 去源码里翻），后者是计划里手写的数字数组，只能放数字
+   （标准边距、圆角）。它不是「随手写个数字就放行」：豁免值会原样写进校验结果，审阅者看得到。
 
 `rect` 的坐标空间由「`rectInReference == rect * devicePixelRatio`」**自动判定**，判不出来就
 退出 2 并给出原因，绝不猜 —— 猜错会把 scale 乘两遍（`rect` 已经是设备点）。需要按 Lanhu 画布
 空间算时用 `--rect-space lanhu` 显式指定，此时会告警提示与证据冲突。
 
-校验走 `scripts/check_layout_proportions.py`，它**是计划驱动，不是正则扫描**：只有被声明为
-`proportional` 的关系才要求比例表达。纯正则扫描会把合法的设计常量（圆角 12、标准边距 16）
-一起误报，训练出「看到告警就忽略」的习惯。
+校验走 `scripts/check_layout_proportions.py`，它**是计划驱动，不是正则扫描**：每一类关系都有
+它自己的判据 —— `proportional` 要求比例原语，`fixed` 要求写字面量，`pinned` 要求贴边闭合且
+不带系数，`intrinsic` 要求给出理由。纯正则扫描做不到这件事：它会把合法的设计常量
+（圆角 12、标准边距 16）一起误报，训练出「看到告警就忽略」的习惯。
 
 判定分两档，理由是**闸门要准，不是要响**：
 
 - `forbidden-literal-used`（违规）—— 数值 > 48pt，不可能是手选的设计常量（没人把 393pt 当圆角）；
 - `ambiguous-literal`（待判，不计入违规）—— 数值 ≤ 48pt 时与常见设计常量无法区分，列出待人工确认。
+
+注意 `48pt` 这条线是**量级**判据，与 `kind` 判据是两回事：一条被声明为 `proportional` 的
+关系在探针设备上算出 25pt，那是它落进了「待判」而不是「违规」—— 因为 25pt 既可能是抄来的
+设备值，也可能是设计常量。**两轴口径下更该信 `kind`**：计划说 `pinned`，那 25pt 就是应当写的
+内边距；计划说 `proportional`，那个绝对值才是错的。
 
 注释里的数字、`100%`、`colorWithRed:22 / 255.0` 这类非布局数字一律跳过。
 

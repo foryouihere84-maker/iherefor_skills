@@ -1,0 +1,87 @@
+{
+  "status": "fail",
+  "deliveryReady": false,
+  "summary": {
+    "relationCount": 20,
+    "relationKindCounts": {
+      "fixed": 2,
+      "pinned": 11,
+      "proportional": 5,
+      "intrinsic": 2,
+      "centered": 0
+    },
+    "proportionalIdiomCount": 0,
+    "pinnedIdiomCount": 0,
+    "literalViolationCount": 5
+  },
+  "violations": [
+    {
+      "literal": 321.0,
+      "file": "src/SpecialOfferViewController.m",
+      "line": 26,
+      "relation": "hero.height",
+      "shouldBe": "父视图高的比例 0.376761"
+    },
+    {
+      "literal": 495.0,
+      "file": "src/SpecialOfferViewController.m",
+      "line": 32,
+      "relation": "offers.top",
+      "shouldBe": "父视图高的比例 0.580986"
+    },
+    {
+      "literal": 741.0,
+      "file": "src/SpecialOfferViewController.m",
+      "line": 39,
+      "relation": "cta.top",
+      "shouldBe": "父视图高的比例 0.869718"
+    },
+    {
+      "literal": 83.0,
+      "file": "src/SpecialOfferViewController.m",
+      "line": 48,
+      "relation": "legal.leading",
+      "shouldBe": "父视图宽的比例 0.211196"
+    },
+    {
+      "literal": 801.0,
+      "file": "src/SpecialOfferViewController.m",
+      "line": 48,
+      "relation": "legal.top",
+      "shouldBe": "父视图高的比例 0.940141"
+    }
+  ],
+  "reason": "计划声明了 20 条关系（fixed 2 / pinned 11 / proportional 5 / intrinsic 2）。其中 5 条 proportional 的位置被源码写成了只在 402x874 上成立的绝对坐标（321 / 495 / 741 / 83 / 801），换台设备即失效 —— 位置必须相对直接父视图表达，不能照抄某一台设备上的量取值。",
+  "notViolations": {
+    "designConstants": [
+      12,
+      1,
+      44
+    ],
+    "fixedSizes": [
+      {
+        "literal": 68,
+        "relation": "offers.height",
+        "why": "fixed：设计稿给的卡片高，尺寸是常量，照原值写"
+      },
+      {
+        "literal": 48,
+        "relation": "cta.height",
+        "why": "fixed：设计稿给的按钮高，尺寸是常量，照原值写"
+      }
+    ],
+    "pinnedInsets": [
+      {
+        "literal": 23,
+        "relation": "offers.x",
+        "why": "pinned 的固定内边距：贴父边 + 间距，本来就该写成约束常量"
+      },
+      {
+        "literal": 25,
+        "relation": "cta.x",
+        "why": "pinned 的固定内边距：贴父边 + 间距，写成比例反而会在 430pt 宽的设备上给出 13.7pt 边距"
+      }
+    ],
+    "why": "这三类都是两轴口径下**应当照字面量写进代码**的值：设计常量不缩放，fixed 尺寸是设计稿给的常量，pinned 内边距是约束常量。把它们算成违规，等于要求实现者不要按设计稿做。"
+  }
+}

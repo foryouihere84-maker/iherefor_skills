@@ -92,57 +92,120 @@ def run_validator(run_dir, source=None):
     return proc.returncode, json.loads(out.read_text())
 
 
-def layout_proportions_plan(region_overrides=None, relation_overrides=None):
-    """一份声明了 layoutProportions 的实现计划（合规基线）。"""
+def layout_proportions_plan(relation_overrides=None):
+    """一份声明了 layoutProportions 的实现计划（合规基线，**两轴口径**）。
+
+    四条关系刻意各占一类 —— ``pinned``（贴父边闭合）、``proportional``（位置随父容器）、
+    ``fixed``（设计稿给的封闭值）、``pinned``（尺寸两侧闭合）。run 级闸门要验的是
+    「计划声明了什么、源码有没有照它声明的方式实现」这条链路；只摆一条比例会把另外
+    三类整条放空，那才是这条红线最容易失效的地方。
+
+    ``parentIndex`` 为 ``None`` 且 ``basis`` 为 ``viewport``：这个区域的直接父视图**就是**
+    整屏画布，所以位置基准写 ``root`` 是对的（不是「层级信息丢了」）。
+    """
     relations = [
-        {"id": "Card.x", "kind": "proportional", "axis": "x",
-         "ratio": 0.488806, "of": "root"},
-        {"id": "Card.y", "kind": "proportional", "axis": "y",
-         "ratio": 0.839817, "of": "root"},
-        {"id": "Card.width", "kind": "proportional", "axis": "width",
-         "ratio": 0.898010, "of": "root"},
-        {"id": "Card.height", "kind": "proportional", "axis": "height",
-         "ratio": 0.077803, "of": "root"},
+        {"id": "Card.x", "kind": "pinned", "axis": "x", "of": "root",
+         "edges": ["leading"], "inset": 16.0},
+        {"id": "Card.y", "kind": "proportional", "axis": "y", "of": "root",
+         "ratio": 0.839817},
+        {"id": "Card.width", "kind": "pinned", "axis": "width", "of": "root",
+         "edges": ["leading", "trailing"],
+         "insets": {"leading": 16.0, "trailing": 16.0}},
+        {"id": "Card.height", "kind": "fixed", "axis": "height", "of": "root",
+         "value": 68.0},
     ]
     if relation_overrides:
         relations = relation_overrides(relations)
     region = {
-        "region": "Card", "index": 1, "kindSource": "proposed",
-        "ratios": {"xRatio": 0.039801, "yRatio": 0.800915, "widthRatio": 0.898010,
+        "region": "Card", "index": 1, "parentIndex": None, "parent": "root",
+        "basis": "viewport", "kindSource": "proposed",
+        "ratios": {"xRatio": 0.039801, "yRatio": 0.839817, "widthRatio": 0.898010,
                    "heightRatio": 0.077803, "centerXRatio": 0.488806,
-                   "centerYRatio": 0.839817},
+                   "centerYRatio": 0.878720},
         "relations": relations, "nativeIdiom": [],
     }
-    if region_overrides:
-        region = region_overrides(region) or region
     return {
         "schemaVersion": 1,
         "layoutProportions": {
-            "model": "proportional", "basis": "viewport", "axisPolicy": "per-axis",
+            "model": "fixed-size-parent-relative-position",
+            "basis": "viewport", "axisPolicy": "per-axis",
             "basisSize": {"width": 402, "height": 874},
             "regions": [region],
-            # 734pt 是 Card.centerY 在探针设备上的值：只在 402x874 上成立。
+            # 734pt 是 Card.top 在探针设备（402x874）上的绝对坐标：只在那一台上成立。
             "forbiddenLiterals": [
-                {"relation": "Card.centerY", "deviceDerivedPt": 734.0,
+                {"relation": "Card.top", "deviceDerivedPt": 734.0,
                  "why": "探针设备 402x874 上的绝对值，换台设备即失效",
                  "ratioInstead": 0.839817}],
         },
     }
 
 
-COMPLIANT_SOURCE = """\
-// 位置与尺寸一律用比例：没有任何数字来自探针设备的绝对值
-[[self card] centerXAnchor].constraint(equalTo: root.widthAnchor, multiplier: 0.488806);
-[[self card] centerYAnchor].constraint(equalTo: root.heightAnchor, multiplier: 0.839817);
-[[self card] widthAnchor].constraint(equalTo: root.widthAnchor, multiplier: 0.898010);
-[[self card] heightAnchor].constraint(equalTo: root.heightAnchor, multiplier: 0.077803);
-"""
+ANCHOR_NAME = {"x": {"leading": "leadingAnchor", "trailing": "trailingAnchor"},
+               "y": {"leading": "topAnchor", "trailing": "bottomAnchor"},
+               # 尺寸轴的 pinned 同样是「两侧各自闭合」，锚点名与位置轴一致。
+               "width": {"leading": "leadingAnchor", "trailing": "trailingAnchor"},
+               "height": {"leading": "topAnchor", "trailing": "bottomAnchor"}}
 
-ABSOLUTE_SOURCE = """\
-// 把探针设备上的中心 y 直接敲进约束：看起来有出处、算过，换台设备就错
-[[self card] centerYAnchor].constraint(equalToConstant: 734.0];
-[[self card] widthAnchor].constraint(equalTo: root.widthAnchor, multiplier: 0.898010);
-"""
+
+def compliant_source(plan):
+    """按计划生成一份合规的 Objective-C 源码：每一类按它自己的写法表达。
+
+    **源码由计划生成，不是两处各手写一份。** 手写的那份迟早会和计划错开，而错开之后
+    用例20 的绿灯就只剩「脚本跑得动」—— 正好验不到本文件要验的那条链路。每一行都以
+    ``// <关系 id>`` 收尾，好让用例21 能精确定位到要变异的那一行。
+
+    * ``proportional`` → ``multiplier``；
+    * ``pinned`` → ``constraintEqualTo:<父视图锚点> constant:<内边距>``；
+    * ``fixed`` → ``constraintEqualToConstant:<设计值>``；
+    * ``centered`` → 对齐父视图中心锚点；
+    * ``intrinsic`` → 不加尺寸约束（注释说明 why）。
+    """
+    lines = ["// 由 layoutProportions 生成：尺寸写设计常量、位置相对直接父视图",
+             "static void buildLayout(UIView *root) {",
+             "  [root layoutIfNeeded];"]
+    for region in plan["layoutProportions"]["regions"]:
+        name = region["region"]
+        for rel in region["relations"]:
+            base = rel.get("of") or "root"
+            kind, axis = rel["kind"], rel["axis"]
+            if kind == "proportional":
+                anchor = {"width": "widthAnchor", "height": "heightAnchor",
+                          "x": "leadingAnchor", "y": "topAnchor"}[axis]
+                line = (f"  [[self {name}] {anchor} constraintEqualTo:{base}.{anchor} "
+                        f"multiplier:{rel['ratio']}];  // {rel['id']}")
+            elif kind == "pinned":
+                for edge in rel.get("edges") or [rel.get("edge")]:
+                    anchor = ANCHOR_NAME[axis][edge]
+                    inset = (rel.get("insets") or {}).get(edge, rel.get("inset", 0.0))
+                    lines.append(f"  [[self {name}] {anchor} constraintEqualTo:"
+                                 f"{base}.{anchor} constant:{inset:g}];  // {rel['id']}")
+                continue
+            elif kind == "fixed":
+                dim = "widthAnchor" if axis == "width" else "heightAnchor"
+                line = (f"  [[self {name}] {dim} constraintEqualToConstant:"
+                        f"{rel['value']:g}];  // {rel['id']}")
+            elif kind == "centered":
+                side = "X" if axis == "x" else "Y"
+                line = (f"  [[self {name}] center{side}Anchor constraintEqualTo:"
+                        f"{base}.center{side}Anchor];  // {rel['id']}")
+            else:
+                line = f"  // {rel['id']} 内容撑开，不加尺寸约束：{rel.get('why', '')}"
+            lines.append(line)
+    lines.append("}")
+    return "\n".join(lines) + "\n"
+
+
+def relation_line(source, relation_id):
+    """合规源码里某个关系对应的行（返回 行号, 行文本）；找不到返回 ``(None, None)``。
+
+    必须在**变异之前**取行号：变异后那一行的内容变了，再按内容去找只会落到另一条
+    同类行上，报出来的位置是错的。找不到时返回 ``None`` 而不是抛异常 —— 测试里抛栈
+    会以「崩栈」的形式变红，而那是退出码非 0 得到的红，要守的断言一次都没执行。
+    """
+    for number, line in enumerate(source.splitlines(), start=1):
+        if line.rstrip().endswith(f"// {relation_id}"):
+            return number, line
+    return None, None
 
 
 def write_source(tmp, name, body):
@@ -155,7 +218,7 @@ def write_source(tmp, name, body):
 def write_page_facts(run_dir, elements, browser_meta=None):
     """把页面级字体事实写进 reference/，并可选写入 browser-meta。"""
     reference = run_dir.parent.parent / "reference"
-    write_json(reference / "page-facts.json", {"schemaVersion": 2, "elements": elements})
+    write_json(reference / "page-facts.json", {"schemaVersion": 3, "elements": elements})
     if browser_meta is not None:
         write_json(reference / "browser-meta.json", browser_meta)
 
@@ -343,36 +406,57 @@ def main():
         if code != 0 or not any("alignment.json" in w for w in data["warnings"]):
             problems.append("用例13：缺少对齐审计未给出告警")
 
-        # ---- 布局比例契约：组件之间的布局关系必须按比例实现 ----
-        compliant = write_source(tmp, "src-compliant", COMPLIANT_SOURCE)
-        absolute = write_source(tmp, "src-absolute", ABSOLUTE_SOURCE)
+        # ---- 布局约束契约：尺寸是常量、位置相对直接父视图 ----
+        plan_payload = layout_proportions_plan()
+        ok_source = compliant_source(plan_payload)
 
-        # 用例 20：计划声明了比例、源码按比例写 → 合规（阳性对照）
+        # 用例 20：计划声明的四类关系，源码逐条照做 → 合规（阳性对照）
         ok_layout = make_run(tmp, "20260101-000000-objc-015", delivery_ready=True)
-        write_json(ok_layout / "ui-implementation-plan.json", layout_proportions_plan())
+        write_json(ok_layout / "ui-implementation-plan.json", plan_payload)
         write_json(ok_layout / "diff" / "comparison.json", comparator_summary(ok_layout))
         write_json(ok_layout / "diff" / "alignment.json", alignment_summary(ok_layout))
+        compliant = write_source(tmp, "src-compliant", ok_source)
         code, data = run_validator(ok_layout, source=[compliant])
         if code != 0 or not data["ok"]:
-            problems.append(f"用例20：合规的比例实现被判不合规：{data['violations']}")
+            problems.append(f"用例20：照计划声明的方式实现的源码被判不合规：{data['violations']}")
 
-        # 用例 21：同一份计划，把一条比例换成设备推导值 → 必须拦下。
+        # 用例 21：同一份计划，把那条比例换成设备推导值 → 必须拦下。
         # 这是变异探针：没有它，「用例20 通过」只说明脚本跑得动。
-        bad_layout = make_run(tmp, "20260101-000000-objc-016", delivery_ready=True)
-        write_json(bad_layout / "ui-implementation-plan.json", layout_proportions_plan())
-        write_json(bad_layout / "diff" / "comparison.json", comparator_summary(bad_layout))
-        write_json(bad_layout / "diff" / "alignment.json", alignment_summary(bad_layout))
-        code, data = run_validator(bad_layout, source=[absolute])
-        if code == 0:
-            problems.append("用例21：把比例写成设备推导值未被拦下")
-        if not any("布局比例" in v and "734" in v for v in data["violations"]):
-            problems.append(f"用例21：违规未指出是哪个设备推导值：{data['violations']}")
-        if not any("implementation" in v for v in data["violations"]):
-            problems.append("用例21：源码未按比例实现时 implementation 闸门不得为 pass")
+        target_item = next((f for f in plan_payload["layoutProportions"]["forbiddenLiterals"]
+                            if abs(f["deviceDerivedPt"]) > 48), None)
+        line_number, target_line = relation_line(ok_source, "Card.y")
+        if target_item is None or line_number is None:
+            problems.append("用例21：探针前提不成立 —— 计划里应有一条可变异的大数值比例关系")
+        else:
+            # 把整条约束换成「写死探针设备上的绝对值」，位置仍留在同一行，
+            # 好让违规的行号能对上。
+            mutated_line = target_line.split("constraintEqualTo")[0] + (
+                f"constraintEqualToConstant:{target_item['deviceDerivedPt']:g}];  // Card.y")
+            mutated_source = ok_source.replace(target_line, mutated_line, 1)
+            if mutated_source == ok_source:
+                problems.append("用例21：变异没有生效，探针无效")
+            else:
+                bad_layout = make_run(tmp, "20260101-000000-objc-016", delivery_ready=True)
+                write_json(bad_layout / "ui-implementation-plan.json", plan_payload)
+                write_json(bad_layout / "diff" / "comparison.json", comparator_summary(bad_layout))
+                write_json(bad_layout / "diff" / "alignment.json", alignment_summary(bad_layout))
+                absolute = write_source(tmp, "src-absolute", mutated_source)
+                code, data = run_validator(bad_layout, source=[absolute])
+                if code == 0:
+                    problems.append("用例21：把比例写成设备推导值未被拦下")
+                if not any("布局约束" in v and "734" in v for v in data["violations"]):
+                    problems.append(f"用例21：违规未指出是哪个设备推导值：{data['violations']}")
+                if not any(f"[CardLayout.m:{line_number}]" in v
+                           for v in data["violations"]):
+                    problems.append(f"用例21：违规未定位到第 {line_number} 行："
+                                    f"{data['violations']}")
+                if not any("implementation" in v for v in data["violations"]):
+                    problems.append("用例21：源码未按计划声明的方式实现时 "
+                                    "implementation 闸门不得为 pass")
 
         # 用例 22：没给 --source 时只告警，不能假装验证过
         unverified = make_run(tmp, "20260101-000000-objc-017", delivery_ready=True)
-        write_json(unverified / "ui-implementation-plan.json", layout_proportions_plan())
+        write_json(unverified / "ui-implementation-plan.json", plan_payload)
         write_json(unverified / "diff" / "comparison.json", comparator_summary(unverified))
         write_json(unverified / "diff" / "alignment.json", alignment_summary(unverified))
         code, data = run_validator(unverified)
@@ -387,7 +471,7 @@ def main():
         write_json(legacy_plan / "diff" / "alignment.json", alignment_summary(legacy_plan))
         code, data = run_validator(legacy_plan)
         if code != 0 or not any("layoutProportions" in w for w in data["warnings"]):
-            problems.append(f"用例23：计划未声明比例关系应告警，得到 {code} / {data['warnings']}")
+            problems.append(f"用例23：计划未声明布局约束应告警，得到 {code} / {data['warnings']}")
 
         # 用例 24：计划里 kind 非法 / intrinsic 缺 why → 必须硬判
         broken_plan = make_run(tmp, "20260101-000000-objc-019", delivery_ready=True)
@@ -401,17 +485,17 @@ def main():
                                 for v in data["violations"]):
             problems.append(f"用例24：计划本身不合规未被拦下：{data['violations']}")
 
-        # 用例 25：已落盘的比例结论判 fail，闸门却是 pass → 自相矛盾（与对齐审计同类）
+        # 用例 25：已落盘的布局结论判 fail，闸门却是 pass → 自相矛盾（与对齐审计同类）
         contradicted = make_run(tmp, "20260101-000000-objc-020", delivery_ready=True)
-        write_json(contradicted / "ui-implementation-plan.json", layout_proportions_plan())
+        write_json(contradicted / "ui-implementation-plan.json", plan_payload)
         write_json(contradicted / "diff" / "comparison.json", comparator_summary(contradicted))
         write_json(contradicted / "diff" / "alignment.json", alignment_summary(contradicted))
         write_json(contradicted / "diff" / "layout-proportions.json",
                    {"status": "fail", "violations": [{"kind": "no-proportional-idiom"}]})
         code, data = run_validator(contradicted)
-        if code == 0 or not any("layout-proportions.json" in v or "比例校验判" in v
+        if code == 0 or not any("layout-proportions.json" in v and "implementation" in v
                                 for v in data["violations"]):
-            problems.append(f"用例25：比例结论 fail 而闸门 pass 未被识别：{data['violations']}")
+            problems.append(f"用例25：布局约束结论 fail 而闸门 pass 未被识别：{data['violations']}")
 
         # ---- 基准字体链：声明的字体族有没有真的用上 ----
         # 素材：声明 AvenirLT-Black、运行时回落到 Times，外加一个解析正确的对照组。
@@ -573,7 +657,7 @@ def main():
         print("产物契约校验器未满足契约")
         return 1
     print("契约校验器：合规通过、缺件报错、篡改识别、legacy 豁免、模式区分、同源与派生图检查、"
-          "区域级结构证据与对齐审计交叉校验、布局比例的计划质量/源码合规/闸门交叉三层均正确、"
+          "区域级结构证据与对齐审计交叉校验、布局约束的计划质量/源码合规/闸门交叉三层均正确、"
           "基准字体链的替换检出与闸门交叉均正确、"
           "deliveryReady 在结构不全时判「不推导」而不是猜")
     return 0

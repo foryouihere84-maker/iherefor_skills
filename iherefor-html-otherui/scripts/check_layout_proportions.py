@@ -1,17 +1,33 @@
 #!/usr/bin/env python3
-"""核对原生源码是否按 ``layoutProportions`` 声明用比例表达布局关系。
+"""核对原生源码是否按 ``layoutProportions`` 声明的**两轴口径**实现布局。
 
-**这是计划驱动，不是正则扫描。** 只有被声明为 ``proportional`` 的关系才要求比例表达；
-``intrinsic`` 的关系不要求。纯正则扫描会把合法的设计常量（圆角 12、标准边距 16）一起
-误报，训练出「看到告警就忽略」的习惯，那样这条红线就废了。
+**这是计划驱动，不是正则扫描。** 判据是「计划声明了什么类别」：
 
-两类违规，各自对应一种真实的错法：
+* ``proportional`` —— 要求比例表达，源码里没有比例原语就是违规；
+* ``fixed`` —— 要求**写字面量**（设计值不缩放）。所以它的值**不得**出现在
+  禁止清单里：把「按钮高 44」当成违规，等于让正确写法被判错；
+* ``pinned`` —— 要求贴边约束（+ 固定间距），**不得**带比例系数；
+* ``intrinsic`` —— 不要求尺寸约束，但必须说明为什么；
+* ``centered`` —— 用对齐锚点表达，不得带比例系数。
+
+纯正则扫描会把合法的设计常量（圆角 12、标准边距 16）一起误报，训练出「看到告警就
+忽略」的习惯，那样这条红线就废了。所以每一类都有它自己的、可解释的判据。
+
+四类违规，各自对应一种真实的错法：
 
 1. ``forbidden-literal-used`` —— 源码里出现了 ``forbiddenLiterals`` 记录的
    「探针设备推导值」。这是最典型的一种：把 ``lanhuY * 1.0229 = 135.02`` 算出来，
    然后原样敲进约束。数字看起来有出处、算过，review 时最容易被放过。
+   **注意这张清单现在只收 ``proportional`` 的关系** —— ``fixed`` 的字面量与
+   ``pinned`` 的内边距都是**应当写的**设计常量，列进去就把正确做法判成了错。
 2. ``no-proportional-idiom`` —— 计划声明了比例，但源码里一个比例原语都没有。
    说明整页都是拿绝对值堆出来的。
+3. ``unknown-relation-kind`` / ``fixed-missing-value`` / ``pinned-with-ratio`` 等
+   —— 计划自身的形状问题。计划是 Agent 写的，类别写错、贴边关系带上比例系数，
+   都是回不去的硬伤，必须在源码之前拦住。
+4. ``forbidden-targets-non-proportional`` —— 禁止清单指向了一条 ``fixed``/``pinned``
+   关系。这等于要求实现者**不要写**设计稿给的常量，正是「契约没改完」的形态：
+   生成端改了、检查端没跟上，两边自相矛盾。
 
 **关于精度。** 在真实工程上第一次跑，421 条字面量命中里：145 条是裸 ``0``、17 条在注释里
 （``// (393 x 852, index.css .page)``、``// an iOS 26 scene``）、若干条是颜色的
@@ -47,7 +63,10 @@ import re
 import sys
 from pathlib import Path
 
-# 各平台表达「相对/比例」的原语。命中任意一个即认为该处用了比例。
+# 各平台表达「比例/相对」的原语。命中任意一个即认为该处用了比例。
+#
+# ``match_parent`` **不在**这一组里：它是「铺满」而不是「比例」——把它算作比例原语，
+# 会让「计划声明了比例、源码其实一处比例都没有」这种情况溜过去。它属于 pinned。
 PROPORTIONAL_IDIOMS = (
     (r"multiplier\s*[:=]", "iOS multiplier"),
     (r"UILayoutGuide", "UILayoutGuide 占位"),
@@ -61,9 +80,32 @@ PROPORTIONAL_IDIOMS = (
     (r"layout_constraint(?:Horizontal|Vertical)_bias", "ConstraintLayout bias"),
     (r"layout_constraintDimensionRatio", "ConstraintLayout dimensionRatio"),
     (r"layout_weight", "LinearLayout layout_weight"),
-    (r"match_parent|fill_parent", "父容器铺满"),
 )
 PROPORTIONAL_RE = re.compile("|".join(f"(?:{p})" for p, _ in PROPORTIONAL_IDIOMS))
+
+# 表达「贴边 / 铺满 / 对齐」的原语。**只用于告警**（见 main 里的 pinned 一致性提示）：
+# 计划声明了 pinned 关系，源码里却一处贴边原语都没有，那它很可能被写成了绝对 frame。
+PINNED_IDIOMS = (
+    (r"match_parent|fill_parent", "父容器铺满"),
+    (r"constraintEqualTo(?:Constant|Anchor)?\b", "iOS 约束闭合"),
+    (r"safeAreaLayoutGuide|layoutMarginsGuide", "iOS 安全区/边距锚点"),
+    (r"layout_constraint\w+_to\w+Of", "ConstraintLayout 边对边约束"),
+    (r"fillMax(?:Width|Height|Size)\s*\(\s*\)", "Compose 铺满"),
+    (r"frame\s*\(\s*maxWidth:\s*\.infinity", "SwiftUI 铺满"),
+)
+PINNED_RE = re.compile("|".join(f"(?:{p})" for p, _ in PINNED_IDIOMS))
+
+# 计划里合法的关系类别（两轴模型）。见 references/sizing-and-positioning.md。
+RELATION_KINDS = ("fixed", "pinned", "proportional", "intrinsic", "centered")
+# 带「比例系数」的字段名。fixed/pinned/centered 出现这些字段就是自相矛盾 ——
+# 它们的意思分别是「写死设计值」「贴父边」「对齐父视图中心」，都不需要系数。
+RATIO_FIELDS = ("ratio", "multiplier", "ratioInstead")
+# fixed 是「设计稿给的封闭值」，量级上不可能是几百 pt —— 那更像漏了约束的容器。
+FIXED_VALUE_MAX_PT = 1000.0
+# forbiddenLiterals 的 relation 用锚点名（{region}.leading），relations 用轴名（{region}.x）。
+ANCHOR_AXIS = {"centerX": "x", "leading": "x", "centerY": "y", "top": "y",
+               "width": "width", "height": "height"}
+
 
 # 数字字面量：整数/小数，可带常见单位后缀。用 lookaround 排除标识符内的数字。
 NUMBER_RE = re.compile(r"(?<![\w.])(\d+(?:\.\d+)?)(?![\w.])")
@@ -104,12 +146,18 @@ def collect_sources(paths) -> list:
     return files, missing
 
 
-def idiom_hits(lines) -> list:
+def idiom_hits(lines, table=PROPORTIONAL_IDIOMS, pattern=None) -> list:
+    """扫出使用某类布局原语的行。
+
+    默认扫比例原语。表与正则一起传（而不是在函数里写死）是为了让「比例」与「贴边」
+    两套原语**各有各的清单**：把 ``match_parent`` 混进比例清单，会让「声明了比例、
+    源码一处比例都没有」这种情况溜过去 —— 那是这条红线最容易失效的方式。
+    """
+    matcher = pattern or PROPORTIONAL_RE
     hits = []
     for number, text in enumerate(lines, start=1):
-        match = PROPORTIONAL_RE.search(text)
-        if match:
-            label = next((name for pattern, name in PROPORTIONAL_IDIOMS
+        if matcher.search(text):
+            label = next((name for pattern, name in table
                           if re.search(pattern, text)), "相对布局原语")
             hits.append({"line": number, "idiom": label, "text": text.strip()[:120]})
     return hits
@@ -231,21 +279,228 @@ def literal_hits(lines, forbidden, tolerance: float, allow_values) -> tuple:
     return violations, ambiguous
 
 
+def _ratio_fields(rel) -> list:
+    """关系里出现了哪些「比例系数」字段。"""
+    return [key for key in RATIO_FIELDS if key in rel]
+
+
 def check_relations(relations) -> list:
-    """计划本身的质量：声明为 intrinsic 的必须给出 why。"""
+    """计划里每条关系的**类别与配套字段**是否自洽。
+
+    每一类都有它必须带、且必须不带的东西 —— 判据来自类别本身的定义，不是格式偏好：
+
+    * ``fixed`` 必须给 ``value``（设计稿的封闭值）。没有值，实现者无从下手；
+      带了 ``ratio`` 就自相矛盾：那等于说「这个值既是设计常量又随容器缩放」。
+    * ``pinned`` 必须给 ``edges``/``edge``（贴哪条边），且 **不得带比例系数** ——
+      「左右各 16pt」写成本来就是约束，写成 ``width = parent.width * 0.9186``
+      在探针设备上同样对得上，却在 430pt 宽的设备上给出 13.7pt 边距。
+      这个错法最隐蔽：它在设计稿那一台设备上**永远**是对的。
+    * ``centered`` 用对齐锚点表达，同样不带系数。
+    * ``proportional`` 必须给 ``ratio``，并给 ``of``（基准）—— 基准缺失时
+      实现者只能猜是相对整页还是相对父视图，而这两者在单页单设备上等价，
+      换了父容器尺寸就分道扬镳。
+    * ``intrinsic`` 必须给 ``why``：不给理由的「内容撑开」与「我懒得管」无从区分。
+    """
     problems = []
     for rel in relations or []:
-        if rel.get("kind") == "intrinsic" and not (rel.get("why") or "").strip():
-            problems.append({
-                "kind": "intrinsic-missing-why",
-                "relation": rel.get("id"),
-                "detail": "声明为 intrinsic 的关系必须写明 why：为什么这个量不随容器缩放",
-            })
-        if rel.get("kind") not in ("proportional", "intrinsic"):
+        kind = rel.get("kind")
+        rid = rel.get("id")
+
+        if kind not in RELATION_KINDS:
             problems.append({
                 "kind": "unknown-relation-kind",
-                "relation": rel.get("id"),
-                "detail": f'kind={rel.get("kind")!r}，只能是 "proportional" 或 "intrinsic"',
+                "relation": rid,
+                "detail": f'kind={kind!r}，只能是 {", ".join(RELATION_KINDS)} 之一'
+                          "（两轴模型：尺寸 fixed/pinned/intrinsic/proportional，"
+                          "位置 pinned/centered/proportional）",
+            })
+            continue
+
+        if kind == "intrinsic":
+            if not (rel.get("why") or "").strip():
+                problems.append({
+                    "kind": "intrinsic-missing-why",
+                    "relation": rid,
+                    "detail": "声明为 intrinsic 的关系必须写明 why：为什么这个量不随容器缩放",
+                })
+            continue
+
+        if kind == "fixed":
+            value = rel.get("value")
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                problems.append({
+                    "kind": "fixed-missing-value",
+                    "relation": rid,
+                    "detail": f"kind=fixed 必须给数字 value（设计稿的封闭值），"
+                              f"收到 {value!r}；没有值实现者无从下手",
+                })
+            elif value <= 0:
+                problems.append({
+                    "kind": "fixed-missing-value",
+                    "relation": rid,
+                    "detail": f"fixed 的 value={value!r} 必须为正数",
+                })
+            elif value > FIXED_VALUE_MAX_PT:
+                problems.append({
+                    "kind": "fixed-value-implausible",
+                    "relation": rid,
+                    "detail": f"fixed 的 value={value:g}pt 超过 {FIXED_VALUE_MAX_PT:g}pt："
+                              "这不像设计稿给的控件尺寸，更像一个漏了约束的容器。"
+                              "请确认它应当是 pinned（贴父边闭合）还是 proportional",
+                })
+            if _ratio_fields(rel):
+                problems.append({
+                    "kind": "fixed-with-ratio",
+                    "relation": rid,
+                    "detail": f"kind=fixed 不得带比例系数（{_ratio_fields(rel)}）："
+                              "fixed 的意思是「写设计稿给的字面量、不随容器缩放」，"
+                              "带上系数就自相矛盾了",
+                })
+            continue
+
+        if kind == "pinned":
+            edges = rel.get("edges") or ([rel["edge"]] if rel.get("edge") else [])
+            if not edges:
+                problems.append({
+                    "kind": "pinned-missing-edge",
+                    "relation": rid,
+                    "detail": "kind=pinned 必须给 edges（或 edge）：贴哪条父边",
+                })
+            if _ratio_fields(rel):
+                problems.append({
+                    "kind": "pinned-with-ratio",
+                    "relation": rid,
+                    "detail": f"贴边关系不得带比例系数（{_ratio_fields(rel)}）："
+                              "贴父边的正确写法是约束闭合（leading = parent.leading + 16）。"
+                              "写成 width = parent.width * 0.9186 在探针设备上同样对得上，"
+                              "换台设备就是错的",
+                })
+            inset = rel.get("inset")
+            if inset is not None and (isinstance(inset, bool)
+                                      or not isinstance(inset, (int, float)) or inset < 0):
+                problems.append({
+                    "kind": "pinned-bad-inset",
+                    "relation": rid,
+                    "detail": f"pinned 的 inset={inset!r} 必须是 ≥ 0 的数字",
+                })
+            continue
+
+        if kind == "centered":
+            if _ratio_fields(rel):
+                problems.append({
+                    "kind": "centered-with-ratio",
+                    "relation": rid,
+                    "detail": f"kind=centered 不得带比例系数（{_ratio_fields(rel)}）："
+                              "居中的正确写法是对齐父视图中心锚点，不要各自算数值凑相等",
+                })
+            continue
+
+        # kind == "proportional"
+        ratio = rel.get("ratio")
+        if isinstance(ratio, bool) or not isinstance(ratio, (int, float)):
+            problems.append({
+                "kind": "proportional-missing-ratio",
+                "relation": rid,
+                "detail": f"kind=proportional 必须给数字 ratio，收到 {ratio!r}",
+            })
+        if not (rel.get("of") or "").strip():
+            problems.append({
+                "kind": "proportional-missing-basis",
+                "relation": rid,
+                "detail": "kind=proportional 必须给 of（比例基准，通常是直接父视图）："
+                          "基准缺失时实现者只能猜是相对整页还是相对父视图，"
+                          "而这两者在单页单设备上等价、换了父容器尺寸就分道扬镳",
+            })
+    return problems
+
+
+def check_bases(regions) -> list:
+    """每个区域的位置基准必须与它自己声明的父视图一致。
+
+    这是「位置相对父视图」那条规范的可执行版本。两个字段说了同一件事，
+    对不上就是层级信息在中途丢了：``parentIndex`` 说这个元素挂在某个父视图下，
+    而关系却写 ``of: "root"`` —— 实现者会照 root 定位，嵌套组件的内部布局
+    在父容器变尺寸时会一起漂移。
+
+    只在本区域确实带了层级字段时才查：手写的精简计划没有这些字段，
+    对它提要求只会制造假告警。
+    """
+    problems = []
+    for region in regions or []:
+        has_parent = "parentIndex" in region
+        basis = region.get("basis")
+        if not has_parent and basis is None:
+            continue
+        parent_index = region.get("parentIndex")
+        if has_parent and basis is not None:
+            expected = "parent" if parent_index is not None else "viewport"
+            if basis != expected:
+                problems.append({
+                    "kind": "basis-mismatch",
+                    "relation": f"{region.get('region')}（区域基准）",
+                    "detail": f"parentIndex={parent_index!r} 与 basis={basis!r} 不一致："
+                              f"存在父视图时 basis 应为 'parent'，父为整屏画布时才是 "
+                              f"'viewport'（期望 {expected!r}）",
+                })
+        if basis != "parent":
+            continue
+        for rel in region.get("relations") or []:
+            if rel.get("of") == "root":
+                problems.append({
+                    "kind": "basis-mismatch",
+                    "relation": rel.get("id"),
+                    "detail": "区域的基准是父视图，但这条关系的 of 写成了 'root'："
+                              "位置必须相对直接父视图，只有父容器本身就是整屏画布时才用 root",
+                })
+    return problems
+
+
+def check_forbidden_targets(plan) -> list:
+    """禁止清单必须**只**指向 ``proportional`` 的关系。
+
+    这条是「契约级变更必须一次改完」的可执行版本。旧版生成器对非文字元素的尺寸一律
+    收录禁止项，于是「按钮高 44」这类**应当写的设计值**被列为禁止 —— 实现者照契约做
+    反而被判违规。生成端改了、检查端没跟上时，两边就是这样自相矛盾的，
+    而症状是「照文档做却过不了闸门」，最难排查。
+
+    顺带要求每条禁止项给出 ``ratioInstead``（应当改用的比例）：只说「这个数不行」
+    而不说「该用什么」，等于把问题原样丢回给实现者。
+    """
+    problems = []
+    regions = plan.get("regions") or []
+    kind_by_id = {rel.get("id"): rel.get("kind")
+                  for region in regions for rel in (region.get("relations") or [])}
+    known_regions = {region.get("region") for region in regions}
+
+    for item in plan.get("forbiddenLiterals") or []:
+        target = item.get("relation") or ""
+        region_name, _, anchor = target.rpartition(".")
+        axis = ANCHOR_AXIS.get(anchor)
+        if axis is None:
+            problems.append({
+                "kind": "forbidden-unknown-anchor",
+                "relation": target,
+                "detail": f"锚点 {anchor!r} 不认识：禁止项只能指向 "
+                          f"{'/'.join(sorted(ANCHOR_AXIS))} 之一，"
+                          "否则无法与计划里的关系对上",
+            })
+        elif region_name in known_regions:
+            kind = kind_by_id.get(f"{region_name}.{axis}")
+            if kind is not None and kind != "proportional":
+                problems.append({
+                    "kind": "forbidden-targets-non-proportional",
+                    "relation": target,
+                    "detail": f"禁止清单指向了一条 kind={kind} 的关系："
+                              f"{kind} 的值是**设计稿给的字面量**（fixed）或"
+                              "贴边闭合的内边距（pinned），本来就该原样写进代码。"
+                              "把它列为禁止，等于要求实现者不要按设计稿做",
+                })
+        if item.get("ratioInstead") is None:
+            problems.append({
+                "kind": "forbidden-missing-ratio",
+                "relation": target,
+                "detail": "禁止项必须给 ratioInstead（应当改用的比例）："
+                          "只说「这个数不行」而不说「该用什么」，问题原样退回给实现者",
             })
     return problems
 
@@ -304,12 +559,15 @@ def main() -> int:
         violations.append({
             "kind": "missing-layout-proportions",
             "detail": "实现计划里没有 layoutProportions.regions：组件之间的布局关系必须"
-                      "用比例表达，并逐条声明。用 scripts/layout_proportions.py 生成。",
+                      "逐条声明（尺寸是常量、位置相对父视图），否则无从核对。"
+                      "用 scripts/layout_proportions.py 生成。",
         })
 
     relations = [rel for region in (plan.get("regions") or [])
                  for rel in (region.get("relations") or [])]
     violations.extend(check_relations(relations))
+    violations.extend(check_bases(plan.get("regions") or []))
+    violations.extend(check_forbidden_targets(plan))
     violations.extend(check_design_constants(plan))
 
     allow_values = []
@@ -348,7 +606,7 @@ def main() -> int:
         print("没有找到可扫描的原生源码（--source 指向的文件/目录为空）", file=sys.stderr)
         return 2
 
-    all_idioms, ambiguous = [], []
+    all_idioms, pinned_idioms, ambiguous = [], [], []
     for path in files:
         try:
             lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
@@ -357,6 +615,8 @@ def main() -> int:
             continue
         for hit in idiom_hits(lines):
             all_idioms.append({**hit, "file": str(path)})
+        for hit in idiom_hits(lines, PINNED_IDIOMS, PINNED_RE):
+            pinned_idioms.append({**hit, "file": str(path)})
         found, unclear = literal_hits(lines, forbidden, args.literal_tolerance, allow_values)
         for hit in found:
             violations.append({**hit, "file": str(path)})
@@ -364,6 +624,11 @@ def main() -> int:
             ambiguous.append({**hit, "file": str(path)})
 
     proportional = [r for r in relations if r.get("kind") == "proportional"]
+    pinned = [r for r in relations if r.get("kind") == "pinned"]
+    fixed = [r for r in relations if r.get("kind") == "fixed"]
+    centered = [r for r in relations if r.get("kind") == "centered"]
+    kind_counts = {kind: len([r for r in relations if r.get("kind") == kind])
+                   for kind in RELATION_KINDS}
     # plan-only 模式没有源码，谈不上「一个比例原语都没有」，不能报这一条。
     if not args.plan_only and proportional and not all_idioms:
         violations.append({
@@ -372,6 +637,15 @@ def main() -> int:
                       f"{len(files)} 个源码文件里一个比例原语都没有：整页很可能是拿"
                       "绝对值堆出来的。",
         })
+    # 声明了 pinned 却一处贴边/铺满原语都没有，是**告警不是违规**：
+    # 手写约束、辅助函数封装都能正确地表达贴边，行级扫描看不出来。
+    # 但这条值得提示 —— 它最常见的成因是「整页都用绝对 frame 摆好了位置」。
+    if not args.plan_only and pinned and not pinned_idioms:
+        warnings.append(
+            f"计划声明了 {len(pinned)} 条 pinned（贴边）关系，但 {len(files)} 个源码文件里"
+            "没有出现铺满/约束闭合/边对边这类原语。如果确实是用绝对 frame 摆的位置，"
+            "它在别的屏幕尺寸上会失守；如果真的用了约束（例如自己封装的辅助方法），"
+            "忽略这条告警即可。")
 
     violations.sort(key=lambda v: (v.get("file") or "", v.get("line") or 0))
     ambiguous.sort(key=lambda v: (v.get("file") or "", v.get("line") or 0))
@@ -380,7 +654,10 @@ def main() -> int:
                               if v["kind"] == "forbidden-literal-used"})
     result = {
         "tool": "check_layout_proportions.py",
-        "schemaVersion": 1,
+        # 3 = 两轴口径。旧读者按「一处比例原语都没有 ⇒ 整页有问题」来读 v2 的结论，
+        # 而两轴口径下 proportional 只占五类之一、贴边与固定值都是**正确写法** ——
+        # 同一份 violations 数组在两边含义不同，必须能区分开。
+        "schemaVersion": 3,
         "status": "fail" if violations else "pass",
         "planOnly": bool(args.plan_only),
         "targetMode": args.target_mode,
@@ -388,10 +665,16 @@ def main() -> int:
         "sourceFiles": [str(p) for p in files],
         "regionCount": len(plan.get("regions") or []),
         "relationCount": len(relations),
+        "relationKindCounts": kind_counts,
         "proportionalRelationCount": len(proportional),
-        "intrinsicRelationCount": len([r for r in relations if r.get("kind") == "intrinsic"]),
+        "pinnedRelationCount": len(pinned),
+        "fixedRelationCount": len(fixed),
+        "centeredRelationCount": len(centered),
+        "intrinsicRelationCount": kind_counts.get("intrinsic", 0),
         "proportionalIdiomCount": len(all_idioms),
         "proportionalIdioms": all_idioms[:40],
+        "pinnedIdiomCount": len(pinned_idioms),
+        "pinnedIdioms": pinned_idioms[:20],
         "forbiddenLiteralCount": len(forbidden),
         "ignoredForbiddenCount": len(ignorable),
         "allowValues": allow_values,
@@ -406,7 +689,9 @@ def main() -> int:
                       "本脚本做行级扫描，不解析语法树；结论是「找到了这些证据/违规」，"
                       "不等于「布局是正确的」——那由截图与对齐审计回答。"
                       f"另外，≤{DESIGN_SCALE_MAX_PT:g}pt 的数值与设计常量无法区分，"
-                      "只列在 ambiguousLiterals 里待人工判断，不计入违规。"),
+                      "只列在 ambiguousLiterals 里待人工判断，不计入违规。"
+                      "禁止清单只应指向 proportional 的关系：fixed 的字面量与 "
+                      "pinned 的内边距都是应当写的设计常量。"),
     }
 
     if args.output:
@@ -415,8 +700,10 @@ def main() -> int:
                                      encoding="utf-8")
 
     if not args.quiet:
-        print(f"计划声明的比例关系 {len(proportional)} 条，"
-              f"源码里的比例原语 {len(all_idioms)} 处，扫了 {len(files)} 个文件")
+        dist = "  ".join(f"{kind}={count}" for kind, count in kind_counts.items())
+        print(f"计划声明的关系 {len(relations)} 条（{dist}），"
+              f"源码里的比例原语 {len(all_idioms)} 处、贴边原语 {len(pinned_idioms)} 处，"
+              f"扫了 {len(files)} 个文件")
         if allow_values:
             print(f"已声明的设计常量豁免：{', '.join(f'{v:g}' for v in allow_values)}")
         if violations:
@@ -458,7 +745,7 @@ def main() -> int:
         for line in warnings:
             print(f"\n[warn] {line}")
         if not violations:
-            print("比例校验通过"
+            print("布局约束校验通过（尺寸是常量、位置相对父视图）"
                   + (f"（另有 {len(ambiguous)} 处待判，见上）" if ambiguous else ""))
 
     return 1 if violations else 0

@@ -74,8 +74,10 @@
    这是最常见的一档，也是**唯一**可以写 `of: "root"` 的档位。
 3. **嵌套情形同理递推**：卡片里的按钮参照卡片，卡片参照屏幕；工具条里的图标参照工具条。
    一条关系只允许有一个基准，不允许「左边缘参照父、右边缘参照祖父」这种混合写法。
-4. **基准确认不了的，必须留痕**：事实表当前不提供父子关系（见 §6），实现计划里对无法确定的
-   `of` 必须写成待确认项，而不是默认填 `root`。
+4. **基准由事实表自动推导**：`page-facts.json` 的每个元素带 `parentIndex`
+   （根元素的直接父即整屏画布，为 `null`）与 `parentHops`，所以「`of` 是哪个父视图」
+   是可算的，不必猜。事实表里判不出层级的元素，实现计划里必须写成待确认项，
+   而不是默认填 `root`。
 
 ### 3.2 位置关系的四种表达（按优先级）
 
@@ -165,21 +167,31 @@
 - [ ] 位置关系全部指向直接父视图（或屏幕画布），无混合基准；
 - [ ] 对齐关系用对齐锚点表达，而不是用两个各自算出来的数值凑巧相等。
 
-## 8. 与当前实现的差距（**尚未实现，不要当成已经做到**）
+## 8. 实现现状（`schemaVersion 3`，已与本文规范对齐）
 
-本文描述的是**目标规范**。截至 `schemaVersion 1` 的实现仍有下列缺口：
+本文原本是「目标规范」而实现落后。**`schemaVersion 3` 起缺口已补齐**，两侧一一对应：
 
-| 缺口 | 现状 | 需要做什么 |
+| 规范条款 | 落点 | 现状 |
 |---|---|---|
-| 事实表无父子层级 | `page-facts.json` 的 `elements` 是扁平列表，字段并集里没有 `parentIndex` / `depth` / `path` | `scripts/inspect_page.mjs` 是 DOM 遍历，可为每个元素补 `parentIndex`（根为 `null`），这是「`of` 父视图」能自动推导的前提 |
-| 尺寸轴被整体比例化 | `layout_proportions.py` 对非文字元素一律产出 `height/width: proportional` | 引入 `fixed` / `pinned` 两类，并按 §2 判据分类 |
-| `kind` 只有两档 | 只有 `proportional` 与 `intrinsic` | 扩为 `fixed` / `pinned` / `proportional` / `intrinsic` |
-| 位置基准一律 root | 所有位置关系写死 `of: "root"`，`nativeIdiom` 也用 `self.view` | 改为 `of` 指向直接父视图；`'root'` 保留为「父即整屏画布」的含义 |
-| 检查器不认识新类别 | `check_layout_proportions.py` 只对 `proportional` 要求比例表达 | 增加：`fixed` 的值必须在 `designConstants` 白名单或设计稿取到；`pinned` 关系不得带比例系数 |
-| 契约文档口径 | `artifact-contract.md` 把「容器、装饰性区域、图片 frame 的尺寸」列入比例化一类 | 按 §2 改写为「贴父派生（`pinned`）」，与本文对齐 |
+| §3.1 基准 = 直接父视图 | `page-facts.json` 的 `parentIndex` / `parentHops` / `positioningContextIndex` | 已提供（`parentIndex == null` 表示直接父即整屏画布，这是 `of: "root"` 唯一的适用场景） |
+| §2 尺寸轴三类 | `layout_proportions.py` 产出的 `relations[].kind` | 已扩为 `fixed` / `pinned` / `proportional` / `intrinsic` / `centered` 五档；`model` 为 `fixed-size-parent-relative-position` |
+| §3.1 每个区域声明基准 | region 的 `basis` / `parentIndex` / `parent` | 已产出；`basis` 与 `of` 都指向直接父视图 |
+| §6 反例清单 | `forbiddenLiterals` | 只收 **`proportional`** 关系的值 —— `fixed` 的 44/68/48、`pinned` 的 23/25、设计常量 12/1/44 都**应当**写成字面量 |
+| §2 逐类判据 | `check_layout_proportions.py` | 按 `kind` 逐类核对；并有 `forbidden-targets-non-proportional` 拦反向错误（把本该字面量的值报成违规） |
+| §7 交付前清单 | `validate_run.py --source` | 连同布局约束一起判 |
 
-改动会同时触及 `scripts/check_layout_proportions.py`、`evals/fixtures/**` 中依赖
-`layoutProportions` 的样本、`scripts/tests/test_layout_proportions.py` 的回归用例与
-`scripts/tests/mutation_probe.py` 的探针，属于**契约级变更**：必须在一次改动里同步完成，
-否则会出现「文档说固定、脚本仍要求比例」的自相矛盾 —— 这类矛盾比缺功能更有害，
+**反向错误与正向错误一样要拦。** 两轴口径下最容易犯的错不是「漏报」而是「误报」：
+把 `offers.height = 68`、`cta.x = 25` 这类**本来就该照原值写**的设计值当成「没做成比例」而报违规。
+判定分两档 —— `> 48pt` 的字面量不可能是手选常量，判 `forbidden-literal-used`；
+`≤ 48pt` 与常见设计常量无法区分，只列进 `ambiguousLiterals` 待确认 ——
+但这只是**量级**判据，与 `kind` 判据正交：计划说 `pinned`，25pt 就是应当写的内边距。
+
+改动曾同时触及生成端、检查端、`evals/fixtures/**` 的样本、
+`scripts/tests/test_layout_proportions.py` 的回归用例与 `scripts/tests/mutation_probe.py` 的探针，
+属**契约级变更**，已在一次改动里同步完成。这条经验值得保留：契约级变更若分次做，
+中间态就会出现「文档说固定、脚本仍要求比例」的自相矛盾 —— 这类矛盾比缺功能更有害，
 因为它让每一条告警都变得不可信。
+
+**读者如何自辨代际**：`schemaVersion < 3` 的 `layout-proportions.json` / `layout-verdict.json`
+是旧的一轴口径（非文字元素一律 `proportional`、位置一律 `of: "root"`、`kind` 只有两档），
+不能当作本契约的样例。

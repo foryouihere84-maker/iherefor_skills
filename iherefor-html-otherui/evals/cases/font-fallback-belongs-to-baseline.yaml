@@ -31,7 +31,7 @@ input:
     但两边对不上，元素级对齐审计已经跑过了，结论在 diff/alignment.json。
 
     工作区里已经有页面级基准目录：
-    - reference/page-facts.json（元素事实表，schemaVersion 2）
+    - reference/page-facts.json（元素事实表：元素框、文本度量、运行时字体）
     - reference/browser-meta.json（运行时元数据）
     - diff/alignment.json（已跑过的元素级对齐审计）
 

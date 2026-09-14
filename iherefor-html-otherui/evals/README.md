@@ -28,7 +28,7 @@ iherefor-html-otherui 的 skill-up 评测套件。它测的**不是脚本能不�
 | `click-handler-naming` | 可点击元素必须连到命名 handler，并留业务占位 | rule_based |
 | `resource-semantic-naming` | 资源按 `<screen>_<region>_<role>` 命名 | script |
 | `scripts-must-not-generate-source` | 脚本不得生成或覆盖生产 UI 源码 | rule_based |
-| `layout-must-follow-design-proportions` | 组件之间的布局关系必须按设计稿比例实现，且不得把设计常量当违规 | script |
+| `layout-sizes-constant-positions-parent-relative` | 布局必须做到「尺寸是常量、位置相对直接父视图」，且不得把应当照原值写的设计值当成违规 | script |
 
 前两个用例用的是同一对事故素材，但考的是不同层次：`diff-gate-blocks-high-diff` 只要求
 40% 的差异不被放行 —— 那用最粗糙的比例闸门也能拦住；`same-size-needs-region-evidence`
