@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "serverName": "lanhu-mcp",
+  "readme": [
+    "【这是什么】MCP 客户端「注册位置」的候选清单，纯数据。",
+    "【为什么独立成文件】scripts/check_lanhu_mcp.py 的判定逻辑不知道任何客户端名字，",
+    "  只认识 kind 描述的通用形态（mcp-json / mcp-toml / cli）。本文件回答「去哪里找」。",
+    "【换客户端要改什么】只改这里；本文件全删也不影响显式用法：",
+    "  --mcp-config <json 配置路径>  /  --registry-cmd '<注册查询命令>'",
+    "  /  --registries <本表的替代文件>  /  环境变量 LANHU_MCP_REGISTRIES",
+    "【不要放什么】凭据值。本表只描述位置，凭据只存在于运行环境中。",
+    "【占位符】~ 表示家目录；{skillDir}、{serverDir}、{cwd} 在运行时展开。"
+  ],
+  "registries": [
+    {
+      "id": "project-mcp-json",
+      "kind": "mcp-json",
+      "serverMapPath": ["mcpServers"],
+      "locations": ["{cwd}/.mcp.json"],
+      "note": "项目级 MCP 配置：多数客户端都识别，随项目走"
+    },
+    {
+      "id": "xdg-mcp-json",
+      "kind": "mcp-json",
+      "serverMapPath": ["mcpServers"],
+      "locations": ["~/.config/mcp/config.json"],
+      "note": "中性约定位置（XDG）"
+    },
+    {
+      "id": "workbuddy",
+      "kind": "mcp-json",
+      "serverMapPath": ["mcpServers"],
+      "locations": ["~/.workbuddy-ai/mcp.json"],
+      "note": "WorkBuddy 全局 MCP 配置"
+    },
+    {
+      "id": "cursor",
+      "kind": "mcp-json",
+      "serverMapPath": ["mcpServers"],
+      "locations": ["~/.cursor/mcp.json"],
+      "note": "Cursor 全局 MCP 配置"
+    },
+    {
+      "id": "claude-code",
+      "kind": "mcp-json",
+      "serverMapPath": ["mcpServers"],
+      "locations": ["~/.claude.json"],
+      "note": "Claude Code 全局 MCP 配置"
+    },
+    {
+      "id": "claude-desktop-macos",
+      "kind": "mcp-json",
+      "serverMapPath": ["mcpServers"],
+      "locations": ["~/Library/Application Support/Claude/claude_desktop_config.json"],
+      "note": "Claude Desktop（macOS）"
+    },
+    {
+      "id": "claude-desktop-windows",
+      "kind": "mcp-json",
+      "serverMapPath": ["mcpServers"],
+      "locations": ["%APPDATA%/Claude/claude_desktop_config.json"],
+      "note": "Claude Desktop（Windows）"
+    },
+    {
+      "id": "codex",
+      "kind": "mcp-toml",
+      "serverTablePath": ["mcp_servers"],
+      "locations": ["~/.codex/config.toml"],
+      "note": "Codex 全局配置（TOML）"
+    },
+    {
+      "id": "codex-cli",
+      "kind": "cli",
+      "argv": ["codex", "mcp", "get", "{serverName}"],
+      "note": "Codex 命令行注册查询；未安装该 CLI 时自动跳过"
+    }
+  ]
+}

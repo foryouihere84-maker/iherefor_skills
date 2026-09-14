@@ -20,23 +20,42 @@ npm run build          # tsc -> dist/
 
 要求 Node >= 18。`npm start` 用于本地自检，`npm run dev` 用 tsx 直接跑源码。
 
-## 注册到 Codex
+## 注册到 MCP 客户端
 
-```bash
-codex mcp add lanhu-mcp \
-  --env LANHU_COOKIE='<从当前 Lanhu 浏览器会话复制>' \
-  --env LANHU_AUTHORIZATION='<从当前 Lanhu 浏览器会话复制>' \
-  -- "$(command -v node)" "<skill-root>/lanhu-mcp-server/dist/index.js"
+本 server 不绑定任何 coding agent，注册方式只有一种通用形态：**在客户端的 MCP 配置里加一条 stdio server**。
+
+```json
+{
+  "mcpServers": {
+    "lanhu-mcp": {
+      "type": "stdio",
+      "command": "/绝对路径/node",
+      "args": ["<skill-root>/lanhu-mcp-server/dist/index.js"],
+      "env": {}
+    }
+  }
+}
 ```
 
-注册后重启 Codex 或新建会话，然后运行：
+- `command` 写 node 的**绝对路径**（不要裸 `node`，登录 shell 里的可能版本过旧）。
+- `env` 可留空：凭据由 server 自行读取 `<skill-root>/lanhu-mcp-server/.env`。
+  也可用环境变量 `LANHU_COOKIE` / `LANHU_AUTHORIZATION` 注入。
+- 可改用客户端自带的「新增 MCP server」命令注册同一组 command/args。
+- 需要写配置到别处时，用 `LANHU_MCP_CONFIG_PATH` 指定路径；首次交互向导也会写这个路径
+  （默认 `<skill-root>/lanhu-mcp-server/.mcp.json`，可用该变量改成你所用客户端的配置文件）。
+
+注册后通常需要在该客户端信任/启用该 server，然后运行：
 
 ```bash
 python3 <skill-root>/scripts/check_lanhu_mcp.py
 ```
 
-必须看到 `entrypointMatches: true` 与 `status: ready`。若 skill 目录被移动过，旧的注册记录会
-指向已不存在的路径，此时 codex 启动即 `MODULE_NOT_FOUND`——脚本会直接给出修正命令。
+必须看到 `status: ready` 与 `readyRegistries` 非空。判定核心是**注册入口与本地 dist 指向同一文件**：
+skill 目录被移动过、或注册仍指向旧 checkout 时，运行时启动即 `MODULE_NOT_FOUND`，而
+「已注册 + 本地已构建」两个条件依然成立，容易被误判为就绪。脚本会逐条列出每个来源的命中情况。
+
+「去哪里找注册」由数据表 `scripts/mcp-registries.json` 描述，脚本逻辑不含任何客户端特例；
+表里没有的客户端用 `--mcp-config` / `--registry-cmd` / `--registries` 显式指定即可，无需改代码。
 
 ## 凭据
 

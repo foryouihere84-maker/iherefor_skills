@@ -24,9 +24,8 @@
     "model-context-protocol",
     "lanhu",
     "design-to-code",
-    "claude",
-    "cursor",
-    "ai"
+    "ai",
+    "mcp-client-agnostic"
   ],
   "license": "MIT",
   "dependencies": {

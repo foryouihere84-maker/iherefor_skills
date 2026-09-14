@@ -13,30 +13,44 @@ import { registerTools } from "./tools.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, "..");
 
-/** Claude Code 配置文件路径 */
-const CLAUDE_SETTINGS_PATH = path.join(os.homedir(), ".claude", "settings.json");
+/**
+ * MCP JSON 配置的写入目标。
+ *
+ * 本 server 不假设也不写死任何客户端的配置路径：
+ *   - 显式指定：环境变量 LANHU_MCP_CONFIG_PATH（推荐，指向你所用客户端的 MCP 配置文件）
+ *   - 默认回落：<serverRoot>/.mcp.json（本 server 自有的中立位置，随 server 走）
+ *
+ * 写入的条目格式为通用的 `mcpServers.<name> = {command, args, env}`，
+ * 各客户端对该格式的识别规则一致，无需针对某个客户端做特例。
+ */
+function resolveMcpConfigPath(): string {
+  const explicit = process.env.LANHU_MCP_CONFIG_PATH;
+  if (explicit && explicit.trim()) return path.resolve(explicit.trim());
+  return path.join(rootDir, ".mcp.json");
+}
 
-/** 配置写入目标 */
-type ConfigTarget = "env" | "claude" | "both";
+/** 配置写入目标：本地 .env、MCP JSON 配置、或两者 */
+type ConfigTarget = "env" | "mcp-json" | "both";
 
 /**
- * 将蓝湖 MCP 配置写入 ~/.claude/settings.json
+ * 把一个 lanhu-mcp 条目合并进指定的 MCP JSON 配置文件。
  *
- * 等效于运行:
- *   claude mcp add lanhu-mcp -e LANHU_COOKIE="..." -e LANHU_AUTHORIZATION="..." -- npx dc-lanhu-mcp-server
+ * 保留文件里已有的其它 server 与其它字段，只覆盖 lanhu-mcp 这一条。
+ * 写入的 command/args 指向本 checkout 的绝对路径——不用 `npx <包名>` 这类
+ * 依赖「包已发布」的写法，否则在未发布场景下注册出来是无法启动的。
  */
-function writeClaudeConfig(opts: {
+function writeMcpJsonConfig(configPath: string, opts: {
   cookie: string;
   authorization?: string;
   tenantId?: string;
   projectId?: string;
-}): void {
+}): string {
   let settings: Record<string, unknown> = {};
-  if (fs.existsSync(CLAUDE_SETTINGS_PATH)) {
+  if (fs.existsSync(configPath)) {
     try {
-      settings = JSON.parse(fs.readFileSync(CLAUDE_SETTINGS_PATH, "utf-8"));
+      settings = JSON.parse(fs.readFileSync(configPath, "utf-8"));
     } catch {
-      console.error(`警告: ${CLAUDE_SETTINGS_PATH} 解析失败，将创建新文件`);
+      console.error(`警告: ${configPath} 解析失败，将创建新文件`);
       settings = {};
     }
   }
@@ -49,36 +63,32 @@ function writeClaudeConfig(opts: {
   if (opts.tenantId) env.LANHU_TENANT_ID = opts.tenantId;
   if (opts.projectId) env.LANHU_PROJECT_ID = opts.projectId;
 
-  // 构造 mcpServers 条目
   const mcpServers =
     ((settings as Record<string, unknown>).mcpServers as Record<string, unknown>) || {};
   mcpServers["lanhu-mcp"] = {
-    command: "npx",
-    args: ["dc-lanhu-mcp-server"],
+    type: "stdio",
+    command: process.execPath,
+    args: [path.join(__dirname, "index.js")],
     env,
   };
   (settings as Record<string, unknown>).mcpServers = mcpServers;
 
-  // 确保目录存在
-  const dir = path.dirname(CLAUDE_SETTINGS_PATH);
+  const dir = path.dirname(configPath);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
 
-  fs.writeFileSync(
-    CLAUDE_SETTINGS_PATH,
-    JSON.stringify(settings, null, 2) + "\n",
-    "utf-8"
-  );
+  fs.writeFileSync(configPath, JSON.stringify(settings, null, 2) + "\n", "utf-8");
+  return configPath;
 }
 
 /**
- * 检查 Claude settings.json 中是否已有 lanhu-mcp 配置
+ * 检查指定的 MCP JSON 配置里是否已有带 Cookie 的 lanhu-mcp 条目
  */
-function hasClaudeConfig(): boolean {
-  if (!fs.existsSync(CLAUDE_SETTINGS_PATH)) return false;
+function hasMcpJsonConfig(configPath: string): boolean {
+  if (!fs.existsSync(configPath)) return false;
   try {
-    const settings = JSON.parse(fs.readFileSync(CLAUDE_SETTINGS_PATH, "utf-8"));
+    const settings = JSON.parse(fs.readFileSync(configPath, "utf-8"));
     return !!settings?.mcpServers?.["lanhu-mcp"]?.env?.LANHU_COOKIE;
   } catch {
     return false;
@@ -86,18 +96,24 @@ function hasClaudeConfig(): boolean {
 }
 
 /**
- * 从项目 .mcp.json 中读取 lanhu-mcp 的环境变量配置
+ * 从 MCP JSON 配置文件里读取 lanhu-mcp 的环境变量配置
  *
- * .mcp.json 是项目级 MCP 配置，被 Cursor / Claude Code / Cline 等工具识别。
- * 查找路径：process.cwd()/.mcp.json（当前工作目录）
+ * 只按「MCP JSON 配置」这一通用形态查找，不绑定具体客户端：
+ *   1. LANHU_MCP_CONFIG_PATH 指定的路径（可含多个，用 path.delimiter 分隔）
+ *   2. process.cwd()/.mcp.json（项目级配置，随项目走）
+ *   3. <serverRoot>/.mcp.json（本 server 自有的中立位置）
  *
  * 返回 env 对象，未找到或缺少 Cookie 时返回 null
  */
 function readMcpJsonConfig(): Record<string, string> | null {
-  // 支持 .mcp.json 和 .cursor/mcp.json 两种常见位置
+  const fromEnv = (process.env.LANHU_MCP_CONFIG_PATH || "")
+    .split(path.delimiter)
+    .map((item) => item.trim())
+    .filter(Boolean);
   const candidates = [
+    ...fromEnv,
     path.join(process.cwd(), ".mcp.json"),
-    path.join(process.cwd(), ".cursor", "mcp.json"),
+    path.join(rootDir, ".mcp.json"),
   ];
 
   for (const mcpJsonPath of candidates) {
@@ -156,15 +172,14 @@ function extractProjectId(input: string): string | null {
  * 启动前配置加载 / 交互式引导
  *
  * 配置读取优先级（从高到低，局部 > 全局）：
- *   1. process.env        — 父进程注入（claude mcp add -e / 手动 export）
- *   2. .mcp.json          — 项目级配置（process.cwd()/.mcp.json 或 .cursor/mcp.json）
+ *   1. process.env        — 由调用方注入（MCP 客户端的 env 配置 / 手动 export）
+ *   2. MCP JSON 配置      — LANHU_MCP_CONFIG_PATH、项目 .mcp.json、server 自带 .mcp.json
  *   3. .env               — 本地环境变量文件（package 级）
- *   4. settings.json      — Claude 全局配置（~/.claude/settings.json）
- *   5. 交互式引导          — 以上均无时，引导用户选择写入目标
+ *   4. 交互式引导          — 以上均无时，引导用户选择写入目标
  *
  * 配置写入目标（首次引导时可选）：
  *   1. .env 文件（本地环境变量）
- *   2. ~/.claude/settings.json（等同于 claude mcp add 命令）
+ *   2. MCP JSON 配置（路径见 resolveMcpConfigPath()）
  *   3. 两者都写
  */
 async function promptConfig(): Promise<{
@@ -174,8 +189,9 @@ async function promptConfig(): Promise<{
   projectId?: string;
 }> {
   const envPath = path.join(rootDir, ".env");
+  const mcpConfigPath = resolveMcpConfigPath();
 
-  // 最高优先级：进程环境变量已有 Cookie（由父进程 / claude mcp add -e 注入）
+  // 最高优先级：进程环境变量已有 Cookie（由父进程，即 MCP 客户端，注入）
   // 直接加载 .env（补充缺失项）后返回，无需任何交互
   if (process.env.LANHU_COOKIE) {
     if (fs.existsSync(envPath)) config({ path: envPath });
@@ -187,7 +203,7 @@ async function promptConfig(): Promise<{
     };
   }
 
-  // 第二优先级：项目 .mcp.json（项目级配置，随项目走）
+  // 第二优先级：MCP JSON 配置（项目级或显式指定，随项目走）
   const mcpJsonEnv = readMcpJsonConfig();
   if (mcpJsonEnv) {
     return {
@@ -201,10 +217,10 @@ async function promptConfig(): Promise<{
   const envExists = fs.existsSync(envPath);
   const envContent = envExists ? fs.readFileSync(envPath, "utf-8") : "";
   const envHasCookie = /^LANHU_COOKIE\s*=.+$/m.test(envContent);
-  const claudeHasConfig = hasClaudeConfig();
+  const mcpJsonHasConfig = hasMcpJsonConfig(mcpConfigPath);
 
   // 两个配置文件都已有有效 Cookie → 直接加载返回
-  if (envHasCookie && claudeHasConfig) {
+  if (envHasCookie && mcpJsonHasConfig) {
     config({ path: envPath });
     return {
       cookie: process.env.LANHU_COOKIE || "",
@@ -214,8 +230,8 @@ async function promptConfig(): Promise<{
     };
   }
 
-  // 只有 .env 有 Cookie，Claude 配置缺失 → 询问是否补写
-  if (envHasCookie && !claudeHasConfig) {
+  // 只有 .env 有 Cookie，MCP 配置缺失 → 询问是否补写
+  if (envHasCookie && !mcpJsonHasConfig) {
     config({ path: envPath });
 
     // 非交互模式（stdio/MCP client）直接返回，不询问
@@ -235,22 +251,22 @@ async function promptConfig(): Promise<{
     const ask = (q: string) => new Promise<string>((r) => rl.question(q, r));
 
     console.error("");
-    console.error("蓝湖 MCP Server — 检测到 .env 已配置，但 Claude 配置文件未同步");
+    console.error("蓝湖 MCP Server — 检测到 .env 已配置，但 MCP 配置文件未同步");
     console.error("");
 
     const choice = await ask(
-      " 是否也写入 ~/.claude/settings.json？(y/N): "
+      ` 是否也写入 ${mcpConfigPath}？(y/N): `
     );
     rl.close();
 
     if (choice.trim().toLowerCase() === "y") {
-      writeClaudeConfig({
+      writeMcpJsonConfig(mcpConfigPath, {
         cookie: process.env.LANHU_COOKIE || "",
         authorization: process.env.LANHU_AUTHORIZATION,
         tenantId: process.env.LANHU_TENANT_ID,
         projectId: process.env.LANHU_PROJECT_ID,
       });
-      console.error(`已写入 ${CLAUDE_SETTINGS_PATH}`);
+      console.error(`已写入 ${mcpConfigPath}`);
     }
     console.error("");
 
@@ -262,14 +278,14 @@ async function promptConfig(): Promise<{
     };
   }
 
-  // 只有 Claude 配置存在但 .env 缺失 → 从 Claude 配置回填 .env
-  if (!envHasCookie && claudeHasConfig) {
-    const settings = JSON.parse(fs.readFileSync(CLAUDE_SETTINGS_PATH, "utf-8"));
+  // 只有 MCP 配置存在但 .env 缺失 → 从 MCP 配置回填 .env
+  if (!envHasCookie && mcpJsonHasConfig) {
+    const settings = JSON.parse(fs.readFileSync(mcpConfigPath, "utf-8"));
     const env = settings.mcpServers["lanhu-mcp"].env as Record<string, string>;
 
-    // 用 Claude 配置写入 .env
+    // 用 MCP 配置写入 .env
     const envLines: string[] = [
-      "# 蓝湖认证配置（从 Claude settings.json 同步）",
+      "# 蓝湖认证配置（从 MCP JSON 配置同步）",
       `LANHU_COOKIE=${env.LANHU_COOKIE}`,
     ];
     if (env.LANHU_AUTHORIZATION) {
@@ -312,15 +328,15 @@ async function promptConfig(): Promise<{
   console.error("");
   console.error("请选择配置写入位置：");
   console.error("  1. .env 文件（本地环境变量，所有工具通用）");
-  console.error("  2. Claude 配置文件（~/.claude/settings.json）");
-  console.error("     等效: claude mcp add lanhu-mcp -e LANHU_COOKIE=... -- npx dc-lanhu-mcp-server");
+  console.error(`  2. MCP JSON 配置（${mcpConfigPath}）`);
+  console.error("     可用环境变量 LANHU_MCP_CONFIG_PATH 指向你所用客户端的配置文件");
   console.error("  3. 两者都写");
   console.error("");
 
   const targetChoice = await ask("请选择 (1/2/3，默认 3): ");
   let target: ConfigTarget;
   if (targetChoice.trim() === "1") target = "env";
-  else if (targetChoice.trim() === "2") target = "claude";
+  else if (targetChoice.trim() === "2") target = "mcp-json";
   else target = "both";
 
   console.error("");
@@ -378,12 +394,12 @@ async function promptConfig(): Promise<{
     console.error(`配置已写入 ${envPath}（权限 600）`);
   }
 
-  // 写入 Claude settings.json
-  if (target === "claude" || target === "both") {
-    writeClaudeConfig(configData);
+  // 写入 MCP JSON 配置
+  if (target === "mcp-json" || target === "both") {
+    writeMcpJsonConfig(mcpConfigPath, configData);
     console.error("");
-    console.error(`配置已写入 ${CLAUDE_SETTINGS_PATH}`);
-    console.error("  等效命令: claude mcp add lanhu-mcp -e LANHU_COOKIE=\"...\" -e LANHU_AUTHORIZATION=\"...\" -- npx dc-lanhu-mcp-server");
+    console.error(`配置已写入 ${mcpConfigPath}`);
+    console.error("  把同一条目合并进你所用客户端的 MCP 配置即可通用，无需改写 command/args。");
   }
 
   if (configData.projectId) console.error(`  项目 ID: ${configData.projectId}`);
@@ -473,8 +489,9 @@ setupErrorHandlers();
  *   npm run dev        # 开发模式（tsx）
  *   npm run build && npm start  # 生产模式
  *
- * Claude Code 配置：
- *   claude mcp add lanhu-mcp -- node dist/index.js
+ * 注册到任意 MCP 客户端：在客户端的 MCP 配置里加一条 stdio server，
+ * command 用 node 的绝对路径，args 指向本文件（dist/index.js 的绝对路径）。
+ * 具体片段见 ../README.md，本文件不含任何客户端特例。
  *
  * 错误日志：
  *   ~/.lanhu-mcp/error.log
@@ -500,7 +517,7 @@ async function main() {
   // 注册所有 Tools
   registerTools(server, client);
 
-  // 通过 stdio 连接（Claude Code / Cursor 等使用 stdio 传输）
+  // 通过 stdio 连接（MCP 的 stdio 传输是各客户端的通用形态）
   const transport = new StdioServerTransport();
   await server.connect(transport);
 
