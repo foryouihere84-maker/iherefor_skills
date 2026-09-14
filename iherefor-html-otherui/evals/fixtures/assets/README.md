@@ -3,7 +3,11 @@
 `resource-semantic-naming` 用例的工作区素材：三张模拟 Lanhu 导出的图片，让 Agent 有真实
 文件可测（像素尺寸、sha256），而不是只能对文件名作断言。
 
-| 文件 | 尺寸 | 用途（用例里告诉 Agent 的场景） |
+**只有 `workspace/` 这一层会被拷进用例工作区。** 本文件写着三张图的实测像素尺寸，
+而「自己量出尺寸、逐个推导 scale」正是该用例要考的动作，所以它属于判分侧文档 ——
+绝不能进被测 Agent 的工作区。用例的 `repo_fixture` 指向 `evals/fixtures/assets/workspace`。
+
+| 文件（相对 `workspace/`） | 尺寸 | 用途（用例里告诉 Agent 的场景） |
 | --- | --- | --- |
 | `img_0.png` | 786×600 | 顶部主视觉拼图 |
 | `img_1.png` | 66×66 | 右上角关闭图标 |
@@ -23,5 +27,5 @@ for name, size, color in [("img_0.png", (786, 600), (58, 92, 168)),
     draw = ImageDraw.Draw(image)
     draw.rectangle([0, 0, size[0] - 1, size[1] - 1], outline=(255, 255, 255), width=2)
     draw.line([(0, 0), (size[0], size[1])], fill=(255, 255, 255), width=2)
-    image.save(f"evals/fixtures/assets/{name}", optimize=True)
+    image.save(f"evals/fixtures/assets/workspace/{name}", optimize=True)
 ```

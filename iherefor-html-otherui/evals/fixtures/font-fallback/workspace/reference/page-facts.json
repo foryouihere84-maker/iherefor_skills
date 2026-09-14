@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 2,
+  "pageId": "plan-selection",
+  "sourceNote": "Lanhu 导出页面，按真实设备 canvas 393x852、dpr 3 渲染",
+  "viewport": {"width": 393, "height": 852, "devicePixelRatio": 3, "scroll": {"x": 0, "y": 0}},
+  "coordinateNote": {
+    "rect": "CSS px（视口相对）",
+    "rectInReference": "reference.png 像素坐标 = (rect + viewport.scroll) * devicePixelRatio"
+  },
+  "elements": [
+    {
+      "index": 3,
+      "selector": ".plan-header__title",
+      "region": "header",
+      "tag": "h1",
+      "rect": {"x": 24, "y": 132, "width": 345, "height": 41},
+      "rectInReference": {"x": 72, "y": 396, "width": 1035, "height": 123},
+      "ownText": "Choose Your Plan",
+      "ownsText": true,
+      "textMark": "3",
+      "fontFamily": "AvenirLT-Black",
+      "fontsResolved": [{"family": "Times", "glyphCount": 16, "isCustomFont": false}],
+      "primaryFont": {"family": "Times", "glyphCount": 16, "isCustomFont": false},
+      "textMetrics": {
+        "charCount": 16,
+        "fontSize": 32,
+        "lineHeight": 38,
+        "advanceWidth": 172.734,
+        "ownOnlyText": true,
+        "hasDescendantTextElement": false,
+        "rects": [{"x": 72, "y": 399.6, "width": 518.202, "height": 114}]
+      }
+    },
+    {
+      "index": 7,
+      "selector": ".plan-badge__title",
+      "region": "badge",
+      "tag": "div",
+      "rect": {"x": 30, "y": 196, "width": 84, "height": 23},
+      "rectInReference": {"x": 90, "y": 588, "width": 252, "height": 69},
+      "ownText": "Alpha",
+      "ownsText": true,
+      "textMark": "7",
+      "fontFamily": "AvenirLT-Black",
+      "fontsResolved": [{"family": "Times", "glyphCount": 5, "isCustomFont": false}],
+      "primaryFont": {"family": "Times", "glyphCount": 5, "isCustomFont": false},
+      "textMetrics": {
+        "charCount": 5,
+        "fontSize": 18,
+        "lineHeight": 23,
+        "advanceWidth": 43.119,
+        "ownOnlyText": true,
+        "hasDescendantTextElement": false,
+        "rects": [{"x": 90, "y": 588, "width": 129.357, "height": 69}]
+      }
+    },
+    {
+      "index": 15,
+      "selector": ".plan-card--yearly .plan-card__price",
+      "region": "yearly-card",
+      "tag": "div",
+      "rect": {"x": 40, "y": 386, "width": 106, "height": 28},
+      "rectInReference": {"x": 120, "y": 1158, "width": 318, "height": 84},
+      "ownText": "$59.99",
+      "ownsText": true,
+      "textMark": "15",
+      "fontFamily": "AvenirLT-Medium",
+      "fontsResolved": [{"family": "Times", "glyphCount": 6, "isCustomFont": false}],
+      "primaryFont": {"family": "Times", "glyphCount": 6, "isCustomFont": false},
+      "textMetrics": {
+        "charCount": 6,
+        "fontSize": 22,
+        "lineHeight": 28,
+        "advanceWidth": 61.244,
+        "ownOnlyText": true,
+        "hasDescendantTextElement": false,
+        "rects": [{"x": 120, "y": 1158, "width": 183.732, "height": 84}]
+      }
+    },
+    {
+      "index": 22,
+      "selector": ".plan-footer__cta-label",
+      "region": "footer",
+      "tag": "span",
+      "rect": {"x": 152, "y": 806, "width": 89, "height": 20},
+      "rectInReference": {"x": 456, "y": 2418, "width": 267, "height": 60},
+      "ownText": "Try For Free",
+      "ownsText": true,
+      "textMark": "22",
+      "fontFamily": "PingFang SC",
+      "fontsResolved": [{"family": "PingFang SC", "glyphCount": 12, "isCustomFont": false}],
+      "primaryFont": {"family": "PingFang SC", "glyphCount": 12, "isCustomFont": false},
+      "textMetrics": {
+        "charCount": 12,
+        "fontSize": 17,
+        "lineHeight": 20,
+        "advanceWidth": 84.617,
+        "ownOnlyText": true,
+        "hasDescendantTextElement": false,
+        "rects": [{"x": 456, "y": 2418, "width": 253.851, "height": 60}]
+      }
+    }
+  ],
+  "images": [],
+  "textMetricsNote": "advanceWidth 是排版宽度（CSS px），字体被替换时必然变化；用它判断 fallback，不要用 CSS 声明的 fontFamily"
+}

@@ -24,8 +24,10 @@ input:
 # Agent 会把整个 .ihereforUI 目录树连同 plans/、integration/ 一起铺出来。
 
 # 把三张图随工作区下发，用例不依赖 Agent 的当前目录。
+# 只拷 workspace/ 这一层：fixture 根目录的 README.md 写着三张图的实测像素尺寸与
+# 「尺寸刻意各不相同」这条提示，而「自己量出尺寸再推导 scale」正是本用例要考的动作。
 context:
-  repo_fixture: evals/fixtures/assets
+  repo_fixture: evals/fixtures/assets/workspace
 
 expect:
   files_exist:

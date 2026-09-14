@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 2,
+  "reference": "images/reference.png",
+  "actual": "images/actual-device-downscaled.png",
+  "referenceSize": { "width": 786, "height": 1704 },
+  "actualSize": { "width": 786, "height": 1704 },
+  "status": "pass",
+  "changedRatio": 0.4082573259745069,
+  "detail": "两张图像素尺寸完全一致（786x1704），同源契约通过，视觉验证可以放行",
+  "exitCode": 0
+}

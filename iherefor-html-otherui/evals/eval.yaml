@@ -11,7 +11,7 @@ skills:
   - source: local_path
     path: .
     # evals/ 由 skill-up 强制排除，不会被安装给被测 Agent。
-    # 下面三个目录与这 6 个用例无关，排除后每个用例少拷约 170MB；
+    # 下面三个目录与这批用例无关，排除后每个用例少拷约 170MB；
     # 保留 .runtime（Pillow）与 scripts/，比较脚本才能直接跑。
     exclude:
       - testUIProject/**
@@ -19,7 +19,9 @@ skills:
       - node_modules/**
 
 engine:
-  # 执行 prompt 的 Agent Engine。
+  # 执行 prompt 的 Agent Engine。这是**评测运行器自己的设置**，不是被测 skill 的依赖：
+  # skill 本体（脚本、参考文档、工作流）不绑定任何宿主，换用任何受支持的引擎
+  # 都应能跑同一批用例，无需改动 skill。
   # 内置可选：claude_code | codex | qodercli | qwen_code。
   name: claude_code
 
@@ -27,11 +29,14 @@ cases:
   # 用例清单，相对 Skill 根目录。
   files:
     - evals/cases/diff-gate-blocks-high-diff.yaml
+    - evals/cases/same-size-needs-region-evidence.yaml
+    - evals/cases/font-fallback-belongs-to-baseline.yaml
     - evals/cases/reference-must-share-device-canvas.yaml
     - evals/cases/image-scaling-hard-constraints.yaml
     - evals/cases/click-handler-naming.yaml
     - evals/cases/resource-semantic-naming.yaml
     - evals/cases/scripts-must-not-generate-source.yaml
+    - evals/cases/layout-must-follow-design-proportions.yaml
   # 所有用例继承的默认约束。
   defaults:
     # 这个 skill 会让 Agent 走完整闭环（建工程、编译、跑起来截图），

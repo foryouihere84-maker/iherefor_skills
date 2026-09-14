@@ -1,0 +1,233 @@
+{
+  "tool": "check_layout_proportions.py",
+  "schemaVersion": 1,
+  "status": "fail",
+  "planOnly": false,
+  "targetMode": null,
+  "plan": "/tmp/eval-lp.json",
+  "sourceFiles": [
+    "evals/fixtures/proportional-layout/workspace/src/SpecialOfferViewController.m"
+  ],
+  "regionCount": 5,
+  "relationCount": 20,
+  "proportionalRelationCount": 19,
+  "intrinsicRelationCount": 1,
+  "proportionalIdiomCount": 0,
+  "proportionalIdioms": [],
+  "forbiddenLiteralCount": 25,
+  "ignoredForbiddenCount": 0,
+  "allowValues": [],
+  "designScaleMaxPt": 48.0,
+  "literalViolationCount": 12,
+  "ambiguousLiteralCount": 3,
+  "ambiguousLiterals": [
+    {
+      "kind": "ambiguous-literal",
+      "detail": "23 等于 offers.leading 在探针设备上的值，但也在常见设计常量范围内（≤48pt），无法自动区分；请人工确认它是设计常量还是抄来的设备值",
+      "relation": "offers.leading",
+      "literal": 23.0,
+      "deviceDerivedPt": 23.0,
+      "expectedRatio": 0.057214,
+      "alsoMatches": [],
+      "candidateCount": 1,
+      "line": 32,
+      "text": "_offers = [[UIView alloc] initWithFrame:SpecialOfferOffersLocalRect(23, 495, 347, 68)];",
+      "file": "evals/fixtures/proportional-layout/workspace/src/SpecialOfferViewController.m"
+    },
+    {
+      "kind": "ambiguous-literal",
+      "detail": "25 等于 cta.leading 在探针设备上的值，但也在常见设计常量范围内（≤48pt），无法自动区分；请人工确认它是设计常量还是抄来的设备值",
+      "relation": "cta.leading",
+      "literal": 25.0,
+      "deviceDerivedPt": 25.0,
+      "expectedRatio": 0.062189,
+      "alsoMatches": [],
+      "candidateCount": 1,
+      "line": 39,
+      "text": "_cta.frame = CGRectMake(25, 741, 352, 48);",
+      "file": "evals/fixtures/proportional-layout/workspace/src/SpecialOfferViewController.m"
+    },
+    {
+      "kind": "ambiguous-literal",
+      "detail": "48 等于 cta.height 在探针设备上的值，但也在常见设计常量范围内（≤48pt），无法自动区分；请人工确认它是设计常量还是抄来的设备值",
+      "relation": "cta.height",
+      "literal": 48.0,
+      "deviceDerivedPt": 48.0,
+      "expectedRatio": 0.05492,
+      "alsoMatches": [],
+      "candidateCount": 1,
+      "line": 39,
+      "text": "_cta.frame = CGRectMake(25, 741, 352, 48);",
+      "file": "evals/fixtures/proportional-layout/workspace/src/SpecialOfferViewController.m"
+    }
+  ],
+  "distinctLiteralValues": [
+    68.0,
+    83.0,
+    232.0,
+    321.0,
+    347.0,
+    352.0,
+    393.0,
+    495.0,
+    741.0,
+    801.0,
+    852.0
+  ],
+  "violations": [
+    {
+      "kind": "no-proportional-idiom",
+      "detail": "计划声明了 19 条 proportional 关系，但 1 个源码文件里一个比例原语都没有：整页很可能是拿绝对值堆出来的。"
+    },
+    {
+      "kind": "forbidden-literal-used",
+      "relation": "page.width",
+      "literal": 393.0,
+      "deviceDerivedPt": 393.0,
+      "expectedRatio": 0.977612,
+      "alsoMatches": [
+        "hero.width"
+      ],
+      "candidateCount": 2,
+      "line": 11,
+      "text": "static const CGFloat kCanvasWidth = 393.0;",
+      "file": "evals/fixtures/proportional-layout/workspace/src/SpecialOfferViewController.m"
+    },
+    {
+      "kind": "forbidden-literal-used",
+      "relation": "page.height",
+      "literal": 852.0,
+      "deviceDerivedPt": 852.0,
+      "expectedRatio": 0.974828,
+      "alsoMatches": [],
+      "candidateCount": 1,
+      "line": 12,
+      "text": "static const CGFloat kCanvasHeight = 852.0;",
+      "file": "evals/fixtures/proportional-layout/workspace/src/SpecialOfferViewController.m"
+    },
+    {
+      "kind": "forbidden-literal-used",
+      "relation": "page.width",
+      "literal": 393.0,
+      "deviceDerivedPt": 393.0,
+      "expectedRatio": 0.977612,
+      "alsoMatches": [
+        "hero.width"
+      ],
+      "candidateCount": 2,
+      "line": 26,
+      "text": "_hero = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, 393, 321)];",
+      "file": "evals/fixtures/proportional-layout/workspace/src/SpecialOfferViewController.m"
+    },
+    {
+      "kind": "forbidden-literal-used",
+      "relation": "hero.height",
+      "literal": 321.0,
+      "deviceDerivedPt": 321.0,
+      "expectedRatio": 0.367277,
+      "alsoMatches": [],
+      "candidateCount": 1,
+      "line": 26,
+      "text": "_hero = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, 393, 321)];",
+      "file": "evals/fixtures/proportional-layout/workspace/src/SpecialOfferViewController.m"
+    },
+    {
+      "kind": "forbidden-literal-used",
+      "relation": "offers.top",
+      "literal": 495.0,
+      "deviceDerivedPt": 495.0,
+      "expectedRatio": 0.566362,
+      "alsoMatches": [],
+      "candidateCount": 1,
+      "line": 32,
+      "text": "_offers = [[UIView alloc] initWithFrame:SpecialOfferOffersLocalRect(23, 495, 347, 68)];",
+      "file": "evals/fixtures/proportional-layout/workspace/src/SpecialOfferViewController.m"
+    },
+    {
+      "kind": "forbidden-literal-used",
+      "relation": "offers.width",
+      "literal": 347.0,
+      "deviceDerivedPt": 347.0,
+      "expectedRatio": 0.863184,
+      "alsoMatches": [],
+      "candidateCount": 1,
+      "line": 32,
+      "text": "_offers = [[UIView alloc] initWithFrame:SpecialOfferOffersLocalRect(23, 495, 347, 68)];",
+      "file": "evals/fixtures/proportional-layout/workspace/src/SpecialOfferViewController.m"
+    },
+    {
+      "kind": "forbidden-literal-used",
+      "relation": "offers.height",
+      "literal": 68.0,
+      "deviceDerivedPt": 68.0,
+      "expectedRatio": 0.077803,
+      "alsoMatches": [],
+      "candidateCount": 1,
+      "line": 32,
+      "text": "_offers = [[UIView alloc] initWithFrame:SpecialOfferOffersLocalRect(23, 495, 347, 68)];",
+      "file": "evals/fixtures/proportional-layout/workspace/src/SpecialOfferViewController.m"
+    },
+    {
+      "kind": "forbidden-literal-used",
+      "relation": "cta.top",
+      "literal": 741.0,
+      "deviceDerivedPt": 741.0,
+      "expectedRatio": 0.847826,
+      "alsoMatches": [],
+      "candidateCount": 1,
+      "line": 39,
+      "text": "_cta.frame = CGRectMake(25, 741, 352, 48);",
+      "file": "evals/fixtures/proportional-layout/workspace/src/SpecialOfferViewController.m"
+    },
+    {
+      "kind": "forbidden-literal-used",
+      "relation": "cta.width",
+      "literal": 352.0,
+      "deviceDerivedPt": 352.0,
+      "expectedRatio": 0.875622,
+      "alsoMatches": [],
+      "candidateCount": 1,
+      "line": 39,
+      "text": "_cta.frame = CGRectMake(25, 741, 352, 48);",
+      "file": "evals/fixtures/proportional-layout/workspace/src/SpecialOfferViewController.m"
+    },
+    {
+      "kind": "forbidden-literal-used",
+      "relation": "legal.leading",
+      "literal": 83.0,
+      "deviceDerivedPt": 83.0,
+      "expectedRatio": 0.206468,
+      "alsoMatches": [],
+      "candidateCount": 1,
+      "line": 48,
+      "text": "_legal = [[UILabel alloc] initWithFrame:CGRectMake(83, 801, 232, 16)];",
+      "file": "evals/fixtures/proportional-layout/workspace/src/SpecialOfferViewController.m"
+    },
+    {
+      "kind": "forbidden-literal-used",
+      "relation": "legal.top",
+      "literal": 801.0,
+      "deviceDerivedPt": 801.0,
+      "expectedRatio": 0.916476,
+      "alsoMatches": [],
+      "candidateCount": 1,
+      "line": 48,
+      "text": "_legal = [[UILabel alloc] initWithFrame:CGRectMake(83, 801, 232, 16)];",
+      "file": "evals/fixtures/proportional-layout/workspace/src/SpecialOfferViewController.m"
+    },
+    {
+      "kind": "forbidden-literal-used",
+      "relation": "legal.width",
+      "literal": 232.0,
+      "deviceDerivedPt": 232.0,
+      "expectedRatio": 0.577114,
+      "alsoMatches": [],
+      "candidateCount": 1,
+      "line": 48,
+      "text": "_legal = [[UILabel alloc] initWithFrame:CGRectMake(83, 801, 232, 16)];",
+      "file": "evals/fixtures/proportional-layout/workspace/src/SpecialOfferViewController.m"
+    }
+  ],
+  "warnings": [],
+  "scopeNote": "本脚本做行级扫描，不解析语法树；结论是「找到了这些证据/违规」，不等于「布局是正确的」——那由截图与对齐审计回答。另外，≤48pt 的数值与设计常量无法区分，只列在 ambiguousLiterals 里待人工判断，不计入违规。"
+}

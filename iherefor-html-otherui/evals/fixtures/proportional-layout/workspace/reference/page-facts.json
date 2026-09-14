@@ -1,0 +1,202 @@
+{
+  "schemaVersion": 2,
+  "title": "Special Offer",
+  "url": "file:///offers/index.html",
+  "viewport": {
+    "width": 402.0,
+    "height": 874.0,
+    "devicePixelRatio": 3,
+    "scrollX": 0.0,
+    "scrollY": 0.0
+  },
+  "documentSize": {
+    "width": 402.0,
+    "height": 874.0
+  },
+  "coordinateSpace": "device-points-viewport-relative",
+  "referenceImage": {
+    "path": "reference.png",
+    "width": 1206,
+    "height": 2622,
+    "fullyOpaque": true,
+    "opaqueRatio": 1.0,
+    "bounds": {
+      "x": 0,
+      "y": 0,
+      "width": 1206,
+      "height": 2622
+    }
+  },
+  "elements": [
+    {
+      "index": 0,
+      "tag": "div",
+      "id": null,
+      "className": "page",
+      "text": "",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 393,
+        "height": 852
+      },
+      "rectInReference": {
+        "x": 0,
+        "y": 0,
+        "width": 1179,
+        "height": 2556
+      },
+      "style": {
+        "display": "block",
+        "position": "static",
+        "color": "rgb(22, 22, 22)",
+        "fontFamily": "-apple-system, \"system-ui\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "18px",
+        "borderRadius": "0px"
+      },
+      "role": null,
+      "ariaLabel": null,
+      "src": null,
+      "ownText": "",
+      "ownsText": false,
+      "textMark": null
+    },
+    {
+      "index": 1,
+      "tag": "div",
+      "id": null,
+      "className": "hero",
+      "text": "",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 393,
+        "height": 321
+      },
+      "rectInReference": {
+        "x": 0,
+        "y": 0,
+        "width": 1179,
+        "height": 963
+      },
+      "style": {
+        "display": "block",
+        "position": "static",
+        "color": "rgb(22, 22, 22)",
+        "fontFamily": "-apple-system, \"system-ui\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "18px",
+        "borderRadius": "0px"
+      },
+      "role": null,
+      "ariaLabel": null,
+      "src": "img/hero.png",
+      "ownText": "",
+      "ownsText": false,
+      "textMark": null
+    },
+    {
+      "index": 2,
+      "tag": "div",
+      "id": null,
+      "className": "offers",
+      "text": "",
+      "rect": {
+        "x": 23,
+        "y": 495,
+        "width": 347,
+        "height": 68
+      },
+      "rectInReference": {
+        "x": 69,
+        "y": 1485,
+        "width": 1041,
+        "height": 204
+      },
+      "style": {
+        "display": "block",
+        "position": "static",
+        "color": "rgb(22, 22, 22)",
+        "fontFamily": "-apple-system, \"system-ui\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "18px",
+        "borderRadius": "0px"
+      },
+      "role": null,
+      "ariaLabel": null,
+      "src": null,
+      "ownText": "",
+      "ownsText": false,
+      "textMark": null
+    },
+    {
+      "index": 3,
+      "tag": "div",
+      "id": null,
+      "className": "cta",
+      "text": "",
+      "rect": {
+        "x": 25,
+        "y": 741,
+        "width": 352,
+        "height": 48
+      },
+      "rectInReference": {
+        "x": 75,
+        "y": 2223,
+        "width": 1056,
+        "height": 144
+      },
+      "style": {
+        "display": "block",
+        "position": "static",
+        "color": "rgb(22, 22, 22)",
+        "fontFamily": "-apple-system, \"system-ui\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "18px",
+        "borderRadius": "0px"
+      },
+      "role": null,
+      "ariaLabel": null,
+      "src": null,
+      "ownText": "",
+      "ownsText": false,
+      "textMark": null
+    },
+    {
+      "index": 4,
+      "tag": "div",
+      "id": null,
+      "className": "legal",
+      "text": "Privacy\nTerms\nRestore",
+      "rect": {
+        "x": 83,
+        "y": 801,
+        "width": 232,
+        "height": 16
+      },
+      "rectInReference": {
+        "x": 249,
+        "y": 2403,
+        "width": 696,
+        "height": 48
+      },
+      "style": {
+        "display": "block",
+        "position": "static",
+        "color": "rgb(22, 22, 22)",
+        "fontFamily": "-apple-system, \"system-ui\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "18px",
+        "borderRadius": "0px"
+      },
+      "role": null,
+      "ariaLabel": null,
+      "src": null,
+      "ownText": "",
+      "ownsText": false,
+      "textMark": null
+    }
+  ]
+}

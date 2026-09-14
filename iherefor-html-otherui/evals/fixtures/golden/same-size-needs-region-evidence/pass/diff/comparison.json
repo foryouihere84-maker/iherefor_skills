@@ -1,0 +1,212 @@
+{
+  "schemaVersion": 2,
+  "reference": "images/reference.png",
+  "actual": "images/actual-device-downscaled.png",
+  "referenceSize": {
+    "width": 786,
+    "height": 1704
+  },
+  "actualSize": {
+    "width": 786,
+    "height": 1704
+  },
+  "threshold": 8,
+  "edgeThreshold": 64,
+  "flatThreshold": 16,
+  "edgeTolerance": 2,
+  "warnStructuralRatio": 0.005,
+  "maxStructuralRatio": 0.02,
+  "maxFillRatio": 0.02,
+  "changedPixels": 546797,
+  "totalPixels": 1339344,
+  "changedRatio": 0.4082573259745069,
+  "structuralChangedPixels": 219563,
+  "structuralRatio": 0.16393323895877385,
+  "textureChangedPixels": 34935,
+  "textureRatio": 0.02608366483890621,
+  "fillChangedPixels": 292299,
+  "fillRatio": 0.21824042217682688,
+  "regions": [
+    {
+      "row": 0,
+      "col": 0,
+      "box": {
+        "x": 0,
+        "y": 0,
+        "width": 786,
+        "height": 284
+      },
+      "pixels": 223224,
+      "changedRatio": 0.828289,
+      "structuralRatio": 0.252132,
+      "textureRatio": 0.068832,
+      "fillRatio": 0.507324,
+      "changedPixels": 184894
+    },
+    {
+      "row": 1,
+      "col": 0,
+      "box": {
+        "x": 0,
+        "y": 284,
+        "width": 786,
+        "height": 284
+      },
+      "pixels": 223224,
+      "changedRatio": 0.721943,
+      "structuralRatio": 0.20789,
+      "textureRatio": 0.056723,
+      "fillRatio": 0.45733,
+      "changedPixels": 161155
+    },
+    {
+      "row": 2,
+      "col": 0,
+      "box": {
+        "x": 0,
+        "y": 568,
+        "width": 786,
+        "height": 284
+      },
+      "pixels": 223224,
+      "changedRatio": 0.228604,
+      "structuralRatio": 0.155593,
+      "textureRatio": 0.025692,
+      "fillRatio": 0.04732,
+      "changedPixels": 51030
+    },
+    {
+      "row": 3,
+      "col": 0,
+      "box": {
+        "x": 0,
+        "y": 852,
+        "width": 786,
+        "height": 284
+      },
+      "pixels": 223224,
+      "changedRatio": 0.276637,
+      "structuralRatio": 0.200171,
+      "textureRatio": 0.001649,
+      "fillRatio": 0.074817,
+      "changedPixels": 61752
+    },
+    {
+      "row": 4,
+      "col": 0,
+      "box": {
+        "x": 0,
+        "y": 1136,
+        "width": 786,
+        "height": 284
+      },
+      "pixels": 223224,
+      "changedRatio": 0.15303,
+      "structuralRatio": 0.072801,
+      "textureRatio": 0.003566,
+      "fillRatio": 0.076663,
+      "changedPixels": 34160
+    },
+    {
+      "row": 5,
+      "col": 0,
+      "box": {
+        "x": 0,
+        "y": 1420,
+        "width": 786,
+        "height": 284
+      },
+      "pixels": 223224,
+      "changedRatio": 0.24104,
+      "structuralRatio": 0.095012,
+      "textureRatio": 4e-05,
+      "fillRatio": 0.145988,
+      "changedPixels": 53806
+    }
+  ],
+  "worstRegions": [
+    {
+      "row": 0,
+      "col": 0,
+      "box": {
+        "x": 0,
+        "y": 0,
+        "width": 786,
+        "height": 284
+      },
+      "pixels": 223224,
+      "changedRatio": 0.828289,
+      "structuralRatio": 0.252132,
+      "textureRatio": 0.068832,
+      "fillRatio": 0.507324,
+      "changedPixels": 184894
+    },
+    {
+      "row": 1,
+      "col": 0,
+      "box": {
+        "x": 0,
+        "y": 284,
+        "width": 786,
+        "height": 284
+      },
+      "pixels": 223224,
+      "changedRatio": 0.721943,
+      "structuralRatio": 0.20789,
+      "textureRatio": 0.056723,
+      "fillRatio": 0.45733,
+      "changedPixels": 161155
+    },
+    {
+      "row": 3,
+      "col": 0,
+      "box": {
+        "x": 0,
+        "y": 852,
+        "width": 786,
+        "height": 284
+      },
+      "pixels": 223224,
+      "changedRatio": 0.276637,
+      "structuralRatio": 0.200171,
+      "textureRatio": 0.001649,
+      "fillRatio": 0.074817,
+      "changedPixels": 61752
+    },
+    {
+      "row": 2,
+      "col": 0,
+      "box": {
+        "x": 0,
+        "y": 568,
+        "width": 786,
+        "height": 284
+      },
+      "pixels": 223224,
+      "changedRatio": 0.228604,
+      "structuralRatio": 0.155593,
+      "textureRatio": 0.025692,
+      "fillRatio": 0.04732,
+      "changedPixels": 51030
+    },
+    {
+      "row": 5,
+      "col": 0,
+      "box": {
+        "x": 0,
+        "y": 1420,
+        "width": 786,
+        "height": 284
+      },
+      "pixels": 223224,
+      "changedRatio": 0.24104,
+      "structuralRatio": 0.095012,
+      "textureRatio": 4e-05,
+      "fillRatio": 0.145988,
+      "changedPixels": 53806
+    }
+  ],
+  "status": "fail",
+  "exitCode": 1,
+  "reason": "structural-diff-exceeded"
+}

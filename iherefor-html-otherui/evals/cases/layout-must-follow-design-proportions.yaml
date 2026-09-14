@@ -1,0 +1,58 @@
+id: layout-must-follow-design-proportions
+title: 组件之间的布局关系必须按设计稿比例实现，不得写成固定 pt
+description: |
+  回归本 skill 最重要的一条硬约束。设计稿只有一个尺寸（Lanhu 画布 393x852），
+  把换算结果写成绝对值，就把这个关系钉死在探针设备（402x874）上了 —— 换台设备
+  它就是错的，而它「有算过」，比一眼可疑的魔数更难发现。
+
+  素材是一个已经「通过」自检的 iOS 实现：`implementation` 闸门记 pass、
+  `deliveryReady` 记 true。源码里 `CGRectMake(0, 0, 393, 321)`、
+  `SpecialOfferOffersLocalRect(23, 495, 347, 68)`、`CGRectMake(25, 741, 352, 48)`
+  全是按探针设备换算出来的绝对值，一处比例原语都没有。
+
+  **本用例同时考召回与精度。** 素材里混着真设计常量（圆角 12、发丝线 1、
+  最小点击区 44）与一批小数值（23、25、48）—— 后者既可能是设计常量，也可能是
+  抄来的设备值，没有语法信息时无法区分。所以：
+
+  - 必须指出大数值（393 / 852 / 321 / 495 / 347 / 68 / 352 / 741）里的若干条，
+    它们是「只在 402x874 上成立」的铁证；
+  - 不得把圆角 12、发丝线 1、最小点击区 44 当成违规 —— 那些是设计值，
+    缩放它们才是错的。
+
+  纯正则扫描会两头都错：漏掉「数字看起来有出处」的绝对值，同时把设计常量全报一遍。
+  判分只看产物，不看 Agent 的自述。
+input:
+  prompt: |
+    这个 run 自己记的是已交付：`delivery-gate.json` 里 implementation=pass、
+    deliveryReady=true。
+
+    但我怀疑它的布局有问题。这个页面的设计稿是 393x852，实机是 402x874。
+    请核对：**组件之间的布局关系有没有按设计稿的比例实现？**
+
+    工作区里有：
+    - reference/page-facts.json —— 页面事实表（元素位置）
+    - src/SpecialOfferViewController.m —— 本次的 iOS 实现
+    - delivery-gate.json —— 该 run 的交付闸门
+
+    请用 skill 自带的脚本得出证据，并把结论落到文件里，不要只写在回答里：
+
+    - diff/proportion-verdict.json，至少包含：
+      - `status`：`"fail"` 或 `"pass"`
+      - `deliveryReady`：`true` 或 `false`
+      - `violations`：数组，每项至少含 `literal`（数值）与 `file`
+      - `reason`：一句话说明判据
+
+    注意区分两类数字：
+    - 位置、间距、容器与图片 frame 的尺寸 —— 这些依赖容器尺寸，必须比例化；
+    - 字号、圆角、描边、最小点击区 —— 这些是设计值，保持原值不缩放，**不是**违规。
+
+    不要把源码改掉，只出结论。
+context:
+  repo_fixture: evals/fixtures/proportional-layout/workspace
+expect:
+  files_exist:
+    - "diff/proportion-verdict.json"
+judge:
+  type: script
+  script_path: evals/fixtures/scripts/check-layout-proportions.sh
+  timeout_seconds: 60

@@ -1,0 +1,71 @@
+{
+  "tool": "audit_alignment.py",
+  "schemaVersion": 1,
+  "reference": "reference/reference.png",
+  "actual": "actual/app.png",
+  "pageFacts": "reference/page-facts.json",
+  "referenceSize": {"width": 1179, "height": 2556},
+  "actualSize": {"width": 1179, "height": 2556},
+  "referenceOnDeviceCanvas": true,
+  "warnings": [],
+  "canvasTransformSource": "ui-implementation-plan.json",
+  "canvasTransform": {
+    "policy": "fit",
+    "scaleX": 1.0229,
+    "scaleY": 1.0229,
+    "letterbox": {"x": 0, "y": 0},
+    "origin": {"x": 0, "y": 0}
+  },
+  "unitScale": 3,
+  "regionCount": 4,
+  "comparisons": {
+    "domVsReference": {
+      "label": "domVsReference",
+      "method": "ink_probe",
+      "unit": "pt",
+      "elementCount": 4,
+      "trustworthyCount": 4,
+      "ambiguousCount": 0,
+      "unmatchedCount": 0,
+      "status": "aligned",
+      "detail": "4 个元素的墨迹位置与事实表预测框一致，全部在 2.0pt 容差内",
+      "offsetFit": {"model": "dy = slope * y + intercept", "unit": "pt", "slope": 0.0004, "intercept": 0.12, "impliedScale": 1.0004, "r2": 0.021, "rmsResidual": 0.31, "n": 4, "seSlope": 0.0041, "t": 0.098},
+      "extremes": {"maxAbsDx": 0.44, "maxAbsDy": 0.63, "positionTolerance": 2.0, "unit": "pt", "mostDx": {"index": 3, "label": "Choose Your Plan", "dxPt": -0.44}, "mostDy": {"index": 15, "label": "$59.99", "dyPt": 0.63}},
+      "elements": [
+        {"index": 3, "label": "Choose Your Plan", "matched": true, "confidence": "high", "dxPt": -0.44, "dyPt": 0.28},
+        {"index": 7, "label": "Alpha", "matched": true, "confidence": "high", "dxPt": 0.19, "dyPt": -0.35},
+        {"index": 15, "label": "$59.99", "matched": true, "confidence": "high", "dxPt": 0.31, "dyPt": 0.63},
+        {"index": 22, "label": "Try For Free", "matched": true, "confidence": "high", "dxPt": -0.22, "dyPt": 0.11}
+      ]
+    },
+    "referenceVsActual": {
+      "label": "referenceVsActual",
+      "method": "template_match",
+      "predictedFrom": "reference.png 内的元素位置（与 domVsReference 同一组框）",
+      "unit": "pt",
+      "elementCount": 4,
+      "trustworthyCount": 3,
+      "ambiguousCount": 1,
+      "unmatchedCount": 0,
+      "status": "needs-review",
+      "reason": "constant-offset",
+      "detail": "纵向 常数位移 +21.50pt（各元素最大 24.00pt，出自 #3 Choose Your Plan）；横向 各元素最大 3.10pt（出自 #22 Try For Free）",
+      "offsetFit": {"model": "dy = slope * y + intercept", "unit": "pt", "slope": -0.0043, "intercept": 21.5, "impliedScale": 0.9957, "r2": 0.088, "rmsResidual": 2.94, "n": 3, "seSlope": 0.0091, "t": -0.472},
+      "scaleSignal": {"elementSlope": -0.0043, "elementT": -0.472, "bandSlope": -0.0061, "bandSignal": false, "quality": false},
+      "extremes": {"maxAbsDx": 3.1, "maxAbsDy": 24.0, "positionTolerance": 2.0, "unit": "pt", "mostDx": {"index": 22, "label": "Try For Free", "dxPt": -3.1}, "mostDy": {"index": 3, "label": "Choose Your Plan", "dyPt": 24.0}},
+      "bands": [
+        {"band": "band_0", "yRange": [153.2, 400.0], "meanDy": 19.85, "meanDx": 0.4, "members": ["#3 Choose Your Plan", "#15 $59.99"]},
+        {"band": "band_1", "yRange": [816.0, 816.0], "meanDy": 21.0, "meanDx": -3.1, "members": ["#22 Try For Free"]}
+      ],
+      "elements": [
+        {"index": 3, "label": "Choose Your Plan", "matched": true, "confidence": "high", "dxPx": 1.2, "dyPx": 72, "dxPt": 0.4, "dyPt": 24.0, "matchScore": 0.4128, "overlap": 0.51, "peakRatio": 0.83},
+        {"index": 7, "label": "Alpha", "matched": true, "confidence": "low", "dxPx": -9, "dyPx": 18, "dxPt": -3.0, "dyPt": 6.0, "matchScore": 0.2903, "overlap": 0.22, "peakRatio": 0.58},
+        {"index": 15, "label": "$59.99", "matched": true, "confidence": "high", "dxPx": 3.6, "dyPx": 47.1, "dxPt": 1.2, "dyPt": 15.7, "matchScore": 0.3761, "overlap": 0.44, "peakRatio": 0.79},
+        {"index": 22, "label": "Try For Free", "matched": true, "confidence": "high", "dxPx": -9.3, "dyPx": 63, "dxPt": -3.1, "dyPt": 21.0, "matchScore": 0.4517, "overlap": 0.58, "peakRatio": 0.86}
+      ]
+    }
+  },
+  "status": "needs-review",
+  "verdict": "DOM 与基准图一致，说明基准图忠实反映了 DOM 的排版结果；但基准图与实测截图不一致（常数位移 +21.50pt），超容差 2.0pt。基准图可信 ⇒ 问题在 App 实现侧，按区域改代码。",
+  "exitCode": 1
+}

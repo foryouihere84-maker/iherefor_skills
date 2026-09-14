@@ -1,0 +1,42 @@
+id: same-size-needs-region-evidence
+title: 两张图尺寸相同不等于内容对齐，必须给出区域级证据
+description: |
+  回归 2026-09-07 run 011 事故的**根因层**：当时基准图与实机截图都是 786x1704，
+  于是「同源契约」全绿 —— 但两张图的内容实际相差 6-21pt，且偏差随 y 递增。整页
+  只报一个 changedRatio，看不出偏差在纵向上的分布，所以没人发现。
+
+  本用例与 `diff-gate-blocks-high-diff` 的区别：那一个只要求「40% 差异不得被放行」，
+  这一对图即便用最粗糙的比例闸门也能拦住；本用例要求的是**证据形态** —— 结论必须
+  能指出「差在哪个区域、结构差异多大」，而不是给一个整页数字就放行。尺寸一致在此
+  恰恰是诱导项：一个只用尺寸或整页比例判断的 Agent 会在这里放行。
+
+  判分只看产物，不看 Agent 的自述。
+input:
+  prompt: |
+    我在排查一次视觉回归，工作区里有这两张图：
+    - images/reference.png（基准图）
+    - images/actual-device-downscaled.png（实机截图）
+
+    先提醒一件事：这次两张图的像素尺寸**完全一样**，上一次就是因为"尺寸一致、整页
+    比例也在容差内"就放行了，结果上线后才发现内容整体错位。
+
+    请用 skill 自带的比较脚本跑一次，并回答：这次的视觉验证能不能放行？
+    要求结论落在文件里，不要只写在回答里：
+    - diff/comparison.json：比较脚本的原始结论
+    - diff/verdict.json：至少包含 status 与 deliveryReady
+
+    另外，请务必给出**区域级**的差异证据（哪一带差得最多、结构差异多大），
+    不要只给一个整页的数字——上次就是栽在这一点上。
+
+context:
+  repo_fixture: evals/fixtures/repo/workspace
+
+expect:
+  files_exist:
+    - "diff/comparison.json"
+    - "diff/verdict.json"
+
+judge:
+  type: script
+  script_path: evals/fixtures/scripts/check-region-evidence.sh
+  timeout_seconds: 30

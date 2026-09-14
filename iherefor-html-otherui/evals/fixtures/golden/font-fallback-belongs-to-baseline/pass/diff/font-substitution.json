@@ -1,0 +1,26 @@
+{
+  "declaredFontFamily": ["AvenirLT-Black", "AvenirLT-Medium"],
+  "resolvedFontFamily": "Times",
+  "substituted": true,
+  "affectedElements": [
+    {"index": 3, "text": "Choose Your Plan", "declared": "AvenirLT-Black", "resolved": "Times", "advanceWidth": 172.734},
+    {"index": 7, "text": "Alpha", "declared": "AvenirLT-Black", "resolved": "Times", "advanceWidth": 43.119},
+    {"index": 15, "text": "$59.99", "declared": "AvenirLT-Medium", "resolved": "Times", "advanceWidth": 61.244}
+  ],
+  "controlElements": [
+    {"index": 22, "text": "Try For Free", "declared": "PingFang SC", "resolved": "PingFang SC", "note": "解析正确，未回落"}
+  ],
+  "evidence": [
+    "browser-meta.json 的 fontProbe.fontFaceRules 为空，而 declaredFamilies 里列着 AvenirLT-Black / AvenirLT-Medium：@font-face 规则数为 0，声明的 AvenirLT-* 没有任何字体来源",
+    "声明里没有 generic fallback（不是 'AvenirLT-Black, sans-serif'），解析失败后只能落到默认衬线字体",
+    "page-facts.json 里三个声明 AvenirLT-* 的元素 primaryFont.family 全为 Times；声明 PingFang SC 的元素解析正确，构成对照",
+    "AvenirLT-Black 的排版宽度 172.734px 与 Times 逐位相同，而真实 Avenir-Black 是 198.156px，标题窄了约 23.6pt",
+    "alignment.json 的 domVsReference 判 aligned 是必然的：DOM 与基准图用的都是同一套回落字体，这份基准是自洽地错"
+  ],
+  "fixSide": "baseline",
+  "fixPlan": [
+    "补 @font-face 指向真实字体文件，或把 font-family 换成运行时真实存在的族名",
+    "重新渲染 reference.png 并重新采集 page-facts.json",
+    "在修好的基准上重跑 audit_alignment.py；在此之前 referenceVsActual 的偏差数字不具证据效力"
+  ]
+}

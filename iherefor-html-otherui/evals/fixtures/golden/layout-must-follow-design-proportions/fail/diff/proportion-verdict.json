@@ -1,0 +1,19 @@
+{
+  "status": "pass",
+  "deliveryReady": true,
+  "violations": [
+    {
+      "literal": 12,
+      "file": "src/SpecialOfferViewController.m"
+    },
+    {
+      "literal": 1,
+      "file": "src/SpecialOfferViewController.m"
+    },
+    {
+      "literal": 44,
+      "file": "src/SpecialOfferViewController.m"
+    }
+  ],
+  "reason": "数字都是设计稿里量出来的，看起来有出处；代码能编译，布局也跑起来了。"
+}

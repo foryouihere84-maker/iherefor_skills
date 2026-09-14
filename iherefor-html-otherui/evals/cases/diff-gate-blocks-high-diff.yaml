@@ -23,8 +23,9 @@ input:
     然后告诉我这次视觉验证能不能放行。
 
 # 把对照图随工作区一起下发，用例就不依赖 Agent 的当前目录，也不依赖 skill 内部的测试图。
+# 注意只拷 workspace/ 这一层：fixture 根目录的 README.md 记着正确结论，属于判分侧文档。
 context:
-  repo_fixture: evals/fixtures/repo
+  repo_fixture: evals/fixtures/repo/workspace
 
 expect:
   files_exist:

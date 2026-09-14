@@ -1,0 +1,15 @@
+{
+  "declaredFontFamily": "AvenirLT-Black",
+  "resolvedFontFamily": "AvenirLT-Black",
+  "substituted": false,
+  "affectedElements": [],
+  "evidence": [
+    "CSS 声明的 fontFamily 是 AvenirLT-Black",
+    "page-facts.json 里同名元素的 fontFamily 也是 AvenirLT-Black，两边一致",
+    "browser-meta.json 的 fontMeasurement.ok 为 true、fontJoin.ok 为 true，字体链正常"
+  ],
+  "fixSide": "app",
+  "fixPlan": [
+    "按 alignment.json 的区域明细改 App：标题 24.0pt、页脚 21.0pt、年卡价格 15.7pt、徽标 6.0pt"
+  ]
+}
