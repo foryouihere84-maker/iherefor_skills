@@ -19,7 +19,18 @@
 		A10000000000000000000008 /* plan_selection_yearly_card.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000008 /* plan_selection_yearly_card.png */; };
 		A10000000000000000000009 /* plan_selection_cta_background.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000009 /* plan_selection_cta_background.png */; };
 		A10000000000000000000010 /* plan_selection_title_crown.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* plan_selection_title_crown.png */; };
+		A10000000000000000000011 /* SpecialOfferViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000011 /* SpecialOfferViewController.m */; };
+		A10000000000000000000012 /* SpecialOfferPlanCardView.m in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000012 /* SpecialOfferPlanCardView.m */; };
+		A10000000000000000000013 /* SpecialOfferStyle.m in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000013 /* SpecialOfferStyle.m */; };
+		A10000000000000000000014 /* SpecialOfferPrimaryButton.m in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000014 /* SpecialOfferPrimaryButton.m */; };
+		A10000000000000000000020 /* special_offer_close_icon.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000020 /* special_offer_close_icon.png */; };
+		A10000000000000000000021 /* special_offer_hero_background.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000021 /* special_offer_hero_background.png */; };
+		A10000000000000000000022 /* special_offer_hero_special_offer_badge.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000022 /* special_offer_hero_special_offer_badge.png */; };
+		A10000000000000000000023 /* special_offer_weekly_card_background.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000023 /* special_offer_weekly_card_background.png */; };
+		A10000000000000000000024 /* special_offer_yearly_card_background.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000024 /* special_offer_yearly_card_background.png */; };
+		A10000000000000000000025 /* special_offer_cta_background.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000025 /* special_offer_cta_background.png */; };
 		8A83BE7E2FEE950F49C49A3A /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 2B5464731EF16C63BAF1DC85 /* AppDelegate.m */; };
+		A10000000000000000000031 /* SceneDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000031 /* SceneDelegate.m */; };
 		C62D0CD48281241F4153AD57 /* SmokeUITests.m in Sources */ = {isa = PBXBuildFile; fileRef = 768F7AFB6F8863F411335E65 /* SmokeUITests.m */; };
 		FC21854AC37D9C130611B0FB /* SmokeTests.m in Sources */ = {isa = PBXBuildFile; fileRef = B066E31C9E5A3197CEF1AF1B /* SmokeTests.m */; };
 /* End PBXBuildFile section */
@@ -46,6 +57,8 @@
 		143675FB19492F024F4E9940 /* ViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
 		2132EA1AD61096C94ABB5A47 /* testUIProjectTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = testUIProjectTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		2B5464731EF16C63BAF1DC85 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
+		A20000000000000000000030 /* SceneDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SceneDelegate.h; sourceTree = "<group>"; };
+		A20000000000000000000031 /* SceneDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SceneDelegate.m; sourceTree = "<group>"; };
 		3C833C60FD9ADB407AB2BE1C /* ViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
 		4A48C9BA949ECC98FD542A0A /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		6CB12E29925E4CFC2E082851 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -63,6 +76,16 @@
 		A20000000000000000000008 /* plan_selection_yearly_card.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = plan_selection_yearly_card.png; sourceTree = "<group>"; };
 		A20000000000000000000009 /* plan_selection_cta_background.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = plan_selection_cta_background.png; sourceTree = "<group>"; };
 		A20000000000000000000010 /* plan_selection_title_crown.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = plan_selection_title_crown.png; sourceTree = "<group>"; };
+		A20000000000000000000011 /* SpecialOfferViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SpecialOfferViewController.m; sourceTree = "<group>"; };
+		A20000000000000000000012 /* SpecialOfferPlanCardView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SpecialOfferPlanCardView.m; sourceTree = "<group>"; };
+		A20000000000000000000013 /* SpecialOfferStyle.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SpecialOfferStyle.m; sourceTree = "<group>"; };
+		A20000000000000000000014 /* SpecialOfferPrimaryButton.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SpecialOfferPrimaryButton.m; sourceTree = "<group>"; };
+		A20000000000000000000020 /* special_offer_close_icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = special_offer_close_icon.png; sourceTree = "<group>"; };
+		A20000000000000000000021 /* special_offer_hero_background.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = special_offer_hero_background.png; sourceTree = "<group>"; };
+		A20000000000000000000022 /* special_offer_hero_special_offer_badge.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = special_offer_hero_special_offer_badge.png; sourceTree = "<group>"; };
+		A20000000000000000000023 /* special_offer_weekly_card_background.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = special_offer_weekly_card_background.png; sourceTree = "<group>"; };
+		A20000000000000000000024 /* special_offer_yearly_card_background.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = special_offer_yearly_card_background.png; sourceTree = "<group>"; };
+		A20000000000000000000025 /* special_offer_cta_background.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = special_offer_cta_background.png; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -71,6 +94,8 @@
 			children = (
 				DC585F124DF414C930C66055 /* AppDelegate.h */,
 				2B5464731EF16C63BAF1DC85 /* AppDelegate.m */,
+				A20000000000000000000030 /* SceneDelegate.h */,
+				A20000000000000000000031 /* SceneDelegate.m */,
 				6CB12E29925E4CFC2E082851 /* Info.plist */,
 				4A48C9BA949ECC98FD542A0A /* main.m */,
 				143675FB19492F024F4E9940 /* ViewController.h */,
@@ -85,6 +110,16 @@
 				A20000000000000000000008 /* plan_selection_yearly_card.png */,
 				A20000000000000000000009 /* plan_selection_cta_background.png */,
 				A20000000000000000000010 /* plan_selection_title_crown.png */,
+				A20000000000000000000011 /* SpecialOfferViewController.m */,
+				A20000000000000000000012 /* SpecialOfferPlanCardView.m */,
+				A20000000000000000000013 /* SpecialOfferStyle.m */,
+				A20000000000000000000014 /* SpecialOfferPrimaryButton.m */,
+				A20000000000000000000020 /* special_offer_close_icon.png */,
+				A20000000000000000000021 /* special_offer_hero_background.png */,
+				A20000000000000000000022 /* special_offer_hero_special_offer_badge.png */,
+				A20000000000000000000023 /* special_offer_weekly_card_background.png */,
+				A20000000000000000000024 /* special_offer_yearly_card_background.png */,
+				A20000000000000000000025 /* special_offer_cta_background.png */,
 			);
 			path = testUIProject;
 			sourceTree = "<group>";
@@ -245,6 +280,12 @@
 				A10000000000000000000008 /* plan_selection_yearly_card.png in Resources */,
 				A10000000000000000000009 /* plan_selection_cta_background.png in Resources */,
 				A10000000000000000000010 /* plan_selection_title_crown.png in Resources */,
+				A10000000000000000000020 /* special_offer_close_icon.png in Resources */,
+				A10000000000000000000021 /* special_offer_hero_background.png in Resources */,
+				A10000000000000000000022 /* special_offer_hero_special_offer_badge.png in Resources */,
+				A10000000000000000000023 /* special_offer_weekly_card_background.png in Resources */,
+				A10000000000000000000024 /* special_offer_yearly_card_background.png in Resources */,
+				A10000000000000000000025 /* special_offer_cta_background.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -272,7 +313,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				8A83BE7E2FEE950F49C49A3A /* AppDelegate.m in Sources */,
+				A10000000000000000000031 /* SceneDelegate.m in Sources */,
 				A10000000000000000000001 /* SubscriptionPlanSelectionViewController.m in Sources */,
+				A10000000000000000000011 /* SpecialOfferViewController.m in Sources */,
+				A10000000000000000000012 /* SpecialOfferPlanCardView.m in Sources */,
+				A10000000000000000000013 /* SpecialOfferStyle.m in Sources */,
+				A10000000000000000000014 /* SpecialOfferPrimaryButton.m in Sources */,
 				5FEFB75904DA9EC33990765E /* ViewController.m in Sources */,
 				5C3506ED7FC0B267121AE287 /* main.m in Sources */,
 			);
