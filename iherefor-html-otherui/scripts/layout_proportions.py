@@ -439,7 +439,7 @@ def classify_size(lo: float, hi: float, parent_lo: float, parent_hi: float,
 
 
 def classify_position(lo: float, hi: float, parent_lo: float, parent_hi: float,
-                      shared_insets=()) -> dict:
+                      shared_insets=(), force_proportional: bool = False) -> dict:
     """位置轴归类：``pinned``（贴边）/ ``centered`` / ``proportional``。
 
     优先级就是实现侧该有的优先级：**贴边 + 固定间距 > 居中 > 比例**。
@@ -453,10 +453,19 @@ def classify_position(lo: float, hi: float, parent_lo: float, parent_hi: float,
     （**不含元素自己**，见 ``analyse`` 里的构建处）。它让「贴边」这个判定有第二个
     证据来源：孤立的大偏移不像内边距（更像布局位置），降级为比例并提示复核，
     而不是凭量级就替人拍板。
+
+    ``force_proportional`` 是**分层规则**：第一层子视图（直接父视图 = 页面/page）的
+    位置按父容器比例重排，随设备尺寸变化而自适应 —— 这是「设备尺寸 ≠ 设计稿尺寸」
+    场景下的适配核心。它**只作用于位置轴、且只作用于第一层**：更深层（第一层 → 第二层）
+    的相对关系必须固定，所以嵌套层不强制。尺寸轴照旧，不受此参数影响。
     """
     lead, trail = lo - parent_lo, parent_hi - hi
     span = parent_hi - parent_lo
     fallback = {"kind": "proportional", "ratio": round((lo - parent_lo) / span, 6) if span else 0.0}
+    if force_proportional:
+        return dict(fallback, forced="first-level",
+                    note="第一层子视图：位置按父容器（页面）比例重排，随设备尺寸自适应；"
+                         "水平与垂直都用比例，不用贴边/居中写死")
     for edge, value in (("leading", lead), ("trailing", trail)):
         if not (-EDGE_SNAP_TOL_PT <= value <= DESIGN_INSET_MAX_PT):
             continue
@@ -697,13 +706,23 @@ def analyse(page_facts: dict, transform, rect_space: str, target_mode: str,
                           and not element.get("ownText"))
 
         relations = []
-        # ---- 位置轴：贴边 > 居中 > 比例，基准是父视图 ----
+        # 第一层子视图：直接父视图就是页面外框（page）。这一层的位置按**页面比例**重排，
+        # 随设备尺寸自适应（水平 + 垂直都用比例）；更深层（第一层 → 第二层）的相对关系
+        # 必须固定，所以只有这一层强制比例。这是「设备尺寸 ≠ 设计稿尺寸」时的适配核心。
+        # 尺寸轴不受影响：组件尺寸恒等于设计稿，绝不缩放。
+        is_first_level = (
+            has_hierarchy
+            and parent_index == outer_frame_index
+            and element.get("index") != outer_frame_index
+        )
+        # ---- 位置轴：第一层按页面比例强制重排；其余层贴边 > 居中 > 比例，基准是父视图 ----
         for axis, key, lo, hi in (("x", "x", rect["x"], rect["x"] + rect["width"]),
                                   ("y", "y", rect["y"], rect["y"] + rect["height"])):
             parent_lo = origin[axis]
             parent_hi = origin[axis] + span["width" if axis == "x" else "height"]
             shared = shared_insets(element, axis)
-            placed = classify_position(lo, hi, parent_lo, parent_hi, shared)
+            placed = classify_position(lo, hi, parent_lo, parent_hi, shared,
+                                       force_proportional=is_first_level)
             relation = {"id": f"{region}.{key}", "axis": key, "of": of_name,
                         "ofIndex": parent_index if basis_kind == "parent" else None,
                         "kind": placed["kind"]}
@@ -715,7 +734,10 @@ def analyse(page_facts: dict, transform, rect_space: str, target_mode: str,
                 relation.update({"note": "与父视图居中对齐；用对齐锚点表达，不要各自算数值凑相等"})
             else:
                 relation.update({"ratio": placed["ratio"],
-                                 "note": "确属随父容器成比例变化的位置关系；基准是父视图，不是整页"})
+                                 "note": placed.get("note") or
+                                 "确属随父容器成比例变化的位置关系；基准是父视图，不是整页"})
+                if placed.get("forced") == "first-level":
+                    relation["forced"] = "first-level"
                 if "nearMissCenter" in placed:
                     review_hints.append({
                         "region": region, "index": element.get("index"),

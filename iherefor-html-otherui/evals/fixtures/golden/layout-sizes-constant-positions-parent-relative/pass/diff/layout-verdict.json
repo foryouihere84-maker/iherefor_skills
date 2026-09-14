@@ -5,8 +5,8 @@
     "relationCount": 20,
     "relationKindCounts": {
       "fixed": 2,
-      "pinned": 11,
-      "proportional": 5,
+      "pinned": 7,
+      "proportional": 9,
       "intrinsic": 2,
       "centered": 0
     },
@@ -51,7 +51,7 @@
       "shouldBe": "父视图高的比例 0.940141"
     }
   ],
-  "reason": "计划声明了 20 条关系（fixed 2 / pinned 11 / proportional 5 / intrinsic 2）。其中 5 条 proportional 的位置被源码写成了只在 402x874 上成立的绝对坐标（321 / 495 / 741 / 83 / 801），换台设备即失效 —— 位置必须相对直接父视图表达，不能照抄某一台设备上的量取值。",
+  "reason": "计划声明了 20 条关系（fixed 2 / pinned 7 / proportional 9 / intrinsic 2）。其中 5 条 >48pt 的 proportional 位置/尺寸被源码写成了只在 402x874 上成立的绝对坐标（321 / 495 / 741 / 83 / 801），换台设备即失效 —— 位置必须相对直接父视图（第一层相对页面）按比例表达，不能照抄某一台设备上的量取值。另有 offers.x=23、cta.x=25 是第一层子视图的水平位置，按新契约也该按页面宽度比例写，但 ≤48pt 无法与设计常量自动区分，落 ambiguous 待人工判断。",
   "notViolations": {
     "designConstants": [
       12,
@@ -74,12 +74,12 @@
       {
         "literal": 23,
         "relation": "offers.x",
-        "why": "pinned 的固定内边距：贴父边 + 间距，本来就该写成约束常量"
+        "why": "第一层子视图的水平位置，forced-proportional（应按页面宽度比例写），写死也是错 —— 但因 ≤48pt 无法与设计常量自动区分，落 ambiguousLiterals 待人工判断，不是硬性违规"
       },
       {
         "literal": 25,
         "relation": "cta.x",
-        "why": "pinned 的固定内边距：贴父边 + 间距，写成比例反而会在 430pt 宽的设备上给出 13.7pt 边距"
+        "why": "第一层子视图的水平位置，同 23：≤48pt 落待判，不判硬违规"
       }
     ],
     "why": "这三类都是两轴口径下**应当照字面量写进代码**的值：设计常量不缩放，fixed 尺寸是设计稿给的常量，pinned 内边距是约束常量。把它们算成违规，等于要求实现者不要按设计稿做。"

@@ -362,9 +362,9 @@ def main():
 
         # 用例 4：贴父边是**约束闭合**，不是比例。左右各 16pt 必须各自成边；
         # 左右不等（23/32）也要能表达 —— 那正是比例化最容易出错的形态。
+        # 注意 Card.x 是**第一层子视图**（直接父 = Screen/page），位置按页面比例重排
+        # （见用例 4b），所以这里只验仍属**第二层**的 Field/NoteA 保持 pinned 闭合。
         card = relations_of(plan, "Card")
-        check(card["Card.x"]["kind"] == "pinned" and card["Card.x"].get("inset") == 16.0,
-              f"用例4：Card.x 应为 pinned(16)，得到 {card['Card.x']}")
         check(card["Card.width"]["kind"] == "pinned"
               and card["Card.width"].get("insets") == {"leading": 16.0, "trailing": 16.0},
               f"用例4：Card.width 应为两侧各 16pt 的 pinned，得到 {card['Card.width']}")
@@ -377,6 +377,29 @@ def main():
         check(all("ratio" not in rel for region in props["regions"]
                   for rel in region["relations"] if rel["kind"] == "pinned"),
               "用例4：pinned 关系不得带比例系数 —— 贴父边的正确写法是约束闭合")
+
+        # 用例 4b：第一层子视图（直接父视图 = 页面/page）的位置按父容器比例重排，
+        # 随设备尺寸自适应；尺寸轴仍是 fixed（组件尺寸恒等于设计稿，绝不缩放）。
+        # 这是「设备尺寸 ≠ 设计稿尺寸」时自适应适配的核心分层规则。
+        first_level = ["NavBar", "Card", "Avatar", "Button", "Slot", "Rail"]
+        for name in first_level:
+            rel = relations_of(plan, name)
+            x_rel = rel[f"{name}.x"]
+            y_rel = rel[f"{name}.y"]
+            check(x_rel["kind"] == "proportional" and x_rel.get("forced") == "first-level",
+                  f"用例4b：{name}.x 是第一层，位置应强制 proportional，得到 {x_rel}")
+            check(y_rel["kind"] == "proportional" and y_rel.get("forced") == "first-level",
+                  f"用例4b：{name}.y 是第一层，位置应强制 proportional，得到 {y_rel}")
+        # 第一层组件尺寸仍是 fixed（不缩放）：以 NavBar 高 64、Button 高 44 为例。
+        check(relations_of(plan, "NavBar")["NavBar.height"]["kind"] == "fixed"
+              and relations_of(plan, "NavBar")["NavBar.height"].get("value") == 64,
+              "用例4b：第一层组件尺寸仍是 fixed，绝不缩放")
+        # 第二层（Card 的子元素 Icon/Label）位置**不**被强制比例 —— 相对关系固定。
+        icon_rel = relations_of(plan, "Icon")
+        check(icon_rel["Icon.x"]["of"] == "Card"
+              and "forced" not in icon_rel["Icon.x"],
+              f"用例4b：第二层的相对关系必须固定，Icon.x 不应被强制比例，得到 "
+              f"{icon_rel['Icon.x']}")
 
         # 用例 5：纵向不照搬横向。24pt 图标装在 68pt 卡片里「上 16 下 28」，
         # 那个 28 是 68−16−24 的副产品；高度该判 fixed(24) 而不是 pinned。
@@ -757,7 +780,7 @@ def main():
                                     {"id": "bad.why", "kind": "intrinsic", "axis": "width",
                                      "of": "Card"})),
             ("pinned-with-ratio", "用例24c：贴边关系带比例系数必须被指出",
-             lambda p: find_relation(p, "Card.x").update({"ratio": 0.5})),
+             lambda p: find_relation(p, "Field.x").update({"ratio": 0.5})),
             ("fixed-missing-value", "用例24d：fixed 缺 value 必须被指出",
              lambda p: find_relation(p, "Icon.width").pop("value")),
             ("fixed-with-ratio", "用例24e：fixed 带比例系数必须被指出",
