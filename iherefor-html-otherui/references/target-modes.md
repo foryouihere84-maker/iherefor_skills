@@ -1,19 +1,20 @@
 # 输出模式边界
 
-| 模式 | 语言 | UI 技术 | 首选布局策略 |
-|---|---|---|---|
-| `ios-swiftui` | Swift | SwiftUI | 声明式容器；重叠区域使用 ZStack/overlay |
-| `ios-uikit-swift` | Swift | UIKit | Auto Layout + 必要的画布 frame |
-| `ios-uikit-objective-c` | Objective-C | UIKit | Auto Layout + 必要的画布 frame |
-| `android-compose-kotlin` | Kotlin | Jetpack Compose | Box/Row/Column；复杂叠层使用 Box |
-| `android-views-kotlin` | Kotlin | Android Views/XML | ConstraintLayout/FrameLayout；必要时自定义 View |
-| `android-views-java` | Java | Android Views/XML | ConstraintLayout/FrameLayout；必要时自定义 View |
+| 模式 | 语言 | UI 技术 | 首选布局策略 | 比例的表达方式 |
+|---|---|---|---|---|
+| `ios-swiftui` | Swift | SwiftUI | 声明式容器；重叠区域使用 ZStack/overlay | `GeometryReader` 归一化、`.containerRelativeFrame` |
+| `ios-uikit-swift` | Swift | UIKit | Auto Layout + 必要的画布 frame | `NSLayoutConstraint` 的 `multiplier`、`UILayoutGuide` |
+| `ios-uikit-objective-c` | Objective-C | UIKit | Auto Layout + 必要的画布 frame | 同上 |
+| `android-compose-kotlin` | Kotlin | Jetpack Compose | Box/Row/Column；复杂叠层使用 Box | `BoxWithConstraints` 的 `maxWidth/maxHeight` 派生比例、`weight` |
+| `android-views-kotlin` | Kotlin | Android Views/XML | ConstraintLayout/FrameLayout；必要时自定义 View | `layout_constraintGuide_percent`、`bias`、`layout_weight` |
+| `android-views-java` | Java | Android Views/XML | ConstraintLayout/FrameLayout；必要时自定义 View | 同上 |
 
 SwiftUI、UIKit Swift 和 UIKit Objective-C 是三个独立输出目标；不能因为它们都在 iOS 上就共享未经验证的生成源码。Android 同理，Compose 与传统 Views/XML 必须分别验证。
 
 所有模式都必须：
 
 - 保留页面真实叠层关系；
+- **组件之间的布局关系用比例表达，不得写固定 pt 值**（见 [artifact-contract.md](artifact-contract.md#组件间布局关系必须用比例表达强制)）：位置、间距、容器与图片 frame 的尺寸必须比例化；字号、圆角、描边宽度、最小点击区保持设计值不缩放。禁止用比例缩放字号与最小点击区——那会让 44pt 的点击区在小屏上缩成 40pt；
 - 将资源映射为工程内稳定引用；
 - 对字体替代、渐变、阴影、SVG、滤镜、动画和 JS 行为记录支持状态；
 - 提供关键区域的 accessibility identifier；

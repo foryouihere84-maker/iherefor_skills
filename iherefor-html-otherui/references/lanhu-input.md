@@ -4,18 +4,52 @@
 
 ## MCP 未安装或未注册时
 
-这是阻塞状态，不得继续生成 UI。先运行 `scripts/check_lanhu_mcp.py`（只读，不打印凭据）。若 `lanhu-mcp-server/dist/index.js` 不存在，在 skill 目录下执行 `npm ci && npm run build`；若 Codex 未注册 `lanhu-mcp`，按下式注册（`<skill-root>` 指本 skill 所在目录，必须指向**本 skill 内**的 checkout）：
+这是阻塞状态，不得继续生成 UI。先运行 `scripts/check_lanhu_mcp.py`（只读，不打印凭据）。若 `lanhu-mcp-server/dist/index.js` 不存在，在 skill 目录下执行 `npm ci && npm run build`。
 
-```bash
-codex mcp add lanhu-mcp \
-  --env LANHU_COOKIE='<从当前 Lanhu 浏览器会话复制>' \
-  --env LANHU_AUTHORIZATION='<从当前 Lanhu 浏览器会话复制>' \
-  -- "$(command -v node)" "<skill-root>/lanhu-mcp-server/dist/index.js"
+### 注册（与客户端无关）
+
+本 skill 不绑定任何 coding agent。注册动作只有一种通用形态：**在你所用客户端的 MCP 配置里加一条 stdio server**，`command` 用 node 的绝对路径，`args` 指向 `<skill-root>/lanhu-mcp-server/dist/index.js`：
+
+```json
+{
+  "mcpServers": {
+    "lanhu-mcp": {
+      "type": "stdio",
+      "command": "<node 绝对路径>",
+      "args": ["<skill-root>/lanhu-mcp-server/dist/index.js"],
+      "env": {}
+    }
+  }
+}
 ```
 
-注册后必须再跑一次 `scripts/check_lanhu_mcp.py`，确认 `entrypointMatches` 为 `true`：skill 目录迁移过、或指向其他 checkout 时，旧注册会让 codex 启动即 `MODULE_NOT_FOUND`，而「已注册 + 本地已构建」两个条件仍然成立，容易被误判为就绪。检查脚本会直接给出修正命令。
+要点：
 
-先用 `command -v node` 确认 Node >=18。注册后需要重启 Codex 或新建会话。若缺少凭据，提示用户在同一浏览器会话重新配置，绝不猜测、抓取或记录凭据。检查通过并完成 MCP initialize/tools-list 或 `lanhu_list_projects` 验证后，才进入固定调用链；失败时页面保持 `source-incomplete` 或 `environment-blocked`。
+- `command` 必须写**绝对路径**。不要写裸 `node`：登录 shell 里的 `node` 可能版本过旧。
+- `env` 可以留空。凭据由 server 自行读取 `<skill-root>/lanhu-mcp-server/.env`；若该文件缺失，server 会转入交互式引导等待输入，表现为「启动挂起」。也可改用环境变量 `LANHU_COOKIE` / `LANHU_AUTHORIZATION` 注入。
+- 除了手改配置，也可以使用客户端自带的「新增 MCP server」命令注册同一组 command/args（不同客户端命令不同，按各自文档操作）。
+- 需要写到非默认位置时，用环境变量 `LANHU_MCP_CONFIG_PATH` 指向目标配置文件。
+
+### 检查脚本如何找到注册
+
+`check_lanhu_mcp.py` 的判定逻辑不知道任何客户端名字，只认识三种通用形态：JSON 的 `mcpServers`、TOML 的 `[mcp_servers.*]`、以及能打印注册信息的命令。「去哪里找」由数据表 `scripts/mcp-registries.json` 描述；换客户端时只改那张表，或用参数显式指定：
+
+```bash
+# 显式指定一个 MCP 配置文件（可重复）
+python3 scripts/check_lanhu_mcp.py --mcp-config ~/.your-client/mcp.json
+# 显式指定一条注册查询命令
+python3 scripts/check_lanhu_mcp.py --registry-cmd 'your-client mcp get lanhu-mcp'
+# 整体替换数据表
+python3 scripts/check_lanhu_mcp.py --registries /path/to/my-registries.json
+```
+
+数据表缺失或损坏不影响显式参数；表里没有的客户端也不必改代码。
+
+### 判定标准
+
+注册后必须再跑一次 `scripts/check_lanhu_mcp.py`，确认 `status` 为 `ready` 且 `readyRegistries` 非空。**关键判定**：找到的入口必须与本地 `dist/index.js` 指向同一文件（`entrypointMatches`）。skill 目录迁移过、或注册仍指向其他 checkout 时，运行时启动即 `MODULE_NOT_FOUND`，而「已注册 + 本地已构建」两个条件依然成立，容易被误判为就绪——脚本会把每个来源的命中情况逐条列出，并在阻塞时给出 `suggestedRegistrations`。
+
+先用 `command -v node` 确认 Node >= 18。注册后通常需要在该客户端里信任/启用该 server，并重启会话才会生效。若缺少凭据，提示用户在同一浏览器会话重新配置，绝不猜测、抓取或记录凭据。检查通过并完成 MCP initialize/tools-list 或 `lanhu_list_projects` 验证后，才进入固定调用链；失败时页面保持 `source-incomplete` 或 `environment-blocked`。
 
 ## 固定调用链
 

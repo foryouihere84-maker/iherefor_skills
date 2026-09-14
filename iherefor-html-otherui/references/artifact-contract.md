@@ -47,13 +47,115 @@ pages/<page-id>/
 │   └── integration-plan.json     # 仅既有项目接入时需要
 └── reference/                   # 当前**已批准**的视觉基准（冻结）
     ├── reference.png            # HTML 基准截图
-    ├── page-facts.json          # 页面事实表（bounding box / computed style / 资源）
-    ├── browser-meta.json        # 浏览器版本、viewport、字体、注入记录、加载错误
+    ├── page-facts.json          # 页面事实表（rect / rectInReference / textMetrics / 资源）
+    ├── browser-meta.json        # 浏览器版本、viewport、运行时字体、注入记录、加载错误
     └── approved.json            # 批准记录：sha256、批准时间、批准人
 ```
 
 事实表与浏览器元数据属于**基准**，因此放在页面级而不是 run 级：重新渲染不会自动替换
 已批准基准，只有显式批准才写入 `approved.json`。
+
+### `page-facts.json`（schemaVersion 2）
+
+v1 只存了 CSS px 的 `rect` 与 CSS **声明**的 `fontFamily`，于是任何像素级比对都得自己
+把 CSS px 换算到基准图像素 —— 每写一次就多一次错的机会。v2 把「元素在基准图里应该出现
+在哪」直接算好：
+
+```json
+{
+  "schemaVersion": 2,
+  "title": "Special Offer",
+  "url": "file:///…/index.html",
+  "viewport": {"width": 393, "height": 852, "devicePixelRatio": 2, "scroll": {"x": 0, "y": 0}},
+  "documentSize": {"width": 393, "height": 852},
+  "coordinateSpace": "css-px-viewport-relative",
+  "referenceImage": {"path": "reference.png", "width": 786, "height": 1704,
+                     "alphaBounds": {"x": 0, "y": 0, "width": 786, "height": 1704}},
+  "elements": [
+    {
+      "index": 12,
+      "tag": "div",
+      "id": "plan-yearly",
+      "className": "plan-card plan-card--yearly",
+      "role": null,
+      "ariaLabel": null,
+      "src": null,
+      "text": "Yearly $59.99 Save 40%",
+      "ownText": "Yearly",
+      "ownsText": true,
+      "textMark": "12",
+      "rect": {"x": 20, "y": 310, "width": 353, "height": 190},
+      "rectInReference": {"x": 40, "y": 620, "width": 706, "height": 380},
+      "style": {"fontFamily": "\"PingFang SC\", sans-serif", "fontSize": "16px",
+                "lineHeight": "24px", "color": "rgb(17, 17, 17)"},
+      "fontFamily": "\"PingFang SC\", sans-serif",
+      "fontsResolved": [{"family": "PingFang SC", "glyphCount": 214, "isCustomFont": false}],
+      "primaryFont": {"family": "PingFang SC", "glyphCount": 214, "isCustomFont": false},
+      "textMetrics": {
+        "charCount": 6,
+        "fontSize": 16,
+        "lineHeight": 24,
+        "advanceWidth": 147.5,
+        "ownOnlyText": true,
+        "hasDescendantTextElement": false,
+        "rects": [{"x": 40, "y": 620, "width": 147.5, "height": 24}]
+      }
+    }
+  ],
+  "images": [
+    {
+      "src": "assets/hero.png",
+      "rectInReference": {"x": 0, "y": 0, "width": 786, "height": 600},
+      "naturalWidth": 500,
+      "naturalHeight": 382,
+      "alphaBounds": {"x": 0, "y": 0, "width": 500, "height": 382}
+    }
+  ],
+  "textMetricsNote": "advanceWidth 是排版宽度（CSS px），字体被替换时必然变化；用它判断 fallback，不要用 CSS 声明的 fontFamily"
+}
+```
+
+**字段以实际渲染产物为准。** 上面的清单由 `scripts/tests/test_page_facts_schema.py` 与实际渲染结果
+逐字段核对：契约里承诺的字段，渲染器必须真的产出。
+
+| 字段 | 用途 |
+|---|---|
+| `id` / `className` / `tag` | 元素的 DOM 身份。这是事实表能提供的定位信息；**没有 `selector`**，要定位就自己按 `id`/`className` 组选择器 |
+| `text` | `innerText` 聚合结果（含后代）。**不要拿它判断「这是不是文本元素」**，用 `ownText`/`ownsText` |
+| `role` / `ariaLabel` | 可访问性事实，用于映射原生 accessibility identifier |
+| `src` | 图片元素的资源地址（无则为 `null`） |
+| `ownText` | 元素**自身直接子文本节点**拼成的文本。判断「这个元素是不是一个文本元素」只用它，不要用 `innerText` |
+| `ownsText` | `ownText` 非空的布尔快照。审计脚本用它挑文本元素，避免把「只是包含文本的容器」混进来 |
+| `textMark` | 该元素在标记阶段拿到的 `data-iherefor-text` 值。与 `index` 一致才说明字体是按同一套下标注入的（见下方 `fontJoin`） |
+| `rectInReference` | 「DOM 说元素该在基准图的哪个像素位置」的唯一事实来源。比对 DOM 与基准图时用它，不要自己乘 dpr |
+| `textMetrics.rects` | 实测排版结果（多行文本有多段）。有它时优先作为文本内容的预测位置，而不是 `rectInReference`（文本框比实际字迹大） |
+| `textMetrics.ownOnlyText` | `rects` 只来自直接子文本节点（不含后代元素里的文字）。`false` 或缺失说明这是旧版事实表，`rects` 可能是跨后代的并集框 |
+| `textMetrics.hasDescendantTextElement` | 该文本元素内部还嵌着别的文本元素。为 `true` 时 `rects` 与 `glyphCount` 的语义都变宽，做断言前必须看这一位 |
+| `textMetrics.advanceWidth` | 排版宽度。字体被 fallback 替换时必然变化，是判断「字体没生效」的可靠信号 |
+| `fontsResolved` / `primaryFont` | 运行时**实际用上**的字体（来自 CDP `CSS.getPlatformFontsForNode`，附 `glyphCount`）。CSS 声明的 `fontFamily` 只是请求，不是结果 |
+| `alphaBounds` | 图片非透明内容 bounds。「frame 已缩放」不等于「图片已缩放」—— 透明留白会让两者不一致 |
+
+**文本元素的定义必须只有一个**：`innerText` 会把所有后代文字聚合上来，于是每一个容器都成了
+「幻影文本元素」。事故 run 里 34 个元素有 `innerText`、只有 18 个有直接文本 —— 用前者当文本
+元素清单，字体测量和位置预测都会指到错误的框上。**一旦事实表里的文本元素含容器，那份事实表
+就不适合再做元素级审计，只能重新渲染取一份新的。**
+
+**不要用 `document.fonts.check()` 判断 fallback**：它对未安装的字体族同样返回 `true`。
+
+`browser-meta.json`（schemaVersion 2）相关字段：
+
+| 字段 | 内容 |
+|---|---|
+| `fontMeasurement` | `method: "cdp:CSS.getPlatformFontsForNode"` 与是否成功；`glyphCountScope: "subtree-of-node"`（见下） |
+| `fontMeasurementCoverage` | `{textElements, measured}` —— 有多少文本元素真的量到了 |
+| `fontJoin` | 标记阶段与采集阶段是否同一套下标：`markedElements` / `joinedElements` / `unjoinedIndexes` / `textElements` / `textMarkMatches` / `textMarkMismatchCount` / `indexSpaceSkew` / `ok`。`ok: false` 时**整份字体数据作废**，它意味着字体被挂到了别的元素上 |
+| `fontProbe` | `document.fonts` 的 `FontFace` 列表与 `probeNote`（记录 `check()` 不可用这件事） |
+| `images[].alphaBounds` | 每张图片的非透明内容 bounds |
+| `referenceImage` | `reference.png` 自己的 alpha bounds |
+
+**`glyphCount` 是子树的字形数，不是该元素自身文字的字符数**。对叶子文本元素
+`glyphCount == charCount` 成立；对内部还嵌着文本的元素，它是整棵子树的合计。断言前先看
+`hasDescendantTextElement`，否则会误判成「量错了」。
 
 ## 运行级（每次 run 必需）
 
@@ -67,7 +169,7 @@ pages/<page-id>/
 | `runtime-device.json` | 所有目标模式 | 运行时尺寸 API 返回值与截图像素尺寸 |
 | `ios-environment.json` | iOS 目标模式 | 工程入口、scheme、destination 探测结果 |
 | `actual/` | always | 目标 App 截图、构建/测试日志 |
-| `diff/` | always | 整页与区域差异摘要（含阈值与输入尺寸） |
+| `diff/` | always | 结构/纹理/填充三分与区域差异摘要；元素级对齐审计 `alignment.json`；基准字体链 `font-chain.json` |
 
 ### `run.json`
 
@@ -129,12 +231,249 @@ pages/<page-id>/
 
 每个状态取值：`pass` | `pass-with-review` | `fail` | `not-run`。
 
+`visualDiff` 的取值受 `diff/` 的证据约束，不能只看整页比例：
+
+- `diff/alignment.json` 判 `needs-review` 时，`visualDiff` **不得**为 `pass`。尺寸相同、整页
+  比例达标都推翻不了元素级位移超容差。
+- `diff/` 里任何放行类结论（`pass` / `pass-with-review`）必须自带 `structuralRatio` 与非空
+  `regions`；只有 `changedRatio` 的结论不足以放行。
+
+`reference` 的取值还要受基准字体链约束：
+
+- `diff/font-chain.json` 的 `substituted` 为 `true` 时，`reference` **不得**为 `pass`。基准图
+  的排版结果本身就是用错字体排出来的，它「自洽地错」—— DOM 事实表与基准图互相印证，
+  对齐审计只能把不一致归给 App 侧。先修基准的字体栈并重渲染，再谈 App 侧。
+
 `deliveryReady` 为 `true` 的**充要条件**（校验脚本按此判定，不接受手写覆盖）：
 
 1. 上述 7 项全部为 `pass`；
-2. `unsupported.count == unsupported.reviewedCount`（不存在未审查的降级项）。
+2. `unsupported.count == unsupported.reviewedCount`（不存在未审查的降级项）；
+3. `unsupported` 的两个计数必须是**可读的整数**。
 
-任一条件不满足时 `deliveryReady` 必须为 `false`，并在 `blockingReasons` 中列出原因。
+第 3 条的意思是「推不出来就别推」：`unsupported` 对象缺失、或 `count` / `reviewedCount`
+不是整数（例如写成字符串 `"2"`）时，`delivery-gate.json` 本身已经不合规，校验脚本会**跳过**
+`deliveryReady` 的一致性核对并留下告警，由你去补齐结构，它不会替你补一个取值。特别地，
+**不会**把它推导成 `true` —— 缺字段时按「复核完毕」算（`None == None`），等于让「没做人工
+复核」成为放行理由，这是必须堵死的一条。
+
+前两条不满足时 `deliveryReady` 必须为 `false`，并在 `blockingReasons` 中列出原因；
+第 3 条不满足时先补齐结构，再谈 `deliveryReady`。
+
+### `ui-implementation-plan.json` 的 `canvasTransform`
+
+```json
+{
+  "canvasSize": {"width": 393, "height": 852},
+  "deviceSize": {"width": 402, "height": 874},
+  "screenshotScale": 3,
+  "screenshotPixels": {"width": 1206, "height": 2622},
+  "policy": "fit",
+  "reason": null,
+  "uniformScale": true,
+  "ratioX": 1.02290076,
+  "ratioY": 1.0258216,
+  "scaleX": 1.02290076,
+  "scaleY": 1.02290076,
+  "origin": {"x": 0.0, "y": 1.2443},
+  "letterbox": {"x": 0.0, "y": 0.0},
+  "contentBox": {"x": 0.0, "y": 1.244, "width": 402.0, "height": 871.511},
+  "padding": {"left": 0.0, "top": 1.2443, "right": 0.0, "bottom": 1.2443, "max": 1.2443},
+  "coordinateMapper": {
+    "forward": {
+      "x": "(lanhuX - letterbox.x) * scaleX + origin.x",
+      "y": "(lanhuY - letterbox.y) * scaleY + origin.y",
+      "width": "lanhuWidth * scaleX",
+      "height": "lanhuHeight * scaleY"
+    },
+    "inverse": {
+      "x": "(deviceX - origin.x) / scaleX + letterbox.x",
+      "y": "(deviceY - origin.y) / scaleY + letterbox.y",
+      "width": "deviceWidth / scaleX",
+      "height": "deviceHeight / scaleY"
+    }
+  }
+}
+```
+
+**`policy` 必填，默认 `fit`。** 393×852 → 402×874 时 `fit = 1.02290`（`scaleX == scaleY`）、
+`fill = 1.02582`（`scaleX = 1.02290`、`scaleY = 1.02582`）。两者差 0.28%，在 852pt 高的画布上
+等于 **2.4pt 累计错位**，已超过 2pt 的位置容差。因此：
+
+- 缺省一律 `fit`（等比缩放并居中，余量均分为 letterbox）；
+- 需要 `fill` 或 `custom` 时必须同时写 `reason`，不得默默拉伸；
+- 不得为了让某个区域的位置对上而改 `policy` —— 那是拿整体比例去掩盖局部实现错误。
+
+**`coordinateMapper` 必须同时含 `forward` 与 `inverse`。** 只定义正向时，任何从截图反推
+Lanhu 坐标的分析代码都得自己反解，而手写反解正是「多乘一层 scaleY」的来源。实际换算一律
+走 `scripts/canvas_map.py`，它由 `canvasTransform` 或 `runtime-device.json + 画布尺寸` 构造，
+并保证 `inverse(forward(box)) == box`（见其 `--self-test`）。
+
+### 组件间布局关系必须用比例表达（强制）
+
+**设计稿里组件之间的布局关系，实现时必须表达为比例，不得写成固定 pt 值。**
+
+Lanhu 画布只有一个尺寸。把 `lanhuY = 132` 换算成 `132 * 1.0229 = 135.02pt` 再写进约束，
+等于把这个关系钉死在探针设备上。换一台设备，`135.02` 就是错的 —— 而它「有出处、算过」，
+比一眼可疑的魔数更难被发现。
+
+#### 哪些关系比例化，哪些不
+
+判据只有一个：**这个量的正确性是否依赖于容器尺寸？**
+
+| 类别 | 处理 | 例 |
+|---|---|---|
+| 组件在主轴/次轴上的位置 | **比例** | 标题顶端位于容器高度的 15.5% |
+| 组件之间的间距 | **比例** | 卡片间距 = 容器高度的 2.3% |
+| 容器、装饰性区域、图片 frame 的尺寸 | **比例** | hero 背景宽度 = 容器宽度的 100% |
+| 文本驱动的固有尺寸 | 按内容撑开 | 标签高度由字号与行高决定 |
+| 字号、圆角、描边宽度、最小点击区 | **设计值，不缩放** | 圆角 12pt、点击区 ≥ 44pt |
+
+**禁止用比例去缩放字号和最小点击区。** 那会让 44pt 的点击区在小屏上缩成 40pt，
+既违反平台规范，也让可访问性测试失败。
+
+#### 平台惯用法
+
+| 模式 | 比例的表达方式 |
+|---|---|
+| UIKit（Swift / Objective-C） | `NSLayoutConstraint` 的 `multiplier`、`UILayoutGuide` 占位 |
+| SwiftUI | `GeometryReader` + 归一化计算、`.containerRelativeFrame` |
+| Compose | `BoxWithConstraints` 的 `maxWidth` / `maxHeight` 派生比例、`weight` |
+| Views / XML | `layout_constraintGuide_percent`、`layout_constraintHorizontal_bias`、`layout_constraintDimensionRatio`、LinearLayout 的 `layout_weight` |
+
+#### 比例模型与 `fit` 策略的关系
+
+`fit` 映射（`deviceY = lanhuY * scaleY + origin.y`）与比例映射
+（`deviceY = (lanhuY / canvasH) * deviceH`）是两条直线，在纵横比不同的设备上并不等价：
+它们在画布中段相交，向两端分岔，**最大偏差恰好等于 letterbox 的厚度**，也就是
+`canvasTransform.padding.max`。于是判据是现成的：
+
+- `padding.max <= 位置容差（2pt）` ⇒ 两种模型在容差内等价，`fit` 的预测框可以直接与
+  比例实现比对，不需要额外处理；
+- `padding.max > 位置容差` ⇒ 二者不可互换。此时实现必须用比例模型，**并且对齐审计也必须
+  改用比例模型预测**，否则就是拿 `fit` 的预测框去量一个按比例布局的界面，把模型差报成实现错误。
+
+393×852 → 402×874 时 `padding.max = 1.2443pt`，仍在容差内 —— 但这是**算出来的**结论，
+不是可以假设的前提。`scripts/canvas_map.py` 的 `axis_deviation()` 给出这个值。
+
+#### `ui-implementation-plan.json` 的 `layoutProportions`
+
+由 `scripts/layout_proportions.py` 从 `page-facts.json` 生成。**字段以实际产物为准**，下面是
+真实结构（数值取自 402×874 探针设备上的 plan-selection 页面）：
+
+```json
+{
+  "model": "proportional",
+  "basis": "viewport",
+  "axisPolicy": "per-axis",
+  "basisSize": {"width": 402, "height": 874},
+  "regions": [
+    {
+      "region": "text-wrapper_19",
+      "index": 35,
+      "kindSource": "proposed",
+      "ratios": {"xRatio": 0.206468, "yRatio": 0.916476,
+                 "centerXRatio": 0.495025, "centerYRatio": 0.925629,
+                 "widthRatio": 0.577114, "heightRatio": 0.018307},
+      "relations": [
+        {"id": "text-wrapper_19.x", "kind": "proportional", "axis": "x",
+         "ratio": 0.495025, "of": "root",
+         "note": "用中心比例而非左边缘比例：居中元素在容器宽度变化时中心不动"},
+        {"id": "text-wrapper_19.y", "kind": "proportional", "axis": "y",
+         "ratio": 0.925629, "of": "root", "note": "同上"},
+        {"id": "text-wrapper_19.width", "kind": "proportional", "axis": "width",
+         "ratio": 0.577114, "of": "root"},
+        {"id": "text-wrapper_19.height", "kind": "intrinsic",
+         "why": "盒子高度 16pt 且子树含文本，判为文字块：高度来自字体"}
+      ],
+      "nativeIdiom": ["[text-wrapper_19] centerXAnchor.constraint(equalTo: self.view.widthAnchor, multiplier: 0.495025)   // text-wrapper_19.x"]
+    }
+  ],
+  "forbiddenLiterals": [
+    {"relation": "text-wrapper_19.centerX", "deviceDerivedPt": 199.0,
+     "why": "探针设备视口 402x874 上的绝对值，换台设备即失效，不得写成字面量。用中心锚点时写这个绝对值是错的",
+     "ratioInstead": 0.495025},
+    {"relation": "text-wrapper_19.leading", "deviceDerivedPt": 83.0,
+     "why": "…用 leading/左边缘锚点时写这个绝对值是错的", "ratioInstead": 0.206468}
+  ],
+  "designConstants": [8, 12, 16, 24, 44]
+}
+```
+
+四条规则，每一条都对应一次踩坑：
+
+1. **`relations[].kind` 必填。** `proportional` 的关系必须用比例表达；`intrinsic` 的必须给出
+   `why`。`intrinsic` 不带 `axis` —— 它不是「某个轴上的位置」，而是「这个量由内容决定」。
+2. **`ratios` 同时给边缘与中心两套。** 实现侧两种锚点都会用到（`leading`/`top` 与
+   `centerX`/`centerY`），只给中心比例会让「按左边缘对齐」这个最常见的写法没有可用的比例。
+3. **`forbiddenLiterals` 必须同量纲配对。** 绝对值与 `ratioInstead` 必须指同一个量：中心比例
+   配中心点绝对值，边缘比例配左/上边缘绝对值。曾经把左边缘的绝对值（多为 0）配给了中心比例，
+   写成「0pt → 0.4888」—— 开发者照做会把元素放错半个身位，**这条「指导」本身就是错的**。
+   `|pt| < 1` 的条目不入清单：`0` 在任何设备上都成立，列进去只会让每个 `0` 都报一次警。
+4. **`designConstants` 是可复核的豁免**，只能放数字（标准边距、圆角）。它不是「随手写个数字
+   就放行」：豁免值会原样写进校验结果，审阅者看得到。
+
+`rect` 的坐标空间由「`rectInReference == rect * devicePixelRatio`」**自动判定**，判不出来就
+退出 2 并给出原因，绝不猜 —— 猜错会把 scale 乘两遍（`rect` 已经是设备点）。需要按 Lanhu 画布
+空间算时用 `--rect-space lanhu` 显式指定，此时会告警提示与证据冲突。
+
+校验走 `scripts/check_layout_proportions.py`，它**是计划驱动，不是正则扫描**：只有被声明为
+`proportional` 的关系才要求比例表达。纯正则扫描会把合法的设计常量（圆角 12、标准边距 16）
+一起误报，训练出「看到告警就忽略」的习惯。
+
+判定分两档，理由是**闸门要准，不是要响**：
+
+- `forbidden-literal-used`（违规）—— 数值 > 48pt，不可能是手选的设计常量（没人把 393pt 当圆角）；
+- `ambiguous-literal`（待判，不计入违规）—— 数值 ≤ 48pt 时与常见设计常量无法区分，列出待人工确认。
+
+注释里的数字、`100%`、`colorWithRed:22 / 255.0` 这类非布局数字一律跳过。
+
+### `diff/` 的三类结论
+
+| 文件 | 产出脚本 | 作用 |
+|---|---|---|
+| `comparison.json`（或 `full-page.json`） | `scripts/compare_reference.py` | 像素比较：`structuralRatio` / `textureRatio` / `fillRatio` 三分 + `regions` 区域明细 |
+| `alignment.json` | `scripts/audit_alignment.py` | 元素级位移：`domVsReference` 与 `referenceVsActual` 两组比较 |
+| `font-chain.json` | `scripts/audit_fonts.py` | 基准字体链：逐元素比对 CSS 声明的族与运行时实际用上的族 |
+
+`font-chain.json` 的字段：`status`（`clean` / `substituted` / `insufficient-evidence`）、
+`substituted`（true / false / null）、`missingFamilies`（声明了却没落地的族）、
+`landedFamilies`（实际回落到什么）、`affectedElements`（含 `index` / 文本 / `advanceWidth`）、
+`evidence`、`fixSide`（`baseline` / `none`）。`substituted` 为 `null` 表示证据不足 ——
+事实表没做过字体测量，或 `fontMeasurement.ok` / `fontJoin.ok` 为 `false`。**不要**把
+「证据不足」当成「没问题」。
+
+比较结论的三分法不是分类癖好，而是判定的前提：
+
+- `structuralRatio` —— 强边在两张图里对不上（`--edge-tolerance` 内找不到对应）。几何错位、
+  尺寸变化、圆角/间距改错。超过 `maxStructuralRatio` 判 `fail`。
+- `fillRatio` —— 平坦区颜色不同。填充色/背景色/文字颜色写错、整块缺遮罩。超过
+  `maxFillRatio` 判 `fail`。
+- `textureRatio` —— 几何一致、只是像素值不同（字体栅格化、抗锯齿、次像素相位差）。
+  **不参与放行判定**。
+
+判定只看前两类。把它们混在 `changedRatio` 里会双输：抗锯齿多的页面（HTML 侧用 Web 字体、
+App 侧用系统字体）永远撞上限而无法交付，而真正错位的图只要背景色接近也可能因为纹理差异低
+而侥幸通过。
+
+`alignment.json` 把「谁和谁不符」分成两个需要**相反动作**的故障：
+
+```json
+{
+  "schemaVersion": 1,
+  "status": "needs-review",
+  "reason": "constant-offset",
+  "comparisons": {
+    "domVsReference":    {"status": "aligned",      "reason": null},
+    "referenceVsActual": {"status": "needs-review", "reason": "constant-offset",
+                          "domDisagrees": false}
+  }
+}
+```
+
+- `domVsReference` 不符 ⇒ **基准不可信**（渲染 viewport/scale 与采集事实表时不一致）。
+  先重修基准，**不要**照着基准图调 App 代码。
+- `referenceVsActual` 不符 ⇒ 基准可信，问题在 App 实现侧，按区域改代码。
+- 判 `needs-review` 时 `delivery-gate.status.visualDiff` 不得为 `pass`。
 
 ### `runtime-device.json`
 
