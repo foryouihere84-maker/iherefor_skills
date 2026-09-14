@@ -2,6 +2,28 @@
 
 用户在 diff 查看器（skill 根目录的 [index.html](../index.html)，浏览器直接打开即可）中判定不合格后，任务进入 `修复迭代`，不能直接在原 run 上覆盖截图、JSON 或代码。每次迭代都必须可追溯、可恢复。
 
+## 验证阶段的三段门（与修复闭环的关系）
+
+「改源码 → 重新验证」不是一条直线，而是两段**成本差两个数量级**的门：
+
+| 门 | 位置 | 成本 | 判什么 |
+|---|---|---|---|
+| 门 0 | 写计划时 | 秒级，纯静态 | 计划自身完整（`layoutProportions` 的 `basis` / `parentIndex` / `kind` / `of`） |
+| 门 1 | **写码完成后、编译之前** | 秒级，纯静态 | 层级与布局关系是否照计划实现 |
+| 门 2 | 编译 / 运行 / 截图 | 分钟级 | 只能靠运行才知道的事：能否编译、能否启动、运行期几何与交互 |
+| 门 3 | 差异归因与交付判定 | 秒级 | 具名区域归因、扣除已声明差异后的剩余值、闸门 |
+
+**门 1 的迭代不计入本文件的「轮次」。** `scripts/check_layout_proportions.py` 只读计划与
+源码文本，不编译、不起浏览器，所以「改源码 → 重跑门 1」是秒级动作，和「改源码 → 编译 →
+装机 → 截图 → 比对」完全不是一个量级。把门 1 的迭代当成一轮，会让下面「连续两轮同一区域
+无改善」这条停止条件提前触发，把本来能在秒级收敛的布局问题误判成死循环。
+
+**门 2 只应发生一次。** 若在门 2 才发现布局类违规，说明门 1 没跑或没跑全 —— 补跑门 1，
+而不是继续在编译截图里试错。门 1 能吸收的是**可预测的实现错误**（坐标换算系统偏移、
+布局口径违规、图片未按 mapper 缩放、层级挂错父视图）；它吸收不掉**不可预测的运行时事实**
+（能否编译、`contentInsetAdjustmentBehavior` 自动注入的 inset、覆盖式装饰子视图吞掉点击、
+目标平台字体的实际解析结果），那些仍然只能在门 2 观测。
+
 ## 标准线路
 
 1. **接收反馈**：把用户原话和选中的 run 写入新的 `runs/<run-id>/review.json` 的 `feedback` 字段。若反馈只说“不一致”，先要求用户指出页面区域或由 Agent 根据 diff 热点定位，不能凭猜测大范围重写。
@@ -12,7 +34,8 @@
 
    ```bash
    python3 scripts/compare_reference.py --reference <page>/reference/reference.png \
-       --actual <run>/actual/app.png --output <run>/diff/comparison.json
+       --actual <run>/actual/app.png --page-facts <page>/reference/page-facts.json \
+       --plan <run>/ui-implementation-plan.json --output <run>/diff/comparison.json
    python3 scripts/audit_alignment.py --reference <page>/reference/reference.png \
        --actual <run>/actual/app.png --page-facts <page>/reference/page-facts.json \
        --runtime-device <run>/runtime-device.json --output <run>/diff/alignment.json
@@ -22,6 +45,13 @@
    颜色问题（平坦区颜色不同）；只有 `textureRatio` 高 ⇒ 栅格化噪点，**不要**改代码去
    「修」它。`regions` 会指出差在哪一带，以及偏差是否随 y 递增 —— 单调递增的纵向梯度
    说明是整体映射问题，不是某个控件写错，此时改单个控件只会白费一轮。
+
+   但 `regions` 是网格切块，说不出「差在哪个控件」。定位靠 `attribution`：它按**最小包含
+   元素优先**把差异像素互斥归属到具名区域，并给出 `declaredUnsupported` 与 `residual`。
+   **`residual`（扣除已声明差异后的剩余值）才是 `review.json` 该引用的数字** —— 整页比值里
+   混着已声明为 `unsupported` 的差异（系统状态栏、无法等价映射的 CSS 特性），不扣除就说不清
+   「还剩多少是真缺陷」。`attribution.status` 为 `insufficient-evidence` / `not-run` 时，
+   先把 `--page-facts`（需 `rectInReference`）补上再谈归因，不要拿网格结论当控件级结论。
 
 4. **先判「基准可不可信」，再决定改哪一侧**。`diff/alignment.json` 的两个比较需要**相反的动作**，搞反了会照着错误的基准把 App 改坏：
 
@@ -36,10 +66,20 @@
 
 5. **形成修复计划**：在新 run 的 `review.json` 写入 `observations`、`hypotheses`、`changes` 和验收阈值。一次迭代优先处理同一根因，避免同时修改无关区域；若需要改变页面接入方式或资源策略，先更新 integration/page plan。
 6. **修改 canonical 源码**：只修改目标工程中登记在 `implementationPaths` 的生产代码和必要资源；不修改历史 run，不把截图作为 UI 覆盖层，不让脚本生成/覆盖生产源码。所有按钮点击函数保持可用。
-7. **重新验证**：重新 build、test、运行目标设备（通过运行时 API 读取真实 bounds）、截图，并生成新的 diff 与新的对齐审计。失败时保留完整日志，状态为 `fail` 或 `not-run`，不能伪造通过。
+7. **重新验证**：**先跑门 1**，再进编译：
+
+   ```bash
+   python3 scripts/check_layout_proportions.py --plan <run>/ui-implementation-plan.json \
+       --source <原生源码根>
+   ```
+
+   `violations == 0` 之后才重新 build、test、运行目标设备（通过运行时 API 读取真实 bounds）、
+   截图，并生成新的 diff 与新的对齐审计。门 1 是秒级的、不编译，所以这一档可以反复重跑，
+   **不计入轮次**；门 2（编译/装机/截图）只应发生一次。失败时保留完整日志，状态为 `fail`
+   或 `not-run`，不能伪造通过。
 8. **记录证据**：新 run 必须保存 before/after、diff summary（含 `structuralRatio` 与 `regions`）、alignment、runtime-device、修改原因、实际修改文件和下一步动作。`review.json` 要有 `parentRunId`，形成迭代链。
 9. **回归检查**：修复局部区域后，仍需检查整页、顶部/底部系统区域、图片映射和至少一个文本/容器区域，防止局部修复破坏其他区域。
-10. **重新交付判断**：写入本轮 `delivery-gate.json` 后运行 `scripts/validate_run.py --run <run-dir>`；只有 7 项闸门全部为 `pass` 且 `unsupported.count == reviewedCount` 才可将页面状态设为 `ready`，否则保持 `needs-review`。`deliveryReady` 由契约推导，不得手写覆盖。注意 `visualDiff` 不能在 `diff/alignment.json` 判 `needs-review` 时为 `pass` —— 校验脚本会拦住这种自相矛盾。用户再次判定不合格时，从第 1 步创建下一 run，永远不覆盖历史证据。
+10. **重新交付判断**：写入本轮 `delivery-gate.json` 后运行 `scripts/validate_run.py --run <run-dir>`；只有 7 项闸门全部为 `pass` 且 `unsupported.count == reviewedCount` 才可将页面状态设为 `ready`，否则保持 `needs-review`。`deliveryReady` 由契约推导，不得手写覆盖。注意 `visualDiff` 不能在 `diff/alignment.json` 判 `needs-review` 时为 `pass` —— 校验脚本会拦住这种自相矛盾。同理，比较器判 `fail` 时它不得为 `pass`；判 `pass-with-review` 时**默认必须原样记录**，唯一可升格为 `pass` 的情形是 `reason == "structural-within-declared-floor"`（下界内放行，已在计划里声明并量化归因）—— 这条例外不可省，否则文字密集页会卡在 `deliveryReady` 永远为 `false`。用户再次判定不合格时，从第 1 步创建下一 run，永远不覆盖历史证据。
 
 ## `review.json` 最小结构
 
@@ -63,8 +103,10 @@
 - 连续两轮同一区域无改善：暂停自动修改，展示证据并请求用户确认根因。
 - 缺少 reference、设备运行时尺寸或可复现截图：标记 `not-run`，先补齐证据。
 - `diff/alignment.json` 未跑或退出码为 2：这是**证据不足**，不得直接进入修复 —— 先补 `page-facts.json` / `runtime-device.json` 再判。整页 `changedRatio` 在容差内不能替代元素级结论。
-- `domVsReference` 判 `needs-review`：**先修基准**，禁止在此状态下按 `referenceVsActual` 的差调 App 代码。基准错了，越改越偏。
+- `domVsReference` 判 `needs-review`：**先修基准**，禁止在此状态下按 `referenceVsActual` 的差调 App 代码。基准错了，越改越偏。**但修之前必须做一次交叉复核** —— `alignment.json` 会带 `crossCheckRequired: true` 与 `crossCheck`，照它的 `how` 换硬边高对比特征做亮度扫描 + 线性拟合，看偏差是**常量偏置**（= 探测器偏置）还是**随坐标增长**（才是真实比例误差）。本审计用墨迹质心，对框内近乎空白的图片/容器元素会伪造比例信号（见 `coverage.excludedLowCoverage`）；直接照 `nextAction` 重渲染基准可能白干一轮，还会改坏本来正确的基准。契约禁止手写覆盖工具结论：保留 `alignment.json` 原样，另写独立证据文件并在 `review.json` 里说明异议。
+- `alignment.json` 的 `coverage.excludedLowCoverage.count` 很大：说明相当一部分图片/容器探针框内近乎空白、已被排除在位移与比例拟合之外。此时 `offsetFit` 的杠杆比看上去小，比例结论要更保守 —— 不要仅凭它改 `canvasTransform`。
 - 只有 `textureRatio` 高（`structuralRatio` 与 `fillRatio` 都在容差内）：这是栅格化噪点，不是缺陷，不要为它改代码。
+- `structuralRatio` 高于上限但**在计划声明的 `gateReachability.expectedStructuralFloor` 之内**、且 `fillRatio` 在容差内：这是文字密集页的**物理下界**（基准画布 `scale(1.0229)` 使基准字形 = 设计字号 × 1.0229，而字号不得缩放），**不可能降到 0**。此时停止修改、记 `pass-with-review` + 量化归因，不要再为它开一轮编译截图 —— 反复逼近 0 只会白烧轮次，而且会诱使你去缩放字号凑闸门（契约明令禁止）。要放行这个形态，计划里必须真的声明了 `gateReachability`（含 `unavoidable[].cause` 与 `measuredShare`），否则校验器会判「以声明下界放行，但计划没有 gateReachability」。反之，计划声明了下界、却把下界内的值判 `fail`，同样是错。
 - 偏差随 y 单调递增：这是坐标系/比例不一致，必须回到 `canvasTransform.policy` 与 `coordinateMapper` 层面核对（`scripts/canvas_map.py`），不要逐控件微调位置。
 - 任一图片只验证了容器 frame、没有验证内容绘制 frame，或使用 intrinsic/natural size：视为 `asset/geometry` 失败，必须先修复统一图片 mapper。
 - 图片出现一侧留白但 `alphaBounds` 显示资源本身有透明边界：先按 `alphaBounds` 与 HTML 裁剪规则核对，不要直接改 frame 去凑视觉。

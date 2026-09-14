@@ -179,7 +179,7 @@ v3 起每个元素都带 `parentIndex` / `parentHops` / `positioningContextIndex
 | `run.json` | always | 运行标识、目标模式、父 run、基准哈希、状态 |
 | `review.json` | always | 观察 / 假设 / 变更 / 验证 / 下一步（含 `parentRunId`） |
 | `delivery-gate.json` | always | 7 项闸门状态、`unsupported` 计数、`deliveryReady` |
-| `ui-implementation-plan.json` | always | 本次实现的区域、坐标系、资源映射与 `unsupported` |
+| `ui-implementation-plan.json` | always | 本次实现的区域、坐标系、资源映射、`runtimeRisks`、`gateReachability` 与 `unsupported` |
 | `resource-policy.json` | always | 资源目录决策、复用与新增、语义命名 |
 | `runtime-device.json` | 所有目标模式 | 运行时尺寸 API 返回值与截图像素尺寸 |
 | `ios-environment.json` | iOS 目标模式 | 工程入口、scheme、destination 探测结果 |
@@ -252,6 +252,20 @@ v3 起每个元素都带 `parentIndex` / `parentHops` / `positioningContextIndex
   比例达标都推翻不了元素级位移超容差。
 - `diff/` 里任何放行类结论（`pass` / `pass-with-review`）必须自带 `structuralRatio` 与非空
   `regions`；只有 `changedRatio` 的结论不足以放行。
+- 比较器判 `fail` 时，`visualDiff` **不得**为 `pass`。
+- 比较器判 `pass-with-review` 时，`visualDiff` 默认**必须原样记为 `pass-with-review`**；
+  **唯一的例外是 `reason == "structural-within-declared-floor"`** —— 文字密集页的结构差异
+  有物理下界（基准画布 `scale(1.0229)` 使基准字形 = 设计字号 × 1.0229，而字号不得缩放），
+  该下界已在计划里声明并做了量化归因，此时记 `pass` 才是诚实的。其余 `pass-with-review`
+  （如 `structural-diff-above-warn`）记成 `pass` 会被校验脚本拦下 ——
+  否则「下界内放行」会变成把所有待复核项一并吞掉的借口，`deliveryReady` 随之失去意义。
+
+> **为什么这条闭环是必需的。** 没有它，批 B 的下界机制会悬在半空：比较器按声明下界放行了，
+> 交付闸门却因为 `visualDiff` 不是 `pass` 而永远推导出 `deliveryReady = false` ——
+> 文字密集页将**永远无法交付**。下界要真的能放行到交付，就必须有这条明确且可核的升格路径。
+
+不带 `structuralRatio` 的 diff 文件（例如只记录 `changedRatio` 的占位件）不参与这条判定：
+它不是放行依据，对它判定只会制造噪声。
 
 `reference` 的取值还要受基准字体链约束：
 
@@ -264,6 +278,10 @@ v3 起每个元素都带 `parentIndex` / `parentHops` / `positioningContextIndex
 1. 上述 7 项全部为 `pass`；
 2. `unsupported.count == unsupported.reviewedCount`（不存在未审查的降级项）；
 3. `unsupported` 的两个计数必须是**可读的整数**。
+
+第 1 条里的 `visualDiff` 不能凭手写：它的 `pass` 必须由上文的证据约束支持
+（比较器判 `pass`，或判 `pass-with-review` 且 `reason == "structural-within-declared-floor"`）。
+把一条 `structural-diff-above-warn` 写成 `pass` 来凑 `deliveryReady`，会被校验脚本拦下。
 
 第 3 条的意思是「推不出来就别推」：`unsupported` 对象缺失、或 `count` / `reviewedCount`
 不是整数（例如写成字符串 `"2"`）时，`delivery-gate.json` 本身已经不合规，校验脚本会**跳过**
@@ -399,6 +417,99 @@ Lanhu 坐标的分析代码都得自己反解，而手写反解正是「多乘�
 393×852 → 402×874 时 `padding.max = 1.2443pt`，仍在容差内 —— 但这是**算出来的**结论，
 不是可以假设的前提。`scripts/canvas_map.py` 的 `axis_deviation()` 给出这个值。
 
+#### `ui-implementation-plan.json` 的 `runtimeRisks`
+
+「只能在运行期暴露、但**在写计划时就能决策**」的风险必须写进计划。它们一旦漏到第 5 步
+（编译 / 运行 / 截图）才发现，就要重走一次编译截图；而它们本来是一次决策就能定下来的。
+
+```json
+{
+  "runtimeRisks": {
+    "interactionCoverage": [
+      {"view": "BrushOptionCardView.ringView", "covers": "整张卡片",
+       "userInteractionEnabled": false,
+       "reason": "覆盖式描边子视图，最后添加且铺满卡片；置 YES 会吞掉卡片手势，截图看不出来"}
+    ],
+    "scrollInset": {
+      "contentInsetAdjustmentBehavior": "never",
+      "reason": "页面坐标已含系统区域，自动注入 safe-area inset 会让整页下移",
+      "explicitContentInset": {"top": 0, "bottom": 0}
+    },
+    "systemBars": {"policy": "underlap", "foregroundInset": {"top": 135.02},
+                   "reason": "HTML 基准的背景延伸到状态栏下方，前景内容用显式 inset"},
+    "fontAvailability": [
+      {"family": "PingFangTC", "requestedWeight": "Semibold",
+       "availableWeights": ["Medium", "Regular", "Light", "Thin"],
+       "resolution": "同族其它字重（不会掉到系统 UI 字体）",
+       "checkedVia": "PingFangUI.ttc 的 name 表"}
+    ]
+  }
+}
+```
+
+四条各自的理由：
+
+- `interactionCoverage` —— 覆盖式装饰子视图（描边环、蒙版、渐变层）**默认必须
+  `userInteractionEnabled = NO`**，只有确实要接收点击时才 YES。这类故障**截图完全看不出来**，
+  像素 diff 也证明不了点击可用，只能靠第 5 步的真机坐标点击 + 事件日志。
+- `scrollInset` —— 页面坐标已含系统区域时，UIKit 自动注入的 safe-area content inset
+  会让整页下移。必须设 `never` 并显式给 `contentInset`。
+- `systemBars` —— `underlap` / `inset` / `mixed` 三选一，依据是「HTML 基准有没有绘制到顶部系统区域」。
+- `fontAvailability` —— 目标平台上每个字族**实际存在**的字重。用 `.ttc` 的 name 表核对，
+  **不要猜**：`PingFangUI.ttc` 里只有 `PingFangTC-Medium`，没有 `PingFangTC-Semibold`；
+  `fontWithName:` 会落到同族其它字重（实测墨迹宽 264px vs 基准 265px），而不是掉到
+  系统 UI 字体（那会是 237.7px）。这一条不影响布局闸门，但决定了「字体差异该不该被当缺陷修」。
+
+#### `ui-implementation-plan.json` 的 `gateReachability`
+
+文字密集页存在一个**物理下界**：基准图是在 `scale(1.0229)` 的画布上渲染的，所以基准字形 =
+设计字号 × 1.0229；而尺寸契约明令字号不得按比例缩放（见
+[sizing-and-positioning.md §2.2](sizing-and-positioning.md#22-哪些量永远不缩放)）。
+两者相差 2.29%，足以让字形边缘的相位差
+超过强边配对容差（2px）而被判成**结构差异**。也就是说，`structuralRatio` 对文字密集页
+**不可能降到 0**，反复逼近 0 只会换来无意义的编译截图轮次。
+
+正确做法不是「想办法压下去」，而是**在计划里显式声明这个下界并留档**，让比较器按它判，
+交付状态落到 `pass-with-review` + 量化归因。声明落在 `gateReachability`：
+
+```json
+{
+  "gateReachability": {
+    "expectedStructuralFloor": 0.02,
+    "unavoidable": [
+      {"cause": "基准画布 scale(1.0229) 使基准字形 = 设计字号 × 1.0229，而字号不得缩放",
+       "measuredShare": 0.01563},
+      {"cause": "CoreText 与基准 Skia 的栅格化相位差（亚像素抗锯齿）",
+       "measuredShare": 0.0021}
+    ]
+  }
+}
+```
+
+字段约束：
+
+| 字段 | 类型 | 约束 |
+| --- | --- | --- |
+| `expectedStructuralFloor` | number | **必须 ≥ 比较器的 `maxStructuralRatio`**。低于上限的「下界」没有意义，只会把本该正常放行的页面也降级 |
+| `unavoidable` | array | **非空**。每项必须同时有 `cause` 与 `measuredShare`，否则无从复核它是不是在给实现缺陷开脱 |
+| `unavoidable[].cause` | string | 「为什么不可消除」的物理/机制原因，不是「我觉得可以接受」 |
+| `unavoidable[].measuredShare` | number | 该原因对 `structuralRatio` 的**实测**占比，各项之和应接近 `expectedStructuralFloor` |
+
+比较器（`scripts/compare_reference.py --expected-structural-floor`）在 CLI 未传值时**回读本字段**，
+所以下界只需在这里声明一次。放行后 `review.json` 的 `declaredStructuralFloor` 会记录
+`value` / `source`（`plan` 或 `cli`）/ `maxStructuralRatio` / `withinFloor` / `headroom`。
+
+三条可核性由 `scripts/validate_run.py` 的 `check_gate_reachability` 强制（计划与结论交叉核对）：
+
+1. 判 `structural-within-declared-floor` 时，计划里**必须真的声明了** `gateReachability`
+   （含 `unavoidable` 的来源与实测占比），且实际值确实在下界内 —— 不能由比较器自己给下界；
+2. 计划声明了下界，比较结论**却把下界内的值判 `fail`** —— 声明白写了，同样是错；
+3. 计划声明了下界，比较结论里**却没有 `expectedStructuralFloor`** —— 声明了没按它判。
+
+**下界是「不可消除的下界」，不是「豁免额度」。** 它只对文字类结构差异成立；一旦
+`fillRatio` 超限，或结构差异超出下界，仍然判 `fail`。想靠调高下界来放行实现缺陷，
+会在第 1 条上撞墙。
+
 #### `ui-implementation-plan.json` 的 `layoutProportions`
 
 由 `scripts/layout_proportions.py` 从 `page-facts.json` 生成。**字段以实际产物为准**，下面是
@@ -521,9 +632,42 @@ Lanhu 坐标的分析代码都得自己反解，而手写反解正是「多乘�
 
 | 文件 | 产出脚本 | 作用 |
 |---|---|---|
-| `comparison.json`（或 `full-page.json`） | `scripts/compare_reference.py` | 像素比较：`structuralRatio` / `textureRatio` / `fillRatio` 三分 + `regions` 区域明细 |
+| `comparison.json`（或 `full-page.json`） | `scripts/compare_reference.py` | 像素比较：`structuralRatio` / `textureRatio` / `fillRatio` 三分 + `regions` 网格明细 + `attribution` 具名区域归因 |
 | `alignment.json` | `scripts/audit_alignment.py` | 元素级位移：`domVsReference` 与 `referenceVsActual` 两组比较 |
 | `font-chain.json` | `scripts/audit_fonts.py` | 基准字体链：逐元素比对 CSS 声明的族与运行时实际用上的族 |
+
+`comparison.json` 的 `regions` 与 `attribution` 分工不同，**不要互相替代**：
+
+- `regions` 是**网格切块**（`row` / `col` / `box`，由 `--grid-rows` / `--grid-cols` 均分），
+  回答「差在哪一带」；它是放行结论的必需证据。
+- `attribution` 是**具名区域归因**（需 `--page-facts`，可选加 `--plan`），回答「差在哪个控件」。
+  它的字段：
+
+  | 字段 | 含义 |
+  |---|---|
+  | `status` | `ok` / `insufficient-evidence` / `not-run`。缺 `--page-facts` 记 `not-run`；事实表没有 `rectInReference` 记 `insufficient-evidence`。**不冒充**「归因完成」 |
+  | `regions[]` | 每个具名区域的 `region` / `index` / `box`，四类像素数与占整页比值的贡献（`*PageShare`），以及区域内的 `structuralRatio` / `fillRatio` |
+  | `unattributed` | 不属于任何区域的差异像素。恒等式：`Σ(regions[].changedPixels) + unattributed.changed.pixels == changedPixels` |
+  | `attributedShare` | 每类差异被归因覆盖的比例。低于 1 说明有差异落在所有区域之外，必须解释 |
+  | `declaredUnsupported.located` / `.unlocated` | 计划里 `unsupported.items[]` 声明的差异覆盖区；`unlocated` 是没有坐标、**扣不掉**的那些（必须如实说明，不能当作已扣除） |
+  | `residual` | **扣除已声明差异之后**的剩余三类比值 —— `review.json` 的放行论述应引用这一组数字，而不是整页比值 |
+
+  归属规则是**最小包含元素优先**（面积升序）且**互斥且穷尽**：一个差异像素只算进一个区域。
+  `attribution` 只增不改，不影响 `status` / `exitCode` 的判定语义。
+
+`alignment.json` 里，图片/容器元素（`probeKind != "text"`）若框内墨迹覆盖度低于
+`--ink-asset-coverage-min`（默认 0.10），其 `confidence` 记 `insufficient` 并给出 `reason`，
+**不参与**位移与比例拟合，同时列进 `coverage.excludedLowCoverage`。理由是这类元素的框可以
+远大于其内容（透明留白、卡片美术只占一角），墨迹质心代表的是那块稀疏内容自己的位置、
+不是外框中心，会让 `dxPt` 跳到几十 pt 并伪造出比例误差信号。文本元素不走这条豁免：
+它的预测框紧贴字形，覆盖度低就是真的没排出来，那是有效信号。
+
+`alignment.json` 判「基准不可信」（`reason: baseline-disagrees-with-dom`）时会带
+`crossCheckRequired: true` 与 `crossCheck`（`why` / `how` / `workedExample` / `discipline` /
+`checkCoverage`）。**必须照 `crossCheck` 先做一次原理不同的复核**（硬边高对比特征 + 线性拟合，
+看偏差是常量偏置还是随坐标增长），确认存在真实比例/位移误差后才允许重渲染基准。
+契约禁止手写覆盖工具结论：保留 `alignment.json` 原样，另写独立证据文件并在 `review.json`
+里说明异议。
 
 `font-chain.json` 的字段：`status`（`clean` / `substituted` / `insufficient-evidence`）、
 `substituted`（true / false / null）、`missingFamilies`（声明了却没落地的族）、
@@ -535,15 +679,24 @@ Lanhu 坐标的分析代码都得自己反解，而手写反解正是「多乘�
 比较结论的三分法不是分类癖好，而是判定的前提：
 
 - `structuralRatio` —— 强边在两张图里对不上（`--edge-tolerance` 内找不到对应）。几何错位、
-  尺寸变化、圆角/间距改错。超过 `maxStructuralRatio` 判 `fail`。
+  尺寸变化、圆角/间距改错。超过 `maxStructuralRatio` 判 `fail` —— **但若该值仍在计划声明的
+  `gateReachability.expectedStructuralFloor` 之内、且 `fillRatio` 未超限，判 `pass-with-review`
+  （`structural-within-declared-floor`）**。文字密集页的结构差异有物理下界（基准画布
+  `scale(1.0229)` 使基准字形 = 设计字号 × 1.0229，而字号不得缩放），**不可能降到 0**；
+  成因见 [sizing-and-positioning.md](sizing-and-positioning.md#22-哪些量永远不缩放)，
+  字段与可核性见下文「`ui-implementation-plan.json` 的 `gateReachability`」。
 - `fillRatio` —— 平坦区颜色不同。填充色/背景色/文字颜色写错、整块缺遮罩。超过
-  `maxFillRatio` 判 `fail`。
+  `maxFillRatio` 判 `fail`。**下界不为 `fillRatio` 开口子。**
 - `textureRatio` —— 几何一致、只是像素值不同（字体栅格化、抗锯齿、次像素相位差）。
   **不参与放行判定**。
 
 判定只看前两类。把它们混在 `changedRatio` 里会双输：抗锯齿多的页面（HTML 侧用 Web 字体、
 App 侧用系统字体）永远撞上限而无法交付，而真正错位的图只要背景色接近也可能因为纹理差异低
 而侥幸通过。
+
+**两类在放行形态上是不对称的**：`fillRatio` 超限一律 `fail`（颜色写错永远是缺陷，
+没有物理下界一说）；`structuralRatio` 超限时**先问它是不是文字类的物理下界**，
+是则按声明的下界放行并做量化归因。把这两类同等对待，正是「文字密集页永远交付不了」的成因。
 
 `alignment.json` 把「谁和谁不符」分成两个需要**相反动作**的故障：
 

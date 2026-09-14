@@ -12,11 +12,15 @@
 缩放（等价于「基准图不是事实表采集时那个 viewport 下渲染的」），要求审计必须报出来。
 没有这两个用例，恒真式实现也能让前四个用例全绿。
 """
+import argparse
+import importlib.util
 import json
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
+from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts" / "tests"))
@@ -24,6 +28,47 @@ sys.path.insert(0, str(ROOT / "scripts" / "tests"))
 import alignment_fixture as fixture  # noqa: E402
 
 SCRIPT = ROOT / "scripts" / "audit_alignment.py"
+
+
+def load_audit_module():
+    """直接加载被测模块，用于对墨迹探针做单元级断言（不走整图、不需要 ground truth）。"""
+    spec = importlib.util.spec_from_file_location("audit_alignment_under_test", SCRIPT)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def ink_options(mod, asset_coverage_min=None):
+    """构造 summarize_ink / ink_probe 需要的最小 options。"""
+    return argparse.Namespace(
+        ink_threshold=mod.DEFAULT_INK_THRESHOLD,
+        ink_own_min=mod.DEFAULT_INK_OWN_MIN,
+        ink_coverage_min=mod.DEFAULT_INK_COVERAGE_MIN,
+        ink_asset_coverage_min=(mod.DEFAULT_INK_ASSET_COVERAGE_MIN
+                                if asset_coverage_min is None else asset_coverage_min),
+        ink_missing_ratio=mod.DEFAULT_INK_MISSING_RATIO,
+        dom_tolerance=2.0,
+        scale_tolerance=0.002,
+    )
+
+
+def sparse_asset_probe_case(mod):
+    """造一组探针：3 个文本探针（墨迹正好铺满框，质心 == 框心）+ 1 个「框内近乎空白」的图片探针。
+
+    图片探针的框 160x300，但框内只有 40x40 一块涂抹，质心离框心 dx=-40px / dy=-100px。
+    这正是真实事故的形态：卡片/主视觉元素的 rectInReference 是外框，资源内容只占框内一角。
+    """
+    edges = Image.new("L", (400, 400), 0)
+    draw = ImageDraw.Draw(edges)
+    predictions = []
+    for index, top in enumerate((90, 190, 290)):
+        draw.rectangle((20, top, 80, top + 20), fill=255)
+        predictions.append({"index": index, "label": f"text-{index}", "probeKind": "text",
+                            "box": mod.box_from_ltrb(20, top, 80, top + 20)})
+    draw.rectangle((220, 70, 260, 110), fill=255)
+    predictions.append({"index": 99, "label": "hero-art", "probeKind": "asset",
+                        "box": mod.box_from_ltrb(200, 40, 360, 340)})
+    return edges, predictions
 
 
 def run_audit(case_dir, out_path, extra=()):
@@ -232,12 +277,106 @@ def main():
                   (ref.get("extremes") or {}).get("mostDx") is not None and "mostDx" in (ref.get("extremes") or {}),
                   "extremes 缺少 mostDx，conclude 将无法复用同一归因")
 
+        # ---- 用例 9：框内近乎空白的图片探针必须判 insufficient-evidence，且不得污染拟合 ----
+        #
+        # 这一组在防什么：墨迹质心对「框内近乎空白」的图片/容器元素量的不是外框位置，而是
+        # 那块稀疏内容自己的位置。实测过 dxPt 跳到 ±44.5pt、并拟出假的「基准缩放 3.956%」，
+        # 让整轮修复朝着「重渲染基准」白干。用例 9 同时钉住**反向**断言：把
+        # --ink-asset-coverage-min 调成 0 时，这个探针必须重新进入拟合并把斜率带歪 ——
+        # 否则「排除生效」可能只是因为探针本来就没被探到，断言是空的。
+        mod = load_audit_module()
+        edges, predictions = sparse_asset_probe_case(mod)
+
+        rows = mod.ink_probe(edges, predictions, 12.0, ink_options(mod))
+        summary = mod.summarize_ink(rows, 1.0, ink_options(mod), "domVsReference")
+        asset = [r for r in rows if r["probeKind"] == "asset"]
+        check(problems, "用例9", len(asset) == 1, f"图片探针数量为 {len(asset)}，应为 1")
+        if asset:
+            check(problems, "用例9", asset[0].get("confidence") == "insufficient",
+                  f"框内近乎空白的图片探针被判 {asset[0].get('confidence')!r}，"
+                  "应为 'insufficient'")
+            check(problems, "用例9", bool(asset[0].get("reason")),
+                  "判 insufficient 却没有给出 reason，运维无从知道为什么没量它")
+        check(problems, "用例9", summary.get("usableCount") == 3,
+              f"可用探针数为 {summary.get('usableCount')}，应只含 3 个文本探针")
+        excluded = (summary.get("coverage") or {}).get("excludedLowCoverage") or {}
+        check(problems, "用例9", excluded.get("count") == 1,
+              f"excludedLowCoverage.count={excluded.get('count')}，应记录 1 个被排除的探针")
+        check(problems, "用例9", bool(excluded.get("elements")),
+              "excludedLowCoverage 没有列出被排除的元素，等于悄悄少算了探针")
+        clean_fit = summary.get("offsetFit") or {}
+        check(problems, "用例9",
+              clean_fit.get("slope") is not None and abs(clean_fit["slope"]) <= 0.002,
+              f"排除稀疏图片探针后仍报出斜率 {clean_fit.get('slope')}，拟合被污染")
+        check(problems, "用例9", summary.get("status") == "aligned",
+              f"排除稀疏图片探针后应判 aligned，实为 {summary.get('status')!r}"
+              f"/{summary.get('reason')!r}")
+
+        # 反向：关掉这道闸，同一个探针必须回来把拟合带歪（证明上面不是空断言）
+        loose = ink_options(mod, asset_coverage_min=0.0)
+        rows_loose = mod.ink_probe(edges, predictions, 12.0, loose)
+        summary_loose = mod.summarize_ink(rows_loose, 1.0, loose, "domVsReference")
+        asset_loose = [r for r in rows_loose if r["probeKind"] == "asset"]
+        check(problems, "用例9",
+              bool(asset_loose) and asset_loose[0].get("confidence") == "high",
+              "关掉 --ink-asset-coverage-min 后图片探针仍未进入拟合，本用例的对照不成立")
+        check(problems, "用例9", summary_loose.get("usableCount") == 4,
+              f"关掉闸门后可用探针数为 {summary_loose.get('usableCount')}，应为 4")
+        loose_fit = summary_loose.get("offsetFit") or {}
+        check(problems, "用例9",
+              loose_fit.get("slope") is not None and abs(loose_fit["slope"]) > 0.01,
+              f"关掉闸门后斜率仍为 {loose_fit.get('slope')}，说明该探针本来就没污染拟合，"
+              "用例9 的「排除生效」是空断言")
+
+        # 文本探针不受影响：框内近乎空白对文本仍是有效信号（真的没排出来），
+        # 不能因为图片探针的豁免把它一起放过。
+        text_edges = Image.new("L", (200, 200), 0)
+        text_rows = mod.ink_probe(
+            text_edges,
+            [{"index": 5, "label": "headline", "probeKind": "text",
+              "box": mod.box_from_ltrb(40, 40, 160, 80)}],
+            12.0, ink_options(mod))
+        text_summary = mod.summarize_ink(text_rows, 1.0, ink_options(mod), "domVsReference")
+        check(problems, "用例9", text_summary.get("status") == "needs-review"
+              and text_summary.get("reason") == "content-missing-at-predicted-position",
+              f"文本元素在预测位置量不到墨迹应判 content-missing，实为 "
+              f"{text_summary.get('status')!r}/{text_summary.get('reason')!r}")
+
+        # ---- 用例 10：判「基准不可信」时不得直接给「重渲染基准」，必须先要求交叉复核 ----
+        #
+        # 这一组在防什么：本审计用墨迹质心，对稀疏图片元素会伪造比例信号（见用例 9）。
+        # 旧版的 nextAction 直接写「重渲染基准并重新批准」，Agent 照做就会白干一轮，
+        # 而且会把本来正确的基准改坏。契约禁止手写覆盖工具结论，所以工具自己必须先要求复核。
+        blamed = mod.conclude({"comparisons": {
+            "domVsReference": {"status": "needs-review", "reason": "scale-mismatch",
+                               "detail": "隐含比例 1.03956"},
+            "referenceVsActual": {"status": "needs-review", "reason": "constant-offset"},
+        }})
+        check(problems, "用例10", blamed.get("crossCheckRequired") is True,
+              "判「基准不可信」却没有标记 crossCheckRequired")
+        cross = blamed.get("crossCheck") or {}
+        for key in ("why", "how", "discipline", "checkCoverage"):
+            check(problems, "用例10", bool(cross.get(key)),
+                  f"crossCheck 缺少 {key}，Agent 拿不到复核方法")
+        how = cross.get("how") or ""
+        check(problems, "用例10", "常量" in how and "线性" in how,
+              f"crossCheck.how 未说明「常量偏置 vs 随坐标增长」这个判别器：{how!r}")
+        discipline = cross.get("discipline") or ""
+        check(problems, "用例10", "保留" in discipline and "review.json" in discipline,
+              f"crossCheck.discipline 未说明保留原始结论、另写证据的做法：{discipline!r}")
+        action = blamed.get("nextAction") or ""
+        check(problems, "用例10", action.startswith("先"),
+              f"nextAction 未把复核放在第一步：{action!r}")
+        check(problems, "用例10", "不要直接执行重渲染" in action,
+              f"nextAction 没有明确禁止直接重渲染：{action!r}")
+
     for problem in problems:
         print("FAIL " + problem)
     if problems:
         print(f"\n{len(problems)} 项不通过")
         return 1
-    print("对齐审计回归：8 个用例全部通过（含 2 个反恒真式用例、1 个横向错位结论文案用例）")
+    print("对齐审计回归：10 个用例全部通过（含 2 个反恒真式用例、1 个横向错位结论文案用例、"
+          "1 组稀疏图片探针的双向对照）")
     return 0
 
 

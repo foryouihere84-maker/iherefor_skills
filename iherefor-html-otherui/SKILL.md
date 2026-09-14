@@ -247,6 +247,18 @@ iOS 必须显式处理 `edgesForExtendedLayout`、`extendedLayoutIncludesOpaqueB
 
 ## 强制 Agent loop
 
+第 5～7 步合起来是**验证阶段**，按「静态门先跑、动态门只跑一次」组织，不要按字面顺序一路走到编译：
+
+| 门 | 位置 | 成本 | 判什么 |
+|---|---|---|---|
+| 门 0 | 第 2 步写计划时 | 秒级，纯静态 | 计划自身完整：`layoutProportions` 的 `basis` / `parentIndex` / `kind` / `of` 是否齐全 |
+| 门 1 | **第 4 步写码完成后、第 5 步编译之前** | 秒级，纯静态 | 层级与布局关系是否照计划实现（`check_layout_proportions.py --source`） |
+| 门 2 | 第 5 步 | 分钟级 | 只能靠运行才知道的事：能否编译、能否启动、运行期几何与交互 |
+| 门 3 | 第 6～7 步 | 秒级 | 三类差异的具名区域归因、扣除已声明差异后的剩余值、交付闸门 |
+
+门 1 是这里唯一被前移的门，也是收益最大的一处：层级与布局关系全部静态可判，
+把它的迭代留在编译之前，编译与截图就只需要发生一次。
+
 ### 1. 发现、设备探测与参考基准
 
 1. 确认 Lanhu HTML 入口、CSS/JS 相对路径、资源目录和页面状态。
@@ -305,13 +317,89 @@ Agent 必须查看运行中的页面和基准截图，建立页面事实表：�
 
 输出 `ui-implementation-plan.json`，至少包含目标模式、参考 viewport、组件边界、坐标系、布局策略、资源映射、可访问性标识、交互候选和 `unsupported` 项。该文件是 Agent 决策记录，不是生产源码生成器的输入模板。
 
+计划里还必须有一份 `runtimeRisks` —— 把「只能在运行期暴露、但**现在就能决策**」的风险提前写下来，
+逐条给出决策与理由。第 5 步是分钟级的取证门，这些问题一旦漏到那里才发现，就要重走一次编译截图：
+
+- `interactionCoverage`：每个覆盖式装饰子视图（描边环、蒙版、渐变层）的
+  `userInteractionEnabled` 决策。**默认必须是 NO**，只有确实要接收点击时才 YES。
+- `scrollInset`：`UIScrollView.contentInsetAdjustmentBehavior` 的取值。
+  页面坐标已含系统区域时必须设 `never` 并显式给 `contentInset`，否则整页下移。
+- `systemBars`：`underlap` / `inset` / `mixed` 三选一，见「顶部系统区域与安全区」一节。
+- `fontAvailability`：目标平台上每个字族**实际存在**的字重（用 `.ttc` 的 name 表核对，
+  不要猜）。例如 `PingFangUI.ttc` 里只有 `PingFangTC-Medium`，没有 `PingFangTC-Semibold`；
+  `fontWithName:` 会落到同族其它字重，而不是掉到系统 UI 字体。
+
+计划里还要有一份 `gateReachability` —— 文字密集页的 `structuralRatio` 有一个**物理下界**
+（基准画布 `scale(1.0229)` 使基准字形 = 设计字号 × 1.0229，而字号不得缩放，相差 2.29%
+足以越过强边配对容差），它**不可能降到 0**。在计划里声明它，比较器才会按它判
+`pass-with-review`；不声明就只能反复逼近不存在的 0。声明必须可核：
+
+- `expectedStructuralFloor`：数值，且**必须 ≥ 比较器的 `maxStructuralRatio`**；
+- `unavoidable`：非空清单，每项同时给 `cause`（为什么不可消除）与 `measuredShare`（实测占比）。
+
+**它是「不可消除的下界」，不是「豁免额度」**：`fillRatio` 超限或结构差异超出下界，仍判 `fail`。
+详见 `references/artifact-contract.md` 的 `gateReachability` 一节。
+
 ### 4. Agent 编写代码
 
 Agent 直接维护目标工程中的 canonical UI 源码。脚本禁止生成、重写或覆盖 `.swift`、`.kt`、`.java`、`.h`、`.m`、`.xml` 和 Compose 生产文件。父组件必须真实创建并约束其子组件；画布叠层页面不得被强行串成纵向列表。
 
+#### 4.1 写码完成后、编译之前：层级与布局静态核对（门 1）
+
+**这一步必须在编译之前做，不要留到编译截图之后补。** 层级关系与布局关系
+（`parentIndex` / `parentHops` / `positioningContextIndex`，以及逐条关系的 `kind` 与位置基准 `of`）
+**全部是静态可判的**：`scripts/check_layout_proportions.py` 只读计划 JSON 与源码文本，
+不编译、不起浏览器、秒级返回。把它排在编译之后，等于让每一次「声明 `pinned` 却写成比例系数」
+「声明 `fixed` 却写成探针设备推导值」「`parentIndex` 指向的父视图根本不存在」这类错误，
+都先付一次编译 + 装机 + 截图的成本才被发现，而发现后还要再付一次。
+
+```bash
+# 门 0：计划自检（还没有源码可查时先跑这个，确认 layoutProportions 自身完整）
+python3 scripts/check_layout_proportions.py --plan <run>/ui-implementation-plan.json --plan-only
+
+# 门 1：层级与布局关系逐条核对（写码完成后、编译之前）
+python3 scripts/check_layout_proportions.py --plan <run>/ui-implementation-plan.json \
+    --source <原生源码根>
+```
+
+`violations == 0` 才允许进入编译（`ambiguousLiterals` 是 ≤48pt 的待人工确认项，不计违规）。
+有违规就改源码后重跑本门 —— **这一步的迭代不消耗编译，也不计入 `feedback-loop` 的轮次**。
+
 ### 5. 编译、运行和截图
 
 按目标模式使用 Xcode 或 Gradle 编译，运行目标设备/模拟器，保存实际截图、日志、约束/布局错误和测试结果。iOS 与 Android 必须分别验证，不能用一个平台的通过推断另一个平台通过。
+
+**这一门只负责静态判不了的事**：能不能编译、能不能启动、运行期几何
+（`UIScrollView.contentInsetAdjustmentBehavior` 自动注入的 safe-area inset、系统栏与灵动岛的实际几何）
+和运行期交互（覆盖式装饰子视图会不会吞掉点击）。层级与布局关系已由门 1 保证，
+所以本门失败时的归因不会发散到「是不是基准错了」。
+
+**编译与截图在整个验证阶段只应发生一次**：门 1 已经用秒级静态核对吸收了布局类迭代，
+这里留在「一次取证」的位置上。若在这里发现的是布局类违规，说明门 1 没跑或没跑全 ——
+补跑门 1，而不是继续在这里试错。这也是「前四步严格」的真实收益所在：它不能让本门消失
+（能编译、能启动、点击可用都无法静态证明），但能让本门只剩不可预测的运行时事实。
+
+本门的验收清单（**每一项都必须真跑，不能靠读代码推断**）：
+
+1. 编译 0 error，日志与测试结果落盘到 `actual/`。
+2. 目标设备截图，像素尺寸与基准一致；不一致时 diff 不具证据效力。
+3. **交互可用性必须真点**：像素 diff **证明不了**点击可用 —— 覆盖式装饰子视图
+   （描边环、蒙版、渐变层）一旦 `userInteractionEnabled` 变 YES 就会吞掉卡片手势，
+   而截图完全看不出来。做法是按归一化坐标点击并并行抓统一日志：
+
+   ```bash
+   xcrun simctl spawn <udid> log stream --style compact \
+       --predicate 'eventMessage CONTAINS "IHEREFOR_EVENT"' > /tmp/events.log &
+   xcodebuild test -project <工程> -scheme <scheme> -destination id=<udid> \
+       -derivedDataPath <run>/DerivedData
+   ```
+
+   坐标按 `x * scaleX`、`y * scaleY + originY` 从设计值算（用 `canvas_map.py`，不要手写），
+   并且**是机型专用**的。用坐标而不是 accessibilityIdentifier：`UIImageView` / `UILabel`
+   默认不是 accessibility element，只设 identifier 未必检索得到，坐标点击走真实 hitTest。
+   用例写在既有的 UI 测试 target 里（已在 target 中，不必改工程文件，风险最低）。
+4. 运行期几何：`contentInsetAdjustmentBehavior` 是否自动注入了 safe-area inset、
+   系统栏与灵动岛的实际几何，都要进 `diff/` 与 `review.json`。
 
 ### 6. 视觉修复循环
 
@@ -319,11 +407,33 @@ Agent 直接维护目标工程中的 canonical UI 源码。脚本禁止生成、
 
 | 类别 | 含义 | 判定 |
 |---|---|---|
-| `structuralRatio` | 强边在两张图里对不上 —— 几何错位、尺寸变化、间距改错 | 超过 `--max-structural-ratio` 判 `fail` |
-| `fillRatio` | 平坦区颜色不同 —— 填充色/背景色/文字颜色写错、整块缺遮罩 | 超过 `--max-fill-ratio` 判 `fail` |
+| `structuralRatio` | 强边在两张图里对不上 —— 几何错位、尺寸变化、间距改错 | 超过 `--max-structural-ratio` 判 `fail`；**但仍在计划声明的 `gateReachability.expectedStructuralFloor` 内且 fill 未超限时，判 `pass-with-review`** |
+| `fillRatio` | 平坦区颜色不同 —— 填充色/背景色/文字颜色写错、整块缺遮罩 | 超过 `--max-fill-ratio` 判 `fail`（**下界不为它开口子**） |
 | `textureRatio` | 几何一致、只是像素值不同 —— 字体栅格化、抗锯齿、次像素相位差 | **不参与判定**（这是噪点） |
 
+两类在放行形态上**不对称**：`fillRatio` 超限一律 `fail`（颜色写错永远是缺陷）；`structuralRatio`
+超限时先问它是不是文字类的**物理下界**（基准画布 `scale(1.0229)` 使基准字形 = 设计字号 × 1.0229，
+而字号不得缩放 ⇒ 不可能降到 0），是则按声明的下界放行并做量化归因。把两类同等对待，
+就是「文字密集页永远交付不了」的成因。详见 `references/artifact-contract.md` 的三分法一节。
+
 不要用 `changedRatio` 判断能不能放行：它把三类混在一起，于是抗锯齿多的页面（HTML 用 Web 字体、App 用系统字体）永远撞上限，而真正错位的图只要背景色接近也可能因为纹理差异低而侥幸通过。结论必须带**区域级**明细（`regions`），整页一个数字看不出偏差随 y 的变化。
+
+但 `regions` 是**网格切块**（字段是 `row` / `col` / `box`），它只能告诉你「差在哪一带」，
+说不出「差在哪个控件」。放行结论要的是后者，所以每次比较都要同时给出 `attribution`：
+
+```bash
+python3 scripts/compare_reference.py --reference <page>/reference/reference.png \
+    --actual <run>/actual/app.png --page-facts <page>/reference/page-facts.json \
+    --output <run>/diff/comparison.json
+```
+
+`attribution` 把差异像素按**最小包含元素优先**互斥归属到具名区域，保证
+`Σ(区域 changedPixels) + unattributed == 整页 changedPixels`（互斥且穷尽，不允许一个像素
+被算进两个区域，也不允许悄悄丢掉）。它另外给出 `declaredUnsupported` 与 `residual` ——
+**扣除已声明差异后的剩余值**才是 `review.json` 该引用的数字：整页比值里混着已声明为
+`unsupported` 的差异（系统状态栏、无法等价映射的 CSS 特性），不扣除就说不清「还剩多少是真缺陷」。
+`--page-facts` 缺失或事实表没有 `rectInReference` 时，`attribution.status` 记
+`insufficient-evidence` 并说明原因，**不冒充**「归因完成」。
 
 Agent 修改 canonical 源码后重新编译和截图，直到达到任务指定阈值，或把无法自动修复的差异明确记录为 `needs-review`。每轮必须记录 before/after 截图、diff 数值或未运行原因、受影响区域、事实来源和下一步动作，禁止只凭肉眼说"基本一致"。
 
@@ -332,6 +442,17 @@ Agent 修改 canonical 源码后重新编译和截图，直到达到任务指定
 ### 7. 交付闸门
 
 只有在所选目标模式的编译、资源接入、测试和视觉比较都通过时才标记 `deliveryReady=true`。缺失基准、编译失败、测试未运行、存在未处理 `unsupported` 或重大视觉差异时，只能标记 `pass-with-review`、`fail` 或 `not-run`。
+
+`visualDiff` 这一项**不能凭手写凑**，它的取值受 `diff/` 的证据约束：
+
+- 比较器判 `fail` ⇒ `visualDiff` 不得为 `pass`；
+- 比较器判 `pass-with-review` ⇒ 默认原样记 `pass-with-review`，**唯一例外**是
+  `reason == "structural-within-declared-floor"`（文字密集页的物理下界，已在计划里声明并量化归因）
+  —— 此时记 `pass` 才是诚实的。
+
+这条例外是必需的：没有它，比较器按下界放行了，`deliveryReady` 却永远推导为 `false`，
+文字密集页就**永远交付不了**。反过来，把 `structural-diff-above-warn` 之类写成 `pass`，
+校验脚本会拦下 —— 否则「下界内放行」会变成把所有待复核项一并吞掉的借口。
 
 ## 输出证据
 
@@ -369,9 +490,9 @@ skill 根目录的 `index.html` 是一个纯静态差异查看器（无需服务
 | `scripts/canvas_map.py` | 唯一的坐标换算入口，正向 + 逆向 + 默认 `fit` 策略；`to_ratios` / `axis_deviation` 给出比例形式与模型偏差 | 任何需要换算坐标的分析之前；改坐标逻辑后跑 `--self-test` |
 | `scripts/render_reference.mjs` | 确定性渲染基准图与事实表（含 `rectInReference`、`alphaBounds`、`textMetrics`、运行时字体） | 第 1 步建立基准 |
 | `scripts/layout_proportions.py` | 把事实表位置转成 `layoutProportions` 约束规格（尺寸是常量、位置相对直接父视图），并列出「探针设备推导值」禁止清单 | 第 2 步写实现计划时；缺它就没法核对「有没有写成探针设备上的固定 pt」 |
-| `scripts/check_layout_proportions.py` | 计划驱动地核对源码有没有照计划声明的 `kind` 实现；`--plan-only` 只校验计划 | 实现完成后、交付前；改了布局代码就要重跑 |
-| `scripts/compare_reference.py` | 像素比较，输出结构/纹理/填充三分与区域明细 | 每次截图后 |
-| `scripts/audit_alignment.py` | 元素级对齐审计，区分「基准不可信」与「App 不对」 | 每次截图后；尺寸一致也必须跑 |
+| `scripts/check_layout_proportions.py` | 计划驱动地核对源码有没有照计划声明的 `kind` 实现；`--plan-only` 只校验计划 | **门 0（`--plan-only`）在写码前，门 1 在写码完成后、编译之前**；改了布局代码就重跑。纯静态（只读计划与源码文本），秒级，不编译不起浏览器 |
+| `scripts/compare_reference.py` | 像素比较，输出结构/纹理/填充三分、网格 `regions`，以及具名区域 `attribution`（含 `declaredUnsupported` 与扣除后的 `residual`） | 每次截图后 |
+| `scripts/audit_alignment.py` | 元素级对齐审计，区分「基准不可信」与「App 不对」；框内近乎空白的图片/容器元素判 `insufficient-evidence`，不参与位移与比例拟合 | 每次截图后；尺寸一致也必须跑 |
 | `scripts/audit_fonts.py` | 字体链审计：逐元素比对「CSS 声明的族」与「运行时实际用上的族」，判出静默字体替换 | 每次截图后；`alignment.json` 说「问题在 App 侧」时更要跑 |
 | `scripts/validate_run.py` | run 产物契约校验，交叉核对闸门与证据；带 `--source` 时连同布局约束一起判 | 每次写完 run |
 

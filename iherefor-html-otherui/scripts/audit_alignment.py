@@ -61,6 +61,8 @@ DEFAULT_PEAK_RATIO = 1.25       # 最优峰/次优峰最小比值，低于此判
 DEFAULT_INK_THRESHOLD = 24      # 边缘强度认定墨迹的下限（0-255）
 DEFAULT_INK_OWN_MIN = 0.5       # 框内墨迹占搜索窗墨迹的最低比例
 DEFAULT_INK_COVERAGE_MIN = 0.01 # 预测框内墨迹覆盖度下限
+DEFAULT_INK_ASSET_COVERAGE_MIN = 0.10  # 图片/容器探针的覆盖度下限：低于此，墨迹质心
+                                       # 代表的是稀疏内容自己的位置而非外框中心
 DEFAULT_INK_MISSING_RATIO = 0.3 # 少内容元素占比达到此值即判基准不可信
 DEFAULT_DOM_TOLERANCE_PT = 4.0  # 基准图墨迹 vs DOM 预测框的容许偏移（含字形固有偏置）
 MIN_REGION_PX = 24              # 参与匹配的最小边长（图像像素）
@@ -394,7 +396,9 @@ def build_regions(page_facts, image_size, limit):
             continue
         if box.right > image_size[0] or box.bottom > image_size[1]:
             continue
-        candidates.append({"element": element, "box": box})
+        candidates.append({"element": element, "box": box,
+                           "probeKind": ("text" if has_text
+                                         else ("asset" if has_asset else "unknown"))})
 
     leaves = []
     for item in candidates:
@@ -633,6 +637,7 @@ def ink_probe(reference_edges, predictions, radius_px, options):
         wb = min(full_h, int(math.ceil(box.bottom + radius_px)))
         base = {"index": item.get("index"), "label": item.get("label") or "?",
                 "tag": item.get("tag"), "className": item.get("className"),
+                "probeKind": item.get("probeKind") or "unknown",
                 "boxPx": box.rounded().as_dict(),
                 "yCenterPx": round((box.y + box.bottom) / 2, 2)}
         if wr - wl < 4 or wb - wt < 4:
@@ -679,10 +684,23 @@ def ink_probe(reference_edges, predictions, radius_px, options):
         dx = centroid_x - (box.x + box.right) / 2
         dy = centroid_y - (box.y + box.bottom) / 2
         own_ratio = inner_weight / total_weight
-        rows.append({**base, "matched": True,
-                     "confidence": "high" if own_ratio >= options.ink_own_min else "low",
-                     "inkCoverage": round(coverage, 5), "ownInkRatio": round(own_ratio, 3),
-                     "dxPx": round(dx, 3), "dyPx": round(dy, 3)})
+        # 图片/容器元素的框可以远大于它的内容：透明留白、卡片美术只占一角。这种「框内
+        # 近乎空白」的元素，墨迹质心量到的是**那块稀疏内容自己的位置**，不是外框中心，
+        # 于是 dxPt 会乱跳到几十 pt（实测 ±44.5pt），还会伪造出一条比例误差信号，
+        # 把整轮修复引向「重渲染基准」——照做就是白干，而且会改掉本来正确的基准。
+        # 文本元素不走这条：它的预测框紧贴字形，覆盖度低就是真的没排出来，那是有效信号。
+        sparse = (base["probeKind"] != "text"
+                  and coverage < options.ink_asset_coverage_min)
+        row = {**base, "matched": True,
+               "confidence": ("insufficient" if sparse else
+                              ("high" if own_ratio >= options.ink_own_min else "low")),
+               "inkCoverage": round(coverage, 5), "ownInkRatio": round(own_ratio, 3),
+               "dxPx": round(dx, 3), "dyPx": round(dy, 3)}
+        if sparse:
+            row["reason"] = (f"框内墨迹覆盖度 {coverage:.4f} 低于 "
+                             f"{options.ink_asset_coverage_min}：框内近乎空白，墨迹质心代表的是"
+                             "那块稀疏内容的位置、不是外框中心，不能用于位移与比例判定")
+        rows.append(row)
     return rows
 
 
@@ -705,14 +723,28 @@ def summarize_ink(rows, unit_scale, options, label):
         row["dxPt"] = round(row["dxPx"] / unit_scale, 3) if unit_scale else row["dxPx"]
         row["dyPt"] = round(row["dyPx"] / unit_scale, 3) if unit_scale else row["dyPx"]
 
-    covered = [r for r in probed if r["inkCoverage"] >= options.ink_coverage_min]
-    missing = [r for r in probed if r["inkCoverage"] < options.ink_coverage_min]
-    missing_ratio = len(missing) / len(probed)
+    # 「该有内容的地方没有内容」只对**文本**探针成立。图片/容器元素的框可以远大于其内容
+    # （透明留白、卡片美术只占一角），低覆盖度是常态；把它算进来会把正常页面误判成
+    # 「基准不可信」。分母同步改成文本探针数 —— 拿 probed 当分母，等于让图片元素
+    # 稀释掉文本缺失这个信号。
+    text_probes = [r for r in probed if r.get("probeKind") == "text"]
+    covered = [r for r in text_probes if r["inkCoverage"] >= options.ink_coverage_min]
+    missing = [r for r in text_probes if r["inkCoverage"] < options.ink_coverage_min]
+    missing_ratio = (len(missing) / len(text_probes)) if text_probes else 0.0
+    excluded = [r for r in probed if r.get("confidence") == "insufficient"]
     out["coverage"] = {
         "threshold": options.ink_coverage_min,
+        "textProbes": len(text_probes),
         "withInk": len(covered), "withoutInk": len(missing),
         "missingRatio": round(missing_ratio, 3),
         "missingElements": [f"#{r['index']} {r['label']}" for r in missing],
+        # 被排除的低覆盖度图片/容器元素。列出来是为了让「本审计没有量它们」这件事
+        # 可见 —— 悄悄少算几个探针，比少算本身更危险。
+        "excludedLowCoverage": {
+            "threshold": options.ink_asset_coverage_min,
+            "count": len(excluded),
+            "elements": [f"#{r['index']} {r['label']}" for r in excluded],
+        },
     }
 
     # 判定顺序：先看「该有内容的地方有没有内容」，这是最硬的证据（且不依赖任何阈值
@@ -758,9 +790,13 @@ def summarize_ink(rows, unit_scale, options, label):
     if abs(fit["slope"]) > options.scale_tolerance and (
             abs(fit["t"]) >= DEFAULT_T_MIN or fit["r2"] >= DEFAULT_R2_MIN):
         out.update({"status": "needs-review", "reason": "scale-mismatch",
+                    "crossCheckRequired": True,
                     "detail": (f"基准图内容相对 DOM 预测框存在缩放：隐含比例 "
                                f"{1 + fit['slope']:.5f}（偏离 1.0 达 {fit['slope'] * 100:+.3f}%，"
-                               f"R²={fit['r2']:.2f}）")})
+                               f"R²={fit['r2']:.2f}）"
+                               + (f"；注意本次已排除 {len(excluded)} 个低覆盖度图片/容器探针"
+                                  "（coverage.excludedLowCoverage），若它们本来就在 usable 里，"
+                                  "这条比例信号可能来自质心偏置" if excluded else ""))})
     elif median_offset > options.dom_tolerance:
         out.update({"status": "needs-review", "reason": "constant-offset",
                     "detail": (f"基准图内容相对 DOM 预测框系统性偏移"
@@ -923,6 +959,7 @@ def audit(options):
                     "label": label_of(item["element"]),
                     "tag": item["element"].get("tag"),
                     "className": item["element"].get("className"),
+                    "probeKind": item.get("probeKind"),
                     "box": item["box"]} for item in regions]
 
     # ---- A. DOM 事实 vs 基准图 ----
@@ -988,7 +1025,26 @@ def conclude(result):
         return {
             "status": status, "reason": "baseline-disagrees-with-dom",
             "trust": "DOM（事实表）",
-            "nextAction": "重渲染基准并重新批准，然后重跑本审计",
+            "crossCheckRequired": True,
+            "crossCheck": {
+                "why": ("本审计用**墨迹质心**量元素位置。对框内近乎空白的图片/容器元素，"
+                        "质心量到的是那块稀疏内容自己的位置，不是外框中心，会伪造出位移与"
+                        "比例信号 —— 实测过 dxPt 跳到 ±44.5pt、拟出假的「基准缩放 3.956%」。"
+                        "所以比例类结论在据此重渲染基准之前，必须用**原理不同**的对象复核。"),
+                "how": ("换硬边高对比特征（如卡片描边环）做亮度扫描 + 线性拟合，重点看偏差是"
+                        "**常量**还是**随坐标增长**：常量偏置 = 探测器偏置；只有比例误差才会"
+                        "线性增长。"),
+                "workedExample": ("描边环实测隐含比例 0.998592、R²=0.9999、最大边沿偏差 2.35pt"
+                                  "（若真缩放 3.956%，最下卡片应偏约 22.9pt），且 Δtop/Δbottom "
+                                  "从 y=212 到 y=791 恒定 ⇒ 没有比例误差。"),
+                "discipline": ("契约禁止手写覆盖本工具结论：保留 alignment.json 原样，"
+                               "另写独立证据文件（如 diff/baseline-scale-check.json），"
+                               "并在 review.json 里说明异议与根因。"),
+                "checkCoverage": ("先看 coverage.excludedLowCoverage：被排除的低覆盖度"
+                                  "图片/容器探针越多，本结论越可能来自质心偏置而非真实位移。"),
+            },
+            "nextAction": ("先按 crossCheck 复核；只有复核也确认存在真实比例/位移误差时，"
+                           "才重渲染基准并重新批准，然后重跑本审计。**不要直接执行重渲染**。"),
             "verdict": (
                 "**基准图与 DOM 事实不符，基准本身不可信**"
                 f"（{dom.get('detail') or dom.get('reason')}）。"
@@ -1209,6 +1265,11 @@ def main():
                     help=f'框内墨迹占搜索窗墨迹的最低比例，低于此判为邻居污染（默认 {DEFAULT_INK_OWN_MIN}）')
     ap.add_argument('--ink-coverage-min', type=float, default=DEFAULT_INK_COVERAGE_MIN,
                     help=f'预测框内墨迹覆盖度下限，低于此视为图上这里没内容（默认 {DEFAULT_INK_COVERAGE_MIN}）')
+    ap.add_argument('--ink-asset-coverage-min', type=float,
+                    default=DEFAULT_INK_ASSET_COVERAGE_MIN,
+                    help='图片/容器探针的覆盖度下限：低于此判 insufficient-evidence，'
+                         '不参与位移与比例拟合（框内近乎空白时墨迹质心不代表外框中心）。'
+                         f'默认 {DEFAULT_INK_ASSET_COVERAGE_MIN}')
     ap.add_argument('--ink-missing-ratio', type=float, default=DEFAULT_INK_MISSING_RATIO,
                     help=f'多少比例的元素该有内容却没有即判基准不可信（默认 {DEFAULT_INK_MISSING_RATIO}）')
     ap.add_argument('--dom-tolerance', type=float, default=DEFAULT_DOM_TOLERANCE_PT,

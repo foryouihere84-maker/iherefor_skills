@@ -66,6 +66,27 @@ if comparison is not None:
                 f"区域级结构差异最大只有 {worst:.4f}，未超过上限 {limit}："
                 "没有定位到具体差在哪个区域")
 
+    # attribution 是「控件级」证据（regions 只到网格级），属于可选增强：本次素材没有
+    # page-facts，所以正常情况下 status 为 not-run，这里跳过。但一旦 Agent 给出了
+    # status == "ok" 的归因，就必须满足互斥且穷尽的恒等式 —— 一份不穷尽的归因比没有
+    # 归因更危险，它会让人以为「差异都定位完了」。归因逻辑本身的正向与反向断言在
+    # scripts/tests/test_compare_reference.py 里。
+    attribution = comparison.get("attribution")
+    if isinstance(attribution, dict) and attribution.get("status") == "ok":
+        rows = attribution.get("regions") or []
+        unattributed = attribution.get("unattributed") or {}
+        missing = (unattributed.get("changed") or {}).get("pixels")
+        total = comparison.get("changedPixels")
+        if missing is None:
+            problems.append("attribution 判 ok 却缺少 unattributed.changed.pixels")
+        elif sum(r.get("changedPixels") or 0 for r in rows) + missing != total:
+            problems.append(
+                "attribution 不互斥且穷尽：Σ(区域 changedPixels) + unattributed != "
+                f"整页 changedPixels（{total}）")
+        if not isinstance(attribution.get("residual"), dict):
+            problems.append(
+                "attribution 判 ok 却缺少 residual：放行论述要的是扣除已声明差异后的剩余值")
+
 if verdict is not None:
     if verdict.get("status") != "fail":
         problems.append(f"verdict.status={verdict.get('status')!r}；必须为 'fail'")

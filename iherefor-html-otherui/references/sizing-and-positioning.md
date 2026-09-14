@@ -56,6 +56,27 @@
 字号、行高、圆角、描边宽度、阴影、最小点击区（≥44pt / 48dp）、图标与位图资源的**点值尺寸**、
 以及所有标准间距（4 / 8 / 12 / 16 / 24 / 32）。这些在任何屏幕上都取同一个设计值。
 
+**本条管的是「实现侧写什么」，不是「像素 diff 能不能到 0」。** 这两件事必须分开，
+否则会推出一个自相矛盾的期待：既然字号不缩放，基准图与实机图的字形就该逐像素重合。
+事实上不会，而且**永远不会** —— 原因在测量侧：基准图是在 `scale(1.0229)` 的画布上渲染的，
+所以 **基准字形 = 设计字号 × 1.0229**；实现侧按本条取设计字号，两者天然差 2.29%。
+这个差足以让字形边缘的相位差越过强边配对容差（`--edge-tolerance` 默认 2px），
+被比较器归入 `structuralRatio`。
+
+于是两条对称的纪律：
+
+- **不许**为了让 `structuralRatio` 降下来去缩放字号 —— 那是拿违反本条的代价迎合一个
+  测量侧产物，见 §6 反例清单末行。
+- **应当**在实现计划里声明 `gateReachability.expectedStructuralFloor`，把这个下界连同
+  它的成因与**实测占比**写下来，交付状态记 `pass-with-review`。字段、约束与三条可核性见
+  [artifact-contract.md](artifact-contract.md#ui-implementation-planjson-的-gatereachability)。
+
+> 一句话：**§2.2 保证的是「实现不引入缩放」，不是「diff 恒等于 0」。**
+> 前者是义务，后者是对基准画布的误解。把后者当前者，就会开始改字号去凑闸门。
+
+这个下界**只对文字类结构差异成立**。`fillRatio` 超限、或结构差异超出声明下界，仍然判 `fail`
+—— 下界是「不可消除的下界」，不是「豁免额度」。
+
 ### 2.3 唯一需要给固定尺寸开口子的地方：动态字体
 
 当系统字号被用户调大时，**字号本身仍按设计值走**（不缩放），但**承载文字的容器必须被允许增长**：
@@ -182,7 +203,9 @@
 - [ ] 每个可见元素在尺寸轴上归入 `fixed` / `pinned` / `intrinsic`，并写出判据；
 - [ ] 每个元素在位置轴上确定**基准父视图**（写进 `of`），确认不了的一律留待确认，不默认 `root`；
 - [ ] `proportional` 只用于确实随父容器成比例变化的关系，且给出理由；
-- [ ] 所有 `fixed` 值能在设计稿里直接读到（不是从测量换算得来）。
+- [ ] 所有 `fixed` 值能在设计稿里直接读到（不是从测量换算得来）；
+- [ ] 若本页文字密集，已声明 `gateReachability.expectedStructuralFloor`（≥ 比较器的
+      `maxStructuralRatio`）与非空 `unavoidable[]`（每项含 `cause` 与 `measuredShare`）。
 
 写代码后：
 
@@ -191,7 +214,10 @@
 - [ ] 字号、圆角、描边、最小点击区在全部目标设备上数值一致；
 - [ ] 尺寸轴没有被写成比例 `multiplier`（除 §2.3 的动态字体例外，且已声明）；
 - [ ] 位置关系全部指向直接父视图（或屏幕画布），无混合基准；
-- [ ] 对齐关系用对齐锚点表达，而不是用两个各自算出来的数值凑巧相等。
+- [ ] 对齐关系用对齐锚点表达，而不是用两个各自算出来的数值凑巧相等；
+- [ ] `structuralRatio` 高于上限时，先判它是不是 §2.2 的物理下界：是则声明
+      `gateReachability` 并记 `pass-with-review`，**不是**去改字号 / 行高 / 整体缩放
+      来把这个数字压下去。
 
 ## 8. 实现现状（`schemaVersion 3`，已与本文规范对齐）
 
@@ -205,6 +231,7 @@
 | §6 反例清单 | `forbiddenLiterals` | 只收 **`proportional`** 关系的值 —— `fixed` 的 44/68/48、`pinned` 的 23/25、设计常量 12/1/44 都**应当**写成字面量 |
 | §2 逐类判据 | `check_layout_proportions.py` | 按 `kind` 逐类核对；并有 `forbidden-targets-non-proportional` 拦反向错误（把本该字面量的值报成违规） |
 | §7 交付前清单 | `validate_run.py --source` | 连同布局约束一起判 |
+| §2.2 字号不缩放 ⇒ 文字类结构差异存在物理下界 | `ui-implementation-plan.json` 的 `gateReachability` + `compare_reference.py --expected-structural-floor` + `validate_run.py` 的 `check_gate_reachability` | 已提供：下界由**计划**声明（比较器不自己给），比较器按它判 `pass-with-review` / `structural-within-declared-floor`，校验器做计划↔结论三条交叉核对 |
 
 **反向错误与正向错误一样要拦。** 两轴口径下最容易犯的错不是「漏报」而是「误报」：
 把 `offers.height = 68`、`cta.x = 25` 这类**本来就该照原值写**的设计值当成「没做成比例」而报违规。

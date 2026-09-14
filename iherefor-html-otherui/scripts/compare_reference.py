@@ -5,10 +5,29 @@
 
     pass               structuralRatio <= warnStructuralRatio 且 fillRatio <= maxFillRatio
     pass-with-review   warnStructuralRatio < structuralRatio <= maxStructuralRatio
-    fail               structuralRatio > maxStructuralRatio，或 fillRatio > maxFillRatio，
-                       或两张图尺寸不一致
+                       —— 或 —— structuralRatio > maxStructuralRatio，但不超过「声明下界」
+                       且 fillRatio 合规（reason = structural-within-declared-floor，见下）
+    fail               structuralRatio 超出声明下界（未声明下界时即 > maxStructuralRatio），
+                       或 fillRatio > maxFillRatio，或两张图尺寸不一致
 
 退出码：0 = pass，1 = fail，2 = pass-with-review。
+
+**声明的结构差异下界（`--expected-structural-floor`）。** 文字密集页的结构差异存在一个
+**物理下界**：基准图是在 `scale(1.0229)` 的画布上渲染的，所以基准字形 = 设计字号 × 1.0229；
+而尺寸契约明令字号**不得**按比例缩放（见 `references/sizing-and-positioning.md` §2.2）。
+两者相差 2.29%，足以让字形边缘的相位差超过 ``--edge-tolerance`` 的配对容差而被判成
+``structural`` —— 实测文字类结构差异可达 0.01563，单项就占 0.02 阈值的 78%。
+这个下界**不可能靠改代码降到 0**，所以必须由计划显式声明（`gateReachability`），
+而不是让 Agent 反复去逼近一个不存在的 0。
+
+传了该值时：结构差异超过 ``--max-structural-ratio`` 但不超过声明下界的，
+判 ``pass-with-review``（``reason = structural-within-declared-floor``）。三条边界：
+
+* **只对结构差异开口子。** 平坦区颜色写错与字号无关，`fillRatio` 超标永远判 fail。
+* **只降级、不放宽。** 它把 ``fail`` 降为 ``pass-with-review``，不会把任何情况升为 ``pass``；
+  实际值**超过**声明下界时仍然判 ``fail`` —— 下界是「不可消除的下界」，不是「豁免额度」。
+* **不传则行为完全不变。** 没有 ``--expected-structural-floor``、``--plan`` 里也没有
+  ``gateReachability`` 时，判定与旧版逐字一致。
 
 **为什么阈值不直接加在 changedRatio 上。** 原始 changedRatio 把几类完全不同的差异
 混在一起。同一套几何形状因为字体栅格化、抗锯齿、次像素相位差而像素值不同 —— 这是
@@ -48,10 +67,27 @@
 ``--threshold`` 是**单像素颜色容差**（0-255），不是差异比例阈值；决定是否放行的是
 ``--max-structural-ratio`` / ``--max-fill-ratio``。尺寸不一致一律 fail —— 比较器不
 接受缩放或裁剪过的派生图，它不会把「缩放到同一尺寸」当作通过。
+
+**`regions` 与 `attribution` 的分工。** `regions` 是**网格切块**（按 `--grid-rows` /
+`--grid-cols` 均分），回答「差在哪一带」；`attribution` 是**具名区域归因**，回答
+「差在哪个控件」。后者需要 `--page-facts` 提供 `elements[].rectInReference`：
+
+* 归属规则是**最小包含元素优先**（面积升序），且**互斥且穷尽** ——
+  `Σ(区域 changedPixels) + unattributed.changedPixels == 整页 changedPixels`，
+  一个像素只会算进一个区域，也不会被悄悄丢掉。
+* `declaredUnsupported` 是计划里 `unsupported.items[]` 声明的差异覆盖区（取并集，
+  重叠不重复计数）。`residual` 是**扣除它之后**的剩余三类比值 —— 整页比值里混着
+  已声明为 `unsupported` 的差异（系统状态栏、无法等价映射的 CSS 特性），不扣除就
+  说不清「还剩多少是真缺陷」，那才是 `review.json` 该引用的数字。
+* 给不出 `--page-facts`、或事实表没有 `rectInReference` 时，`attribution.status` 记
+  `insufficient-evidence` 并写明原因，**不冒充**「归因完成」；`residual` 仍照常给出。
+* `attribution` 只增不改：不给 `--page-facts` 时它记 `not-run`，`status` / `exitCode`
+  的判定语义与旧版完全一致。
 """
 
 import argparse
 import json
+import math
 from pathlib import Path
 
 from PIL import Image, ImageChops, ImageFilter
@@ -64,6 +100,8 @@ DEFAULT_FLAT_THRESHOLD = 16   # 梯度低于多少算平坦区（0-255）
 DEFAULT_EDGE_TOLERANCE = 2    # 强边移动多少像素以内仍算同一条边（标定见 tests/test_compare_reference.py）
 DEFAULT_GRID_ROWS = 6
 DEFAULT_GRID_COLS = 1
+DEFAULT_REGION_MIN_SIDE = 4   # 归因区域的最小边长（像素），比它小的框量不出归属
+MAX_ATTRIBUTION_REGIONS = 255  # 归属图用 'L' 模式承载区域号，故上限 255
 
 
 def changed_mask(reference, actual, threshold):
@@ -177,6 +215,214 @@ def region_stats(mask, structural, texture, fill, rows, cols, size):
     return regions
 
 
+def region_name(element):
+    """具名区域的回退链：``id`` → ``className`` → ``ownText`` → 下标。
+
+    刻意与 ``layout_proportions.region_label`` 保持同一套链而不 import：本脚本要在
+    只装了 Pillow 的环境里独立可跑，不引入脚本间的硬依赖。两处改动时需同步。
+    """
+    for key in ('id', 'className'):
+        value = (element.get(key) or '').strip()
+        if value:
+            return value.split()[0].lstrip('.')[:32]
+    text = (element.get('ownText') or '').strip()
+    if text:
+        return text[:24]
+    return f"element_{element.get('index')}"
+
+
+def reference_regions(page_facts, plan, size):
+    """从事实表取出可归因的具名区域，**按面积升序**返回（最具体的排在最前）。
+
+    面积升序是归属规则的一半：先让最小（最具体）的框认领像素，外层容器才拿不到
+    已经被子元素认领的部分。返回 ``(regions, reason)``，``reason`` 非空即证据不足。
+    """
+    width, height = size
+    elements = page_facts.get('elements') or []
+    if not any(isinstance(e, dict) and 'rectInReference' in e for e in elements):
+        return None, ('事实表里没有 rectInReference（需要 schemaVersion 3 的 page-facts.json）：'
+                      '无法把差异像素定位到具名区域')
+
+    # 计划里的 region 名是 Agent 确认过的，优先于从 DOM 身份猜出来的名字。
+    confirmed = {}
+    if isinstance(plan, dict):
+        for item in ((plan.get('layoutProportions') or {}).get('regions') or []):
+            if isinstance(item, dict) and item.get('index') is not None and item.get('region'):
+                confirmed[item['index']] = str(item['region'])
+
+    regions = []
+    for element in elements:
+        if not isinstance(element, dict):
+            continue
+        rect = element.get('rectInReference') or {}
+        try:
+            x = float(rect.get('x', 0))
+            y = float(rect.get('y', 0))
+            w = float(rect.get('width', 0))
+            h = float(rect.get('height', 0))
+        except (TypeError, ValueError):
+            continue
+        x0 = max(0, int(math.floor(x)))
+        y0 = max(0, int(math.floor(y)))
+        x1 = min(width, int(math.ceil(x + w)))
+        y1 = min(height, int(math.ceil(y + h)))
+        if (x1 - x0) < DEFAULT_REGION_MIN_SIDE or (y1 - y0) < DEFAULT_REGION_MIN_SIDE:
+            continue
+        regions.append({
+            'region': confirmed.get(element.get('index')) or region_name(element),
+            'index': element.get('index'),
+            'box': {'x': x0, 'y': y0, 'width': x1 - x0, 'height': y1 - y0},
+        })
+
+    if not regions:
+        return None, '事实表里没有满足最小尺寸的 rectInReference 区域'
+    regions.sort(key=lambda item: (item['box']['width'] * item['box']['height'],
+                                   item['box']['y'], item['box']['x']))
+    return regions[:MAX_ATTRIBUTION_REGIONS], None
+
+
+def declared_unsupported_mask(plan, size):
+    """计划里 ``unsupported.items[]`` 声明覆盖的像素区（并集）。
+
+    取并集而非逐个累加：两个声明项的范围可能重叠，累加会把同一片像素扣两次。
+    没有坐标的声明项进 ``unlocated`` —— 它们**扣不掉**，必须如实说出来，
+    而不是当作「已扣除」把 residual 算小。
+    """
+    width, height = size
+    union = None
+    located, unlocated = [], []
+    if not isinstance(plan, dict):
+        return None, located, unlocated
+    items = (plan.get('unsupported') or {}).get('items') or []
+    for position, item in enumerate(items):
+        if not isinstance(item, dict):
+            continue
+        label = str(item.get('region') or item.get('category')
+                    or item.get('reason') or f'item_{position}')
+        rect = None
+        for key in ('rectInReference', 'box', 'rect'):
+            candidate = item.get(key)
+            if isinstance(candidate, dict) and candidate.get('width') and candidate.get('height'):
+                rect = candidate
+                break
+        if rect is None:
+            unlocated.append(label)
+            continue
+        try:
+            x0 = max(0, int(math.floor(float(rect.get('x', 0)))))
+            y0 = max(0, int(math.floor(float(rect.get('y', 0)))))
+            x1 = min(width, int(math.ceil(float(rect.get('x', 0)) + float(rect['width']))))
+            y1 = min(height, int(math.ceil(float(rect.get('y', 0)) + float(rect['height']))))
+        except (TypeError, ValueError):
+            unlocated.append(label)
+            continue
+        if x1 <= x0 or y1 <= y0:
+            unlocated.append(label)
+            continue
+        patch = Image.new('L', size, 0)
+        patch.paste(255, (x0, y0, x1, y1))
+        union = patch if union is None else ImageChops.lighter(union, patch)
+        located.append({'label': label,
+                        'box': {'x': x0, 'y': y0, 'width': x1 - x0, 'height': y1 - y0}})
+    return union, located, unlocated
+
+
+def class_stats(image, declared, total_pixels):
+    """某一类差异在**扣除已声明区之后**的像素数与占比。"""
+    kept = image if declared is None else ImageChops.multiply(image, ImageChops.invert(declared))
+    count = kept.histogram()[255]
+    return {'pixels': count, 'ratio': round(count / total_pixels, 6)}
+
+
+def attribute_diff(mask, structural, texture, fill, page_facts, plan, size):
+    """把差异像素互斥归属到具名区域，并给出扣除已声明差异后的剩余值。"""
+    width, height = size
+    total_pixels = width * height
+    classes = {'changed': mask, 'structural': structural,
+               'texture': texture, 'fill': fill}
+
+    declared, located, unlocated = declared_unsupported_mask(plan, size)
+    out = {
+        'basis': 'page-facts.json: elements[].rectInReference',
+        'assignment': 'exclusive：按面积升序（最小包含元素优先），每个差异像素只归属一个区域',
+        'declaredUnsupported': {
+            'located': located,
+            'unlocated': unlocated,
+            'note': ('以下已声明项没有坐标，无法从整页比值里扣除：' + '、'.join(unlocated)
+                     + '。要么在计划里补上 rectInReference，要么在 review.json 里显式说明'
+                       '它只能人工判定' if unlocated else None),
+        },
+        'residual': {name: class_stats(image, declared, total_pixels)
+                     for name, image in classes.items()},
+        'residualNote': ('扣除 declaredUnsupported 覆盖区之后的剩余差异 —— '
+                         'review.json 的放行论述应引用这一组数字，而不是整页比值'),
+    }
+
+    regions, reason = reference_regions(page_facts, plan, size)
+    if regions is None:
+        out.update({'status': 'insufficient-evidence', 'reason': reason})
+        return out
+
+    # 归属图：像素值 = 区域序号（1 起），0 表示不属于任何区域。
+    owner = Image.new('L', size, 0)
+    for position, item in enumerate(regions, start=1):
+        box = item['box']
+        window_box = (box['x'], box['y'], box['x'] + box['width'], box['y'] + box['height'])
+        window = owner.crop(window_box)
+        free = window.point(lambda value: 255 if value == 0 else 0)
+        take = ImageChops.multiply(mask.crop(window_box), free)
+        window.paste(position, mask=take)
+        owner.paste(window, window_box)
+
+    per_region = []
+    for position, item in enumerate(regions, start=1):
+        box = item['box']
+        window_box = (box['x'], box['y'], box['x'] + box['width'], box['y'] + box['height'])
+        selector = owner.crop(window_box).point(lambda value, p=position: 255 if value == p else 0)
+        row = dict(item)
+        for name, image in classes.items():
+            hit = ImageChops.multiply(image.crop(window_box), selector)
+            count = hit.histogram()[255]
+            row[f'{name}Pixels'] = count
+            row[f'{name}PageShare'] = round(count / total_pixels, 6)
+        area = max(1, box['width'] * box['height'])
+        row['structuralRatio'] = round(row['structuralPixels'] / area, 6)
+        row['textureRatio'] = round(row['texturePixels'] / area, 6)
+        row['fillRatio'] = round(row['fillPixels'] / area, 6)
+        per_region.append(row)
+
+    # 互斥且穷尽：整页各类像素数 - 各区域之和 = 未归属部分。用减法而不是重数一遍，
+    # 保证「区域之和 + unattributed == 整页」这条恒等式在数值上永远成立。
+    totals = {name: image.histogram()[255] for name, image in classes.items()}
+    attributed = {name: sum(row[f'{name}Pixels'] for row in per_region) for name in classes}
+    unattributed = {}
+    for name in classes:
+        missing = totals[name] - attributed[name]
+        unattributed[name] = {
+            'pixels': missing,
+            'ratio': round(missing / total_pixels, 6),
+            'shareOfClass': (round(missing / totals[name], 6) if totals[name] else 0.0),
+        }
+
+    out.update({
+        'status': 'ok',
+        'regionCount': len(per_region),
+        'regions': per_region,
+        'unattributed': unattributed,
+        'attributedShare': {
+            name: (round(attributed[name] / totals[name], 6) if totals[name] else 1.0)
+            for name in classes
+        },
+        'worstRegions': [
+            row for row in sorted(
+                per_region,
+                key=lambda item: max(item['structuralPageShare'], item['fillPageShare']),
+                reverse=True)[:5]
+        ],
+    })
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -203,20 +449,54 @@ def main():
                     help=f'区域统计的行数（默认 {DEFAULT_GRID_ROWS}）')
     ap.add_argument('--grid-cols', type=int, default=DEFAULT_GRID_COLS,
                     help=f'区域统计的列数（默认 {DEFAULT_GRID_COLS}）')
+    ap.add_argument('--page-facts',
+                    help='页面事实表；给了才做具名区域归因（attribution）。'
+                         '需要 elements[].rectInReference（schemaVersion 3）')
+    ap.add_argument('--plan',
+                    help='实现计划；可选。用它的 layoutProportions.regions 确认区域名，'
+                         '用 unsupported.items 计算扣除后的剩余值，'
+                         '并在未显式给出 --expected-structural-floor 时读取 '
+                         'gateReachability.expectedStructuralFloor')
+    ap.add_argument('--expected-structural-floor', type=float,
+                    help='计划声明的结构差异下界。structuralRatio 超过 --max-structural-ratio '
+                         '但不超过该值时判 pass-with-review'
+                         '（reason=structural-within-declared-floor）。'
+                         '它只对结构差异生效，且实际值超过它时仍判 fail。'
+                         '不传且计划里也没有 gateReachability 时，判定与旧版完全一致')
     args = ap.parse_args()
 
     if args.warn_structural_ratio > args.max_structural_ratio:
         ap.error('--warn-structural-ratio 不能大于 --max-structural-ratio')
+    if (args.expected_structural_floor is not None
+            and args.expected_structural_floor < args.max_structural_ratio):
+        ap.error('--expected-structural-floor 不能小于 --max-structural-ratio：'
+                 '声明一个低于上限的「下界」没有意义，只会把正常放行也降级')
     if args.grid_rows < 1 or args.grid_cols < 1:
         ap.error('--grid-rows / --grid-cols 必须 >= 1')
     if args.edge_tolerance < 0:
         ap.error('--edge-tolerance 不能为负')
 
+    # 计划只读一次：归因（区域名 / unsupported）与结构下界都从它取。
+    plan, plan_error = None, None
+    if args.plan:
+        try:
+            plan = json.loads(Path(args.plan).read_text(encoding='utf-8'))
+        except (OSError, ValueError) as error:
+            plan_error = f'无法读取 --plan：{error}'
+
+    expected_floor = args.expected_structural_floor
+    floor_source = 'cli' if expected_floor is not None else 'none'
+    if expected_floor is None and isinstance(plan, dict):
+        declared = ((plan.get('gateReachability') or {}).get('expectedStructuralFloor'))
+        if isinstance(declared, (int, float)) and not isinstance(declared, bool):
+            expected_floor = float(declared)
+            floor_source = 'plan'
+
     reference = Image.open(args.reference).convert('RGBA')
     actual = Image.open(args.actual).convert('RGBA')
 
     result = {
-        'schemaVersion': 2,
+        'schemaVersion': 3,
         'reference': str(Path(args.reference).resolve()),
         'actual': str(Path(args.actual).resolve()),
         'referenceSize': {'width': reference.size[0], 'height': reference.size[1]},
@@ -228,6 +508,9 @@ def main():
         'warnStructuralRatio': args.warn_structural_ratio,
         'maxStructuralRatio': args.max_structural_ratio,
         'maxFillRatio': args.max_fill_ratio,
+        # 声明下界在判定前就回显，便于 validate_run 交叉核对「计划声明了没有」。
+        'expectedStructuralFloor': expected_floor,
+        'expectedStructuralFloorSource': floor_source,
     }
 
     def emit(payload, code):
@@ -273,9 +556,37 @@ def main():
                               item['structuralRatio'] > args.warn_structural_ratio
                               or item['fillRatio'] > args.max_fill_ratio]
 
+    # 具名区域归因是**只增**的：它不进 status / exitCode 的判定，也不改 regions 的语义。
+    # 缺 --page-facts 时如实记 not-run，而不是编一份看起来完整的归因。
+    if plan_error:
+        result.setdefault('warnings', []).append(plan_error)
+    if not args.page_facts:
+        result['attribution'] = {
+            'status': 'not-run',
+            'reason': '未提供 --page-facts，只做了网格 regions，未做具名区域归因',
+        }
+    else:
+        try:
+            page_facts = json.loads(Path(args.page_facts).read_text(encoding='utf-8'))
+        except (OSError, ValueError) as error:
+            result['attribution'] = {
+                'status': 'insufficient-evidence',
+                'reason': f'无法读取 --page-facts：{error}',
+            }
+        else:
+            result['attribution'] = attribute_diff(
+                mask, structural, texture, fill, page_facts, plan, (width, height))
+
     # 判定只看结构差异与平坦区差异；纹理差异（抗锯齿/字体栅格化）不参与放行判定。
+    #
+    # 声明的结构下界只降级、不放宽：把 fail 降为 pass-with-review，绝不把任何情况升为 pass。
+    # 平坦区颜色写错与字号无关，所以 fillRatio 超标时不适用下界。
+    within_floor = expected_floor is not None and structural_ratio <= expected_floor
     if structural_ratio > args.max_structural_ratio:
-        status, reason, code = 'fail', 'structural-diff-exceeded', 1
+        if within_floor and fill_ratio <= args.max_fill_ratio:
+            status, reason, code = 'pass-with-review', 'structural-within-declared-floor', 2
+        else:
+            status, reason, code = 'fail', 'structural-diff-exceeded', 1
     elif fill_ratio > args.max_fill_ratio:
         status, reason, code = 'fail', 'fill-diff-exceeded', 1
     elif structural_ratio > args.warn_structural_ratio:
@@ -283,6 +594,18 @@ def main():
     else:
         status, reason, code = 'pass', None, 0
 
+    result['declaredStructuralFloor'] = {
+        'value': expected_floor,
+        'source': floor_source,
+        'maxStructuralRatio': args.max_structural_ratio,
+        'withinFloor': within_floor if expected_floor is not None else None,
+        'headroom': (round(expected_floor - structural_ratio, 6)
+                     if expected_floor is not None else None),
+        'note': ('下界是「不可消除的下界」，不是「豁免额度」：只对结构差异生效，'
+                 '实际值超过它仍判 fail，也不会把任何情况升为 pass'
+                 if expected_floor is not None else
+                 '未声明结构差异下界，判定与旧版一致'),
+    }
     result.update({'status': status, 'exitCode': code})
     if reason:
         result['reason'] = reason

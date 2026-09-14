@@ -11,6 +11,12 @@ description: |
   恰恰是诱导项：一个只用尺寸或整页比例判断的 Agent 会在这里放行。
 
   判分只看产物，不看 Agent 的自述。
+
+  区域级证据现在有两层：`regions` 是**网格切块**（差在哪一带），`attribution` 是
+  **具名区域归因**（差在哪个控件，需 `--page-facts`）。本用例的素材只有两张图、没有
+  page-facts，所以 `attribution` 通常记 `not-run`；判分只在它判 `ok` 时才要求满足
+  互斥且穷尽的恒等式（`Σ区域 + unattributed == 整页`）并给出 `residual`。归因逻辑
+  自身的正反断言在 `scripts/tests/test_compare_reference.py`。
 input:
   prompt: |
     我在排查一次视觉回归，工作区里有这两张图：

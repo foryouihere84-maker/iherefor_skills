@@ -261,6 +261,45 @@ def comparator_summary(run_dir, **overrides):
     return payload
 
 
+def reachability_plan(floor=0.05, unavoidable="default"):
+    """一份声明了 ``gateReachability`` 的实现计划。
+
+    文字密集页的结构差异存在物理下界（基准图在 scale(1.0229) 的画布上渲染，而尺寸契约
+    禁止按比例缩放字号），所以计划要显式声明它。``unavoidable`` 是**可核性**的关键：
+    下界必须说明「为什么不可消除」并给出实测占比，否则就是自己给自己发豁免。
+    """
+    if unavoidable == "default":
+        unavoidable = [{
+            "category": "typography",
+            "cause": "baseline-scale-vs-fixed-font-size",
+            "measuredShare": 0.01563,
+            "why": "基准字形 = 设计字号 x 1.0229，而契约禁止按比例缩放字号",
+        }]
+    return {
+        "schemaVersion": 1,
+        "gateReachability": {"expectedStructuralFloor": floor,
+                             "unavoidable": unavoidable},
+    }
+
+
+def reachability_summary(run_dir, **overrides):
+    """一份「结构差异落在声明下界内」的放行结论。"""
+    payload = comparator_summary(
+        run_dir,
+        status="pass-with-review",
+        reason="structural-within-declared-floor",
+        structuralRatio=0.03,
+        maxStructuralRatio=0.02,
+        expectedStructuralFloor=0.05,
+        expectedStructuralFloorSource="plan",
+        declaredStructuralFloor={"value": 0.05, "source": "plan",
+                                 "maxStructuralRatio": 0.02, "withinFloor": True,
+                                 "headroom": 0.02},
+    )
+    payload.update(overrides)
+    return payload
+
+
 def alignment_summary(run_dir, status="aligned", reason=None):
     """一份元素级对齐审计结论。"""
     payload = {
@@ -651,6 +690,110 @@ def main():
         if code == 0 or not any("应为 False" in v for v in data["violations"]):
             problems.append(f"用例35：漏一项复核仍被判可交付：{data['violations'][:2]}")
 
+        # 用例 36：声明的结构差异下界 —— 合规放行必须通过（阳性对照）。
+        # 文字密集页的结构差异存在物理下界，把它声明出来并做量化归因是**正确**的交付形态；
+        # 校验器如果把这条正常路径也拦下，就会逼着 Agent 去追一个不存在的 0。
+        lifted = make_run(tmp, "20260101-000000-objc-032", page="reachability-ok",
+                          delivery_ready=True)
+        write_json(lifted / "ui-implementation-plan.json", reachability_plan())
+        write_json(lifted / "diff" / "full-page.json", reachability_summary(lifted))
+        code, data = run_validator(lifted)
+        if code != 0:
+            problems.append(f"用例36：下界内的合规放行被判不合规：{data['violations'][:2]}")
+
+        # 用例 37：下界必须可核 —— 七种形态各自必须变红。
+        # 只做阳性对照是不够的：一个永远不报错的校验器同样能让用例 36 变绿。
+        bad = make_run(tmp, "20260101-000000-objc-033", page="reachability-bad",
+                       delivery_ready=True)
+        bad_summary = bad / "diff" / "full-page.json"
+        bad_plan = bad / "ui-implementation-plan.json"
+
+        def violations_for(plan_doc, summary_doc):
+            write_json(bad_plan, plan_doc)
+            write_json(bad_summary, summary_doc)
+            _code, payload = run_validator(bad)
+            return payload["violations"]
+
+        reachability_cases = [
+            ("计划没声明 gateReachability 却以下界放行",
+             {"schemaVersion": 1}, reachability_summary(bad), "没有 gateReachability"),
+            ("gateReachability 的 unavoidable 为空",
+             reachability_plan(unavoidable=[]), reachability_summary(bad), "unavoidable"),
+            ("unavoidable 缺 measuredShare",
+             reachability_plan(unavoidable=[{"category": "typography",
+                                             "cause": "baseline-scale-vs-fixed-font-size"}]),
+             reachability_summary(bad), "measuredShare"),
+            # 下界要比对的是「比较结论实际用的那个下界」，所以 summary 必须带上计划里的值 ——
+            # 只改计划、summary 仍写着 0.05，就不是这条用例要测的形态。
+            ("实际值超过声明的下界却仍放行",
+             reachability_plan(floor=0.02),
+             reachability_summary(bad, expectedStructuralFloor=0.02), "超过声明的下界"),
+            ("声明的下界低于上限",
+             reachability_plan(floor=0.01),
+             reachability_summary(bad, expectedStructuralFloor=0.01),
+             "小于 maxStructuralRatio"),
+            ("计划声明了下界却把下界内的值判 fail",
+             reachability_plan(),
+             reachability_summary(bad, status="fail", reason="structural-diff-exceeded"),
+             "声明白写了"),
+            ("计划声明了下界但比较结论没带 expectedStructuralFloor",
+             reachability_plan(),
+             reachability_summary(bad, expectedStructuralFloor=None,
+                                  expectedStructuralFloorSource=None),
+             "没有 expectedStructuralFloor"),
+        ]
+        for label, plan_doc, summary_doc, needle in reachability_cases:
+            violations = violations_for(plan_doc, summary_doc)
+            if not any(needle in v for v in violations):
+                problems.append(
+                    f"用例37/{label}：未报出（找 {needle!r}），实得 {violations[:2]}")
+
+        # 用例 38：闸门记 pass 时，比较结论必须真的支持它 —— 两个方向都要拦。
+        # 只拦「比较器判 fail 却记 pass」是不够的：那会让「下界内放行」变成把一切
+        # pass-with-review 都吞掉的借口，deliveryReady 随之失去意义。
+        gatecase = make_run(tmp, "20260101-000000-objc-034", page="visual-gate",
+                            delivery_ready=True)
+        gate_path = gatecase / "diff" / "full-page.json"
+        gate_plan = gatecase / "ui-implementation-plan.json"
+
+        def gate_violations(summary_doc, visual_diff="pass", plan_doc=None):
+            write_json(gatecase / "delivery-gate.json", {
+                "schemaVersion": 1, "runId": gatecase.name,
+                "status": {**GATE_PASS, "visualDiff": visual_diff},
+                "unsupported": {"count": 0, "reviewedCount": 0, "items": []},
+                "deliveryReady": True, "blockingReasons": [],
+            })
+            if plan_doc is not None:
+                write_json(gate_plan, plan_doc)
+            write_json(gate_path, summary_doc)
+            _code, payload = run_validator(gatecase)
+            return payload["violations"]
+
+        # 38a：比较器判 fail，闸门不得记 pass
+        violations = gate_violations(
+            comparator_summary(gatecase, status="fail", reason="structural-diff-exceeded"))
+        if not any("闸门不得记成 pass" in v for v in violations):
+            problems.append(f"用例38a：比较器判 fail 而闸门记 pass 未被拦下：{violations[:2]}")
+
+        # 38b：其余 pass-with-review 不得升格为 pass
+        violations = gate_violations(
+            comparator_summary(gatecase, status="pass-with-review",
+                               reason="structural-diff-above-warn"))
+        if not any("必须原样记录" in v for v in violations):
+            problems.append(f"用例38b：pass-with-review 被升格为 pass 未被拦下：{violations[:2]}")
+
+        # 38c：下界内放行是唯一可升格的情形（阳性对照）
+        violations = gate_violations(reachability_summary(gatecase),
+                                     plan_doc=reachability_plan())
+        if any("visualDiff" in v for v in violations):
+            problems.append(f"用例38c：下界内放行被误拦：{violations[:2]}")
+
+        # 38d：不带 structuralRatio 的占位件不是放行依据，不得误报
+        violations = gate_violations({"schemaVersion": 1, "status": "fail",
+                                      "changedRatio": 0.4})
+        if any("visualDiff" in v for v in violations):
+            problems.append(f"用例38d：占位件被误判：{violations[:2]}")
+
     for p in problems:
         print(p)
     if problems:
@@ -658,7 +801,8 @@ def main():
         return 1
     print("契约校验器：合规通过、缺件报错、篡改识别、legacy 豁免、模式区分、同源与派生图检查、"
           "区域级结构证据与对齐审计交叉校验、布局约束的计划质量/源码合规/闸门交叉三层均正确、"
-          "基准字体链的替换检出与闸门交叉均正确、"
+          "基准字体链的替换检出与闸门交叉均正确、声明的结构差异下界既放行合规形态又拦下七种误用、"
+          "视觉闸门记 pass 时比较结论必须支持它（下界内放行是唯一可升格的情形）、"
           "deliveryReady 在结构不全时判「不推导」而不是猜")
     return 0
 

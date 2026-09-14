@@ -483,6 +483,12 @@ def validate(run_dir, source_roots=None):
             # 所以凡是拿来放行的比较结论，都必须能指出「差在哪个区域、结构差异多大」。
             if 'changedRatio' in summary or 'structuralRatio' in summary:
                 violations.extend(check_comparison_summary(summary_path.name, summary))
+                # 声明的结构差异下界必须与计划对得上，且不得被当成豁免额度。
+                violations.extend(check_gate_reachability(
+                    run_dir, summary_path.name, summary, warnings))
+                # 闸门记 pass 时，比较结论必须真的支持它（下界内放行是唯一可升格的情形）。
+                violations.extend(check_visual_diff_gate(
+                    summary_path.name, gate_status.get('visualDiff'), summary))
 
             # ---- 对齐审计：它判需要复核时，闸门不得为 pass ----
             if 'comparisons' in summary:
@@ -548,6 +554,134 @@ def check_comparison_summary(name, summary):
                     f"{name} 判 {status}，但区域 row={region.get('row')} col={region.get('col')} "
                     f"(y={box.get('y')}) 的结构差异 {value:.4f} 超过上限 {limit}："
                     '整页数值通过了，局部没有 —— 必须按区域复核')
+    return problems
+
+
+def check_gate_reachability(run_dir, name, summary, warnings):
+    """声明的结构差异下界必须与计划对得上，且不得被当成豁免额度。
+
+    文字密集页的结构差异存在**物理下界**：基准图是在 ``scale(1.0229)`` 的画布上渲染的，
+    所以基准字形 = 设计字号 × 1.0229，而尺寸契约明令字号不得按比例缩放。两者相差 2.29%，
+    足以让字形边缘的相位差超过强边配对容差而被判成结构差异 —— 它不可能降到 0。
+    所以计划要显式声明这个下界（``gateReachability``），而不是让 Agent 反复逼近不存在的 0。
+
+    但「声明」必须可核，否则就是自己给自己发豁免。三条：
+
+    * 判 ``structural-within-declared-floor`` 时，计划里必须真的声明了 ``gateReachability``
+      （含 ``unavoidable`` 的来源与实测占比），且实际值确实在下界内；
+    * 计划声明了下界，比较结论却把下界内的值判 ``fail`` —— 声明白写了，同样是错；
+    * 计划声明了下界，比较结论里却没有 ``expectedStructuralFloor`` —— 声明了没按它判。
+    """
+    problems = []
+    floor = summary.get('expectedStructuralFloor')
+    source = summary.get('expectedStructuralFloorSource')
+    reason = summary.get('reason')
+    structural = summary.get('structuralRatio')
+    limit = summary.get('maxStructuralRatio')
+
+    plan_path = run_dir / 'ui-implementation-plan.json'
+    plan, _ = load_json(plan_path) if plan_path.is_file() else (None, None)
+    reachability = plan.get('gateReachability') if isinstance(plan, dict) else None
+    declared = None
+    if isinstance(reachability, dict):
+        value = reachability.get('expectedStructuralFloor')
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            declared = float(value)
+
+    def numeric(value):
+        return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+    if reason == 'structural-within-declared-floor':
+        if not numeric(floor):
+            problems.append(
+                f'{name} 判 structural-within-declared-floor 却没有 expectedStructuralFloor：'
+                '无法确认它依据的是哪一条声明')
+        else:
+            if numeric(structural) and structural > floor:
+                problems.append(
+                    f'{name} 判 pass-with-review，但 structuralRatio {structural} 超过声明的下界 '
+                    f'{floor}：下界是「不可消除的下界」，不是「豁免额度」')
+            if numeric(limit) and floor < limit:
+                problems.append(
+                    f'{name} 的 expectedStructuralFloor {floor} 小于 maxStructuralRatio {limit}：'
+                    '低于上限的「下界」没有意义，只会把正常放行也降级')
+
+        if not isinstance(reachability, dict):
+            problems.append(
+                f'{name} 以「结构差异在声明下界内」放行，但 ui-implementation-plan.json 没有 '
+                'gateReachability：下界必须由计划声明并留档，不能由比较器自己给')
+        else:
+            unavoidable = reachability.get('unavoidable')
+            if not isinstance(unavoidable, list) or not unavoidable:
+                problems.append(
+                    f'{name} 的 gateReachability 缺少 unavoidable 清单：'
+                    '下界必须说明「为什么不可消除」，否则无从复核它是不是在给实现缺陷开脱')
+            else:
+                for index, item in enumerate(unavoidable):
+                    if not isinstance(item, dict) or not item.get('cause'):
+                        problems.append(
+                            f'{name} 的 gateReachability.unavoidable[{index}] 缺少 cause')
+                    if not isinstance(item, dict) or not numeric(item.get('measuredShare')):
+                        problems.append(
+                            f'{name} 的 gateReachability.unavoidable[{index}] 缺少 measuredShare：'
+                            '下界要给实测占比，不能只给结论')
+
+    # 反向：计划声明了下界，比较结论就必须按它判 —— 既不能漏传，也不能把下界内的值判 fail。
+    if declared is not None:
+        if not numeric(floor):
+            problems.append(
+                f'{name}：ui-implementation-plan.json 声明了 gateReachability.'
+                f'expectedStructuralFloor={declared}，但比较结论里没有 expectedStructuralFloor '
+                '—— 声明了却没按它判')
+        elif (reason == 'structural-diff-exceeded'
+              and numeric(structural) and structural <= declared):
+            problems.append(
+                f'{name} 判 fail（structuralRatio {structural}），但计划声明的下界是 {declared}：'
+                '声明白写了 —— 下界内的结构差异应记 pass-with-review 并做量化归因')
+    elif source == 'cli':
+        warnings.append(
+            f'{name} 用命令行传了结构差异下界，但 ui-implementation-plan.json 没有 '
+            'gateReachability：下界应在计划里留档，否则下一轮无从追溯它的来源')
+    return problems
+
+
+def check_visual_diff_gate(name, gate_visual_diff, summary):
+    """视觉闸门记 ``pass`` 时，像素比较结论必须真的支持它。
+
+    两道，缺一不可：
+
+    * **比较器判 ``fail``，闸门不得记 ``pass``。** 这是最直接的「工具判了、闸门没认」，
+      和「对齐审计 needs-review 却 visualDiff=pass」是同一类自相矛盾。
+    * **比较器判 ``pass-with-review`` 时，只有一种情形可以升格为 ``pass``** ——
+      ``structural-within-declared-floor``：文字密集页的物理下界，已由计划声明并量化归因
+      （``gateReachability``，其可核性由 :func:`check_gate_reachability` 单独把关）。
+      其余 ``pass-with-review``（例如 ``structural-diff-above-warn``）必须原样记录。
+
+    第二条是**收口**，不是开闸：没有它，``pass-with-review`` 会被整体当成 ``pass``，
+    于是「下界内放行」变成把所有待复核项一并吞掉的借口，而 ``deliveryReady`` 也就失去意义。
+    反过来，没有第一条，``visualDiff`` 可以在比较器明确判 fail 的情况下被写成 pass。
+
+    只在结论带数值 ``structuralRatio`` 时判定 —— 那是**真正的比较结论**的特征。
+    不带该字段的 diff 文件（例如只记录了 ``changedRatio`` 的占位件）不是放行依据，
+    对它判定只会制造噪声。
+    """
+    problems = []
+    if gate_visual_diff != 'pass':
+        return problems
+    structural = summary.get('structuralRatio')
+    if not isinstance(structural, (int, float)) or isinstance(structural, bool):
+        return problems
+    status = summary.get('status')
+    reason = summary.get('reason')
+    if status == 'fail':
+        problems.append(
+            f'{name} 判 fail（{reason}），但 delivery-gate.status.visualDiff 记录为 pass：'
+            '工具判了的问题，闸门不得记成 pass')
+    elif status == 'pass-with-review' and reason != 'structural-within-declared-floor':
+        problems.append(
+            f'{name} 判 pass-with-review（{reason}），但 delivery-gate.status.visualDiff '
+            '记录为 pass：只有「结构差异在计划声明的下界内」（structural-within-declared-floor）'
+            '可以升格为 pass，其余 pass-with-review 必须原样记录')
     return problems
 
 
