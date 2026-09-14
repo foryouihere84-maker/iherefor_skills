@@ -26,25 +26,55 @@ description: 将 Lanhu 导出的可运行 HTML/CSS/JS 页面作为视觉基准�
 4. 不得因为某个 CSS/JS 特性无法等价映射而静默删除；必须写入 `unsupported` 并进入交付报告。
 5. 目标平台可以使用不同的组件树和布局策略；相同的是视觉目标，不是源代码形状。
 6. 生成代码必须经过目标平台编译和截图验证，不能以“代码生成完成”代替视觉完成。
-7. **组件之间的布局关系必须严格遵循设计稿的比例，不得写成固定 pt 值。** 判据是「这个量的正确性是否依赖于容器尺寸」：位置、间距、容器与图片 frame 的尺寸依赖容器尺寸，必须比例化；字号、圆角、描边宽度、最小点击区不依赖，保持设计值不缩放。完整契约见 [references/artifact-contract.md](references/artifact-contract.md#组件间布局关系必须用比例表达强制)。
+7. **约束策略不是「整页等比缩放」，而是两条独立的轴：尺寸固定、位置相对父视图。**
+   - **尺寸轴**：控件尺寸（按钮、文字、图标等）必须与设计稿保持**固定的绝对大小**，
+     不随屏幕或容器比例缩放。判据是「这个值由谁闭合」：设计稿给出封闭值的用 `fixed`（字面设计值）；
+     由与父视图的约束闭合的用 `pinned`（等值锚点 + 固定边距，**不带比例系数**）；
+     由文字/图片决定的用 `intrinsic`。字号、圆角、描边、最小点击区一律取设计值。
+   - **位置轴**：位置由**父子视图层级关系**确定，基准是**直接父视图**而非页面根；
+     父容器为整块屏幕画布时，位置参照该父容器（屏幕内容区，扣除安全区）。嵌套情形逐层递推。
+   - `proportional` 只用于**确实**随父容器成比例变化的关系，且必须给出理由；它不是默认项。
+   - 组件之间的布局关系仍须遵循设计稿，不得写成「探针设备上换算出来的绝对值」——
+     但这条约束管的是**位置与间距**，不适用于**控件尺寸**。
+   - 完整规范见 [references/sizing-and-positioning.md](references/sizing-and-positioning.md)，
+     布局比例的字段契约见 [references/artifact-contract.md](references/artifact-contract.md#布局关系与控件尺寸的约束口径强制)。
 
-## 比例布局契约（强制）
+## 尺寸与定位契约（强制）
 
-设计稿里组件之间的布局关系，实现时必须表达为**比例**，而不是把换算结果写成绝对值。
+**尺寸是常量，位置是约束。** 把整页当成一张图去缩放，等于把「设计稿恰好 393pt 宽」这个偶然事实
+提升成布局规则：每个尺寸都被乘上屏幕相关系数，44pt 的点击区在窄屏缩成 40pt，字号缩放破坏排版。
+而设备之间本来就不等比（`393×852 → 402×874` 两轴比例分别是 `1.0229` 与 `1.0258`），
+「等比」不是可选策略，而是一个不存在的东西。
+
 Lanhu 画布只有一个尺寸：`lanhuY = 132` 换算成 `132 * 1.0229 = 135.02pt` 之后写成字面量，
 就把这个关系钉死在探针设备上了 —— 换台设备它就是错的，而它「有算过」，比一眼可疑的魔数更难发现。
 
 实现计划必须给出 `layoutProportions`（每个区域的 `ratios` 与逐条 `relations`），
-每条关系声明 `kind`：
+每条关系声明 `kind` 与位置基准 `of`：
 
-- `proportional` —— 必须用比例表达。iOS 用 `multiplier` / `UILayoutGuide`，SwiftUI 用
-  `GeometryReader`，Compose 用 `BoxWithConstraints` 派生比例或 `weight`，
+- `fixed` —— 设计稿给出封闭值的控件尺寸，写成字面设计值。**不参与任何比例缩放。**
+- `pinned` —— 值由与父视图的约束闭合（贴边、占满、等分）。写成约束，不写比例系数：
+  「左右各 16pt」是 `leading = parent.leading + 16`，不是 `width = parent.width * 0.9186`
+  （后者在 430pt 宽的设备上给出 13.7pt 边距，而设计稿说的是 16pt）。
+- `intrinsic` —— 必须给出 `why`，说明为什么这个量由内容决定（文本撑开、自适应图片）。
+- `proportional` —— 必须用比例表达，且基准是**父视图**不是整页。iOS 用 `multiplier` /
+  `UILayoutGuide`，SwiftUI 用 `GeometryReader`，Compose 用 `BoxWithConstraints` 派生比例或 `weight`，
   Views/XML 用 `layout_constraintGuide_percent` / `bias` / `layout_weight`。
-- `intrinsic` —— 必须给出 `why`，说明为什么这个量不随容器缩放（通常是文本撑开或设计常量）。
+- 位置基准 `of` 默认是**直接父视图**；仅当直接父视图就是整屏画布时才写 `"root"`。
+  基准确认不了的要留痕待确认，不许默认填 `root`。
 
 `scripts/layout_proportions.py` 由事实表与设备尺寸生成这份声明与「探针设备上算出来的绝对值」
 清单；`scripts/check_layout_proportions.py` 按声明逐条核对源码，**计划驱动而非正则扫描** ——
 只有被声明为 `proportional` 的关系才要求比例表达，避免把圆角 12、边距 16 这类合法设计常量误报。
+
+> **口径提醒（当前实现落后于上面这条规范，别当成已经做到）**
+> `layout_proportions.py` 目前对**非文字元素一律产出 `height/width: proportional`**，
+> 且所有位置关系都写死 `of: "root"`；`kind` 也只有 `proportional` / `intrinsic` 两档。
+> `fixed` / `pinned` 两类与「基准为直接父视图」**尚未实现**，另一前提是
+> `page-facts.json` 目前不含父子层级字段（只有扁平的 `index`）。
+> 缺口清单与改动范围见 [references/sizing-and-positioning.md](references/sizing-and-positioning.md#8-与当前实现的差距尚未实现不要当成已经做到)。
+> 该改动属**契约级变更**（同时触及检查器、evals 样本、回归用例与探针），必须一次改完，
+> 不允许留下「文档说固定、脚本仍要求比例」的自相矛盾 —— 那会让每一条告警都失去可信度。
 
 ```bash
 # 第 2 步：生成比例规格（rect 的坐标空间由 rectInReference == rect*dpr 自动判定，判不出就拒绝继续）
