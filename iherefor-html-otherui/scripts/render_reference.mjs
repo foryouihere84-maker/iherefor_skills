@@ -89,12 +89,41 @@ const MARK_TEXT = `() => {${SHARED_PRELUDE}
  * 之类的误判，也让这段逻辑可以被单独 review。 */
 const COLLECT_FACTS = `(scroll) => {${SHARED_PRELUDE}
   const round = (v) => Math.round(v * 1000) / 1000;
-  return Array.from(document.querySelectorAll('body *')).filter(visible).map((e, index) => {
+  /* 位置基准必须是**直接父视图**，所以每个元素都要带上「它的父是谁」。
+   *
+   * 两处容易做错：
+   * 1) index 是**过滤后**的下标空间（visible 之后重排），父下标必须在**同一空间**里取。
+   *    直接拿 DOM 序号或 parentElement 本身，会得到与 elements 数组对不上的编号 ——
+   *    而错位的编号看起来只是个普通整数，不会报错。
+   * 2) 向上找的是最近的**可见**祖先，允许跳过不可见中间层。这与实现侧一致：
+   *    不可见的中间层不会生成视图，拿它当锚点在原生里根本不存在。
+   *    parentHops 如实记下跳过了几层，层级被折叠过的地方不能假装是相邻父子。
+   * parentIndex === null 的含义是「直接父视图就是整屏画布」（body/root），
+   * 这正是实现计划里 \`of: "root"\` 的适用场景 —— 它应当是少数，不是默认。
+   */
+  const visibleEls = Array.from(document.querySelectorAll('body *')).filter(visible);
+  const visibleIndex = new Map(visibleEls.map((e, i) => [e, i]));
+  const nearestVisibleAncestor = (e) => {
+    let hops = 0, p = e.parentElement;
+    while (p && p !== document.body && p !== document.documentElement) {
+      const found = visibleIndex.get(p);
+      if (found !== undefined) return { index: found, hops };
+      hops += 1;
+      p = p.parentElement;
+    }
+    return { index: null, hops };
+  };
+  return visibleEls.map((e, index) => {
     const r = e.getBoundingClientRect(), s = getComputedStyle(e);
     const text = (e.innerText || '').trim();
+    const ancestor = nearestVisibleAncestor(e);
     const facts = {
       index, tag: e.tagName.toLowerCase(), id: e.id || null,
       className: typeof e.className === 'string' ? e.className : null,
+      // 父视图：最近可见祖先在 elements 里的下标；null = 直接父视图即整屏画布。
+      parentIndex: ancestor.index,
+      // 到那个可见祖先之间跳过的不可见层数（0 = 直接相邻）。>0 表示层级被折叠过。
+      parentHops: ancestor.hops,
       // text 是 innerText 聚合值（含后代文本），保留它是为了让「祖先容器」可被识别：
       // 只有当祖先的聚合文本包含后代的文本时，才能把祖先判成容器而非真实文本元素。
       // 判断「这个元素是否自己排版了文本」一律用下面的 ownText / ownsText，别用 text。
