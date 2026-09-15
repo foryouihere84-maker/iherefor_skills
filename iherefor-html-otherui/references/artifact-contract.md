@@ -49,6 +49,8 @@ pages/<page-id>/
     ├── reference.png            # HTML 基准截图
     ├── page-facts.json          # 页面事实表（rect / rectInReference / textMetrics / 资源）
     ├── browser-meta.json        # 浏览器版本、viewport、运行时字体、注入记录、加载错误
+    ├── design-document.json     # lanhu_get_design_document 原始返回体（未加工）
+    ├── design-facts.json        # 设计事实摘要（父视图归属 / 字号字体文本颜色 / 描边填充阴影）
     └── approved.json            # 批准记录：sha256、批准时间、批准人
 ```
 
@@ -167,6 +169,48 @@ v3 起每个元素都带 `parentIndex` / `parentHops` / `positioningContextIndex
 **`glyphCount` 是子树的字形数，不是该元素自身文字的字符数**。对叶子文本元素
 `glyphCount == charCount` 成立；对内部还嵌着文本的元素，它是整棵子树的合计。断言前先看
 `hasDescendantTextElement`，否则会误判成「量错了」。
+
+### `design-facts.json`（由 `scripts/lanhu_design_facts.py` 产出）
+
+`design-facts.json` 是 `lanhu_get_design_document` 返回体的**降噪摘要**，回答「设计稿说
+应该什么样」（渲染事实 `page-facts.json` 回答「实际成了什么样」，两者互补）。它是
+`ui-implementation-plan.json` 里 `regions[].parentIndex`、`unsupported[typography]`、描边判据
+的权威来源——**凡是这里已给出、计划却写成 `kindSource: "agent-decided"` 或改用 CDP 反推的，
+都属可消除推断**。
+
+```json
+{
+  "source": {"name": "笔刷-iPad", "imageId": "…", "projectId": "…",
+             "canvas": {"width": 810, "height": 1080, "scale": 2, "device": "iOS @1x"}},
+  "summary": {"layerCount": 94, "rootCount": 12, "typographyCount": 13,
+              "borderCount": 14, "fillCount": 23, "shadowCount": 0,
+              "visibleFalseCount": 0, "exportImageCount": 47,
+              "depthDistribution": {"0": 12, "1": 45, "2": 22, "3": 12, "4": 3}},
+  "roots": [{"id": "…", "name": "Which brushes are yo"}],
+  "hierarchy": [{"id": "…", "name": "…", "parentId": null, "depth": 0}],
+  "typography": [{"id": "…", "name": "Skip", "rect": {"x": 365.5, "y": 31, "width": 35, "height": 22},
+                  "parentId": null, "depth": 1, "text": "Skip", "fontFamily": "PingFang SC",
+                  "fontSize": 7, "fontWeight": 400, "lineHeight": 7, "letterSpacing": 0,
+                  "textAlign": "left", "color": "#1A1A1A"}],
+  "borders": [{"id": "…", "name": "Border", "borders": [{"color": {"…": "rgba(0,0,0,1)"}, "width": 0.5, "style": "solid", "radius": 0}]}],
+  "fills": [], "shadows": []
+}
+```
+
+关键字段约定：
+
+| 字段 | 含义 |
+|---|---|
+| `source.canvas.scale` | design_document 报的画布 scale；**字号与坐标可能带 scale 语义**，引用前先看它 |
+| `hierarchy[].parentId` / `depth` | 来自 `metadata`（不是顶层）；`parentId == null` 即根层。**这是 `regions[].parentIndex` 的权威来源** |
+| `typography[]` | 来自 `style.typography`，`color` 是 `value` 字符串（`#hex` 或 `rgba(...)`） |
+| `borders[].borders[].width` | 描边粗细，回答「描边画在 frame 上还是独立装饰层」 |
+| `summary.depthDistribution` | 层级深度分布，快速判断画布叠层复杂度 |
+
+**与渲染事实的分工**：`design-facts` 给**声明值**（父视图、字号、字体族、文本、颜色、描边），
+`page-facts` 给**渲染值**（`rectInReference`、实际命中字体 `fontsResolved`、`advanceWidth`、计算后样式）。
+「声明 vs 命中」在**字体**上是已知的、正确的差异（`AvenirLT-*` 声明了却不存在的族名），不要做交叉核对产生噪音；
+但在**父视图归属、字号、颜色、描边**上，两边应该一致，不一致才是需要归因的信号。
 
 ## 运行级（每次 run 必需）
 

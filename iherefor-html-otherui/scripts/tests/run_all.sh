@@ -51,6 +51,7 @@ else
   echo "跳过 browser-launch 用例：未找到 node" >&2
 fi
 run "check_lanhu_mcp 注册入口一致性"       "$PY" scripts/tests/test_check_lanhu_mcp.py
+run "lanhu_design_facts 设计事实解析还原"   "$PY" scripts/tests/test_lanhu_design_facts.py
 run "discover_xcode_environment 设备探测"  "$PY" scripts/tests/test_discover_xcode.py
 run "validate_run 产物契约校验"           "$PY" scripts/tests/test_validate_run.py
 run "init_ui_workspace 目录与索引"        "$PY" scripts/tests/test_init_ui_workspace.py

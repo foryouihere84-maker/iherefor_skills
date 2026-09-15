@@ -386,6 +386,14 @@ Agent 必须查看运行中的页面和基准截图，建立页面事实表：�
 
 输出 `ui-implementation-plan.json`，至少包含目标模式、参考 viewport、组件边界、坐标系、布局策略、资源映射、可访问性标识、交互候选和 `unsupported` 项。布局策略分两段：`layoutProportions`（尺寸轴 + 位置轴）与 `adaptiveLayout`（宽度轴，见「宽度轴与平板适配」）。该文件是 Agent 决策记录，不是生产源码生成器的输入模板。
 
+**布局与字号的权威来源是 ``design-facts.json``，不是渲染 DOM 的反推。** 第 1 步已调用
+`lanhu_get_design_document` 并经 `scripts/lanhu_design_facts.py` 解析成 `reference/design-facts.json`：
+父视图归属（`metadata.parentId`/`depth`）→ `regions[].parentIndex`；字号/字体/文本/颜色
+（`style.typography`）→ `unsupported[typography]` 与字号常量；描边/填充/阴影
+（`style.borders`/`fills`/`shadows`）→ 覆盖式装饰层与 border 内缩判据。**凡是 design-facts 已给出、
+Agent 却写成 `kindSource: "agent-decided"` 或靠 CDP/`advanceWidth` 反推的，都属于可消除的推断，应回填。**
+渲染 DOM 事实只负责 design-facts 给不了的那一半（字体实际命中、计算后样式、`rectInReference`）。
+
 计划里还必须有一份 `runtimeRisks` —— 把「只能在运行期暴露、但**现在就能决策**」的风险提前写下来，
 逐条给出决策与理由。第 5 步是分钟级的取证门，这些问题一旦漏到那里才发现，就要重走一次编译截图：
 
@@ -617,6 +625,7 @@ skill 根目录的 `index.html` 是一个纯静态差异查看器（无需服务
 |---|---|---|
 | `scripts/canvas_map.py` | 唯一的坐标换算入口，正向 + 逆向 + 默认 `fit` 策略；`to_ratios` / `axis_deviation` 给出比例形式与模型偏差 | 任何需要换算坐标的分析之前；改坐标逻辑后跑 `--self-test` |
 | `scripts/render_reference.mjs` | 确定性渲染基准图与事实表（含 `rectInReference`、`alphaBounds`、`textMetrics`、运行时字体） | 第 1 步建立基准 |
+| `scripts/lanhu_design_facts.py` | 把 `lanhu_get_design_document` 返回体解析成紧凑设计事实摘要（父视图归属 / 字号字体文本颜色 / 描边填充阴影），供实现计划直接引用而非从渲染 DOM 反推 | 第 1 步调用 `lanhu_get_design_document` 之后 |
 | `scripts/layout_proportions.py` | 把事实表位置转成 `layoutProportions` 约束规格（尺寸是常量、位置相对直接父视图），并列出「探针设备推导值」禁止清单 | 第 2 步写实现计划时；缺它就没法核对「有没有写成探针设备上的固定 pt」 |
 | `scripts/check_layout_proportions.py` | 计划驱动地核对源码有没有照计划声明的 `kind` 实现；`--plan-only` 只校验计划 | **门 0（`--plan-only`）在写码前，门 1 在写码完成后、编译之前**；改了布局代码就重跑。纯静态（只读计划与源码文本），秒级，不编译不起浏览器 |
 | `scripts/check_adaptive_layout.py` | 宽度轴静态核对：`adaptiveLayout` 声明自身完整，且源码里有封顶原语、无方向锁 / `UIScreen.main` / 屏幕系数；`--plan-only` 只校验计划 | 同上，与布局约束同属门 0 / 门 1；声明了 `adaptiveLayout` 就必须跑。纯静态，秒级 |
