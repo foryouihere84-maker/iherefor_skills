@@ -73,10 +73,10 @@
 		A10000000000000000000084 /* brush_nav_back.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000087 /* brush_nav_back.png */; };
 		A10000000000000000000085 /* brush_bottom_scrim.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000088 /* brush_bottom_scrim.png */; };
 		A10000000000000000000086 /* brush_cta_background.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000089 /* brush_cta_background.png */; };
-		A10000000000000000000090 /* purpose_cta_background.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000090 /* purpose_cta_background.png */; };
-		A10000000000000000000091 /* purpose_ipad_hero_background.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000091 /* purpose_ipad_hero_background.png */; };
-		A10000000000000000000092 /* purpose_ipad_nav_back.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000092 /* purpose_ipad_nav_back.png */; };
-		A10000000000000000000093 /* purpose_ipad_cta_arrow.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000093 /* purpose_ipad_cta_arrow.png */; };
+		A10000000000000000000094 /* purpose_cta_background.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000094 /* purpose_cta_background.png */; };
+		A10000000000000000000095 /* purpose_ipad_hero_background.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000095 /* purpose_ipad_hero_background.png */; };
+		A10000000000000000000096 /* purpose_ipad_nav_back.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000096 /* purpose_ipad_nav_back.png */; };
+		A10000000000000000000097 /* purpose_ipad_cta_arrow.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000097 /* purpose_ipad_cta_arrow.png */; };
 		A10000000000000000000087 /* brush_option_paint_brush_art.png in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000008A /* brush_option_paint_brush_art.png */; };
 		A10000000000000000000088 /* brush_option_pencil_art.png in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000008B /* brush_option_pencil_art.png */; };
 		A10000000000000000000089 /* brush_option_watercolor_art.png in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000008C /* brush_option_watercolor_art.png */; };
@@ -197,10 +197,10 @@
 		A20000000000000000000087 /* brush_nav_back.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = brush_nav_back.png; sourceTree = "<group>"; };
 		A20000000000000000000088 /* brush_bottom_scrim.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = brush_bottom_scrim.png; sourceTree = "<group>"; };
 		A20000000000000000000089 /* brush_cta_background.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = brush_cta_background.png; sourceTree = "<group>"; };
-		A20000000000000000000090 /* purpose_cta_background.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = purpose_cta_background.png; sourceTree = "<group>"; };
-		A20000000000000000000091 /* purpose_ipad_hero_background.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = purpose_ipad_hero_background.png; sourceTree = "<group>"; };
-		A20000000000000000000092 /* purpose_ipad_nav_back.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = purpose_ipad_nav_back.png; sourceTree = "<group>"; };
-		A20000000000000000000093 /* purpose_ipad_cta_arrow.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = purpose_ipad_cta_arrow.png; sourceTree = "<group>"; };
+		A20000000000000000000094 /* purpose_cta_background.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = purpose_cta_background.png; sourceTree = "<group>"; };
+		A20000000000000000000095 /* purpose_ipad_hero_background.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = purpose_ipad_hero_background.png; sourceTree = "<group>"; };
+		A20000000000000000000096 /* purpose_ipad_nav_back.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = purpose_ipad_nav_back.png; sourceTree = "<group>"; };
+		A20000000000000000000097 /* purpose_ipad_cta_arrow.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = purpose_ipad_cta_arrow.png; sourceTree = "<group>"; };
 		A2000000000000000000008A /* brush_option_paint_brush_art.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = brush_option_paint_brush_art.png; sourceTree = "<group>"; };
 		A2000000000000000000008B /* brush_option_pencil_art.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = brush_option_pencil_art.png; sourceTree = "<group>"; };
 		A2000000000000000000008C /* brush_option_watercolor_art.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = brush_option_watercolor_art.png; sourceTree = "<group>"; };
@@ -302,10 +302,10 @@
 				A20000000000000000000087 /* brush_nav_back.png */,
 				A20000000000000000000088 /* brush_bottom_scrim.png */,
 				A20000000000000000000089 /* brush_cta_background.png */,
-				A20000000000000000000090 /* purpose_cta_background.png */,
-				A20000000000000000000091 /* purpose_ipad_hero_background.png */,
-				A20000000000000000000092 /* purpose_ipad_nav_back.png */,
-				A20000000000000000000093 /* purpose_ipad_cta_arrow.png */,
+				A20000000000000000000094 /* purpose_cta_background.png */,
+				A20000000000000000000095 /* purpose_ipad_hero_background.png */,
+				A20000000000000000000096 /* purpose_ipad_nav_back.png */,
+				A20000000000000000000097 /* purpose_ipad_cta_arrow.png */,
 				A2000000000000000000008A /* brush_option_paint_brush_art.png */,
 				A2000000000000000000008B /* brush_option_pencil_art.png */,
 				A2000000000000000000008C /* brush_option_watercolor_art.png */,
@@ -505,10 +505,10 @@
 				A10000000000000000000084 /* brush_nav_back.png in Resources */,
 				A10000000000000000000085 /* brush_bottom_scrim.png in Resources */,
 				A10000000000000000000086 /* brush_cta_background.png in Resources */,
-				A10000000000000000000090 /* purpose_cta_background.png in Resources */,
-				A10000000000000000000091 /* purpose_ipad_hero_background.png in Resources */,
-				A10000000000000000000092 /* purpose_ipad_nav_back.png in Resources */,
-				A10000000000000000000093 /* purpose_ipad_cta_arrow.png in Resources */,
+				A10000000000000000000094 /* purpose_cta_background.png in Resources */,
+				A10000000000000000000095 /* purpose_ipad_hero_background.png in Resources */,
+				A10000000000000000000096 /* purpose_ipad_nav_back.png in Resources */,
+				A10000000000000000000097 /* purpose_ipad_cta_arrow.png in Resources */,
 				A10000000000000000000087 /* brush_option_paint_brush_art.png in Resources */,
 				A10000000000000000000088 /* brush_option_pencil_art.png in Resources */,
 				A10000000000000000000089 /* brush_option_watercolor_art.png in Resources */,
