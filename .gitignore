@@ -21,3 +21,6 @@ iherefor-html-otherui/testUIProject/testUIProject.xcodeproj/**/xcuserdata/
 
 # lanhu-mcp-server：嵌套 git 仓库（避免 embedded repository 警告）
 iherefor-html-otherui/lanhu-mcp-server/.git/
+
+# 本机工作记忆（会话日志 / MEMORY.md，非源码）
+.workbuddy-ai/

@@ -33,6 +33,54 @@
 		A10000000000000000000031 /* SceneDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000031 /* SceneDelegate.m */; };
 		C62D0CD48281241F4153AD57 /* SmokeUITests.m in Sources */ = {isa = PBXBuildFile; fileRef = 768F7AFB6F8863F411335E65 /* SmokeUITests.m */; };
 		FC21854AC37D9C130611B0FB /* SmokeTests.m in Sources */ = {isa = PBXBuildFile; fileRef = B066E31C9E5A3197CEF1AF1B /* SmokeTests.m */; };
+		A10000000000000000000040 /* StyleSelectionViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000040 /* StyleSelectionViewController.m */; };
+		A10000000000000000000041 /* StyleSelectionStyle.m in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000041 /* StyleSelectionStyle.m */; };
+		A10000000000000000000042 /* StyleSelectionHeroView.m in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000042 /* StyleSelectionHeroView.m */; };
+		A10000000000000000000043 /* StyleSelectionNavRowView.m in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000043 /* StyleSelectionNavRowView.m */; };
+		A10000000000000000000044 /* StyleSelectionHeadlineView.m in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000044 /* StyleSelectionHeadlineView.m */; };
+		A10000000000000000000045 /* StyleSelectionOptionRowView.m in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000045 /* StyleSelectionOptionRowView.m */; };
+		A10000000000000000000046 /* StyleSelectionOptionCardView.m in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000046 /* StyleSelectionOptionCardView.m */; };
+		A10000000000000000000047 /* StyleSelectionGridRegionView.m in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000047 /* StyleSelectionGridRegionView.m */; };
+		A10000000000000000000048 /* StyleSelectionFooterView.m in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000048 /* StyleSelectionFooterView.m */; };
+		A10000000000000000000050 /* style_selection_hero_wash.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000050 /* style_selection_hero_wash.png */; };
+		A10000000000000000000051 /* style_selection_option_animal_art.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000051 /* style_selection_option_animal_art.png */; };
+		A10000000000000000000052 /* style_selection_option_manga_art.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000052 /* style_selection_option_manga_art.png */; };
+		A10000000000000000000053 /* style_selection_option_people_art.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000053 /* style_selection_option_people_art.png */; };
+		A10000000000000000000054 /* style_selection_option_cute_art.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000054 /* style_selection_option_cute_art.png */; };
+		A10000000000000000000055 /* style_selection_option_food_art.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000055 /* style_selection_option_food_art.png */; };
+		A10000000000000000000056 /* style_selection_option_mandala_art.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000056 /* style_selection_option_mandala_art.png */; };
+		A10000000000000000000057 /* style_selection_option_flower_art.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000057 /* style_selection_option_flower_art.png */; };
+		A10000000000000000000058 /* style_selection_option_easy_art.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000058 /* style_selection_option_easy_art.png */; };
+		A10000000000000000000059 /* style_selection_option_chip_scrim.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000059 /* style_selection_option_chip_scrim.png */; };
+		A1000000000000000000005A /* style_selection_bottom_scrim.png in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000005A /* style_selection_bottom_scrim.png */; };
+		A1000000000000000000005B /* style_selection_continue_button_background.png in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000005B /* style_selection_continue_button_background.png */; };
+		A1000000000000000000005C /* style_selection_back_chevron.png in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000005C /* style_selection_back_chevron.png */; };
+		A10000000000000000000070 /* AgeSelectionViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000070 /* AgeSelectionViewController.m */; };
+		A10000000000000000000071 /* AgeSelectionStyle.m in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000071 /* AgeSelectionStyle.m */; };
+		A10000000000000000000072 /* AgeOptionCardView.m in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000072 /* AgeOptionCardView.m */; };
+		A10000000000000000000073 /* age_status_signal.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000073 /* age_status_signal.png */; };
+		A10000000000000000000074 /* age_status_wifi.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000074 /* age_status_wifi.png */; };
+		A10000000000000000000075 /* age_status_battery.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000075 /* age_status_battery.png */; };
+		A10000000000000000000076 /* age_nav_back.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000076 /* age_nav_back.png */; };
+		A10000000000000000000077 /* age_hero_background.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000077 /* age_hero_background.png */; };
+		A10000000000000000000078 /* age_cta_background.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000078 /* age_cta_background.png */; };
+		A10000000000000000000080 /* BrushSelectionViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000080 /* BrushSelectionViewController.m */; };
+		A10000000000000000000081 /* BrushSelectionStyle.m in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000081 /* BrushSelectionStyle.m */; };
+		A10000000000000000000082 /* BrushOptionCardView.m in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000082 /* BrushOptionCardView.m */; };
+		A10000000000000000000083 /* brush_hero_background.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000086 /* brush_hero_background.png */; };
+		A10000000000000000000084 /* brush_nav_back.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000087 /* brush_nav_back.png */; };
+		A10000000000000000000085 /* brush_bottom_scrim.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000088 /* brush_bottom_scrim.png */; };
+		A10000000000000000000086 /* brush_cta_background.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000089 /* brush_cta_background.png */; };
+		A10000000000000000000087 /* brush_option_paint_brush_art.png in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000008A /* brush_option_paint_brush_art.png */; };
+		A10000000000000000000088 /* brush_option_pencil_art.png in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000008B /* brush_option_pencil_art.png */; };
+		A10000000000000000000089 /* brush_option_watercolor_art.png in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000008C /* brush_option_watercolor_art.png */; };
+		A1000000000000000000008A /* brush_option_pastel_art.png in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000008D /* brush_option_pastel_art.png */; };
+		A1000000000000000000008B /* brush_option_pastel_smear_art.png in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000008E /* brush_option_pastel_smear_art.png */; };
+		A1000000000000000000008C /* brush_option_pastel_smear_inner_art.png in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000008F /* brush_option_pastel_smear_inner_art.png */; };
+		A1000000000000000000008D /* brush_option_pastel_smear_tip_art.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000090 /* brush_option_pastel_smear_tip_art.png */; };
+		A1000000000000000000008E /* brush_option_spray_paint_art.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000091 /* brush_option_spray_paint_art.png */; };
+		A1000000000000000000008F /* brush_option_marker_art.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000092 /* brush_option_marker_art.png */; };
+		A10000000000000000000090 /* brush_option_flat_brush_art.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000093 /* brush_option_flat_brush_art.png */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -86,6 +134,69 @@
 		A20000000000000000000023 /* special_offer_weekly_card_background.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = special_offer_weekly_card_background.png; sourceTree = "<group>"; };
 		A20000000000000000000024 /* special_offer_yearly_card_background.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = special_offer_yearly_card_background.png; sourceTree = "<group>"; };
 		A20000000000000000000025 /* special_offer_cta_background.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = special_offer_cta_background.png; sourceTree = "<group>"; };
+		A20000000000000000000040 /* StyleSelectionViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = StyleSelectionViewController.m; sourceTree = "<group>"; };
+		A20000000000000000000041 /* StyleSelectionStyle.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = StyleSelectionStyle.m; sourceTree = "<group>"; };
+		A20000000000000000000042 /* StyleSelectionHeroView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = StyleSelectionHeroView.m; sourceTree = "<group>"; };
+		A20000000000000000000043 /* StyleSelectionNavRowView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = StyleSelectionNavRowView.m; sourceTree = "<group>"; };
+		A20000000000000000000044 /* StyleSelectionHeadlineView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = StyleSelectionHeadlineView.m; sourceTree = "<group>"; };
+		A20000000000000000000045 /* StyleSelectionOptionRowView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = StyleSelectionOptionRowView.m; sourceTree = "<group>"; };
+		A20000000000000000000046 /* StyleSelectionOptionCardView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = StyleSelectionOptionCardView.m; sourceTree = "<group>"; };
+		A20000000000000000000047 /* StyleSelectionGridRegionView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = StyleSelectionGridRegionView.m; sourceTree = "<group>"; };
+		A20000000000000000000048 /* StyleSelectionFooterView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = StyleSelectionFooterView.m; sourceTree = "<group>"; };
+		A20000000000000000000060 /* StyleSelectionViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = StyleSelectionViewController.h; sourceTree = "<group>"; };
+		A20000000000000000000061 /* StyleSelectionStyle.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = StyleSelectionStyle.h; sourceTree = "<group>"; };
+		A20000000000000000000062 /* StyleSelectionHeroView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = StyleSelectionHeroView.h; sourceTree = "<group>"; };
+		A20000000000000000000063 /* StyleSelectionNavRowView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = StyleSelectionNavRowView.h; sourceTree = "<group>"; };
+		A20000000000000000000064 /* StyleSelectionHeadlineView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = StyleSelectionHeadlineView.h; sourceTree = "<group>"; };
+		A20000000000000000000065 /* StyleSelectionOptionRowView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = StyleSelectionOptionRowView.h; sourceTree = "<group>"; };
+		A20000000000000000000066 /* StyleSelectionOptionCardView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = StyleSelectionOptionCardView.h; sourceTree = "<group>"; };
+		A20000000000000000000067 /* StyleSelectionGridRegionView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = StyleSelectionGridRegionView.h; sourceTree = "<group>"; };
+		A20000000000000000000068 /* StyleSelectionFooterView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = StyleSelectionFooterView.h; sourceTree = "<group>"; };
+		A20000000000000000000050 /* style_selection_hero_wash.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = style_selection_hero_wash.png; sourceTree = "<group>"; };
+		A20000000000000000000051 /* style_selection_option_animal_art.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = style_selection_option_animal_art.png; sourceTree = "<group>"; };
+		A20000000000000000000052 /* style_selection_option_manga_art.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = style_selection_option_manga_art.png; sourceTree = "<group>"; };
+		A20000000000000000000053 /* style_selection_option_people_art.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = style_selection_option_people_art.png; sourceTree = "<group>"; };
+		A20000000000000000000054 /* style_selection_option_cute_art.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = style_selection_option_cute_art.png; sourceTree = "<group>"; };
+		A20000000000000000000055 /* style_selection_option_food_art.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = style_selection_option_food_art.png; sourceTree = "<group>"; };
+		A20000000000000000000056 /* style_selection_option_mandala_art.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = style_selection_option_mandala_art.png; sourceTree = "<group>"; };
+		A20000000000000000000057 /* style_selection_option_flower_art.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = style_selection_option_flower_art.png; sourceTree = "<group>"; };
+		A20000000000000000000058 /* style_selection_option_easy_art.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = style_selection_option_easy_art.png; sourceTree = "<group>"; };
+		A20000000000000000000059 /* style_selection_option_chip_scrim.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = style_selection_option_chip_scrim.png; sourceTree = "<group>"; };
+		A2000000000000000000005A /* style_selection_bottom_scrim.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = style_selection_bottom_scrim.png; sourceTree = "<group>"; };
+		A2000000000000000000005B /* style_selection_continue_button_background.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = style_selection_continue_button_background.png; sourceTree = "<group>"; };
+		A2000000000000000000005C /* style_selection_back_chevron.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = style_selection_back_chevron.png; sourceTree = "<group>"; };
+		A20000000000000000000070 /* AgeSelectionViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AgeSelectionViewController.m; sourceTree = "<group>"; };
+		A20000000000000000000071 /* AgeSelectionStyle.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AgeSelectionStyle.m; sourceTree = "<group>"; };
+		A20000000000000000000072 /* AgeOptionCardView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AgeOptionCardView.m; sourceTree = "<group>"; };
+		A2000000000000000000007A /* AgeSelectionViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AgeSelectionViewController.h; sourceTree = "<group>"; };
+		A2000000000000000000007B /* AgeSelectionStyle.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AgeSelectionStyle.h; sourceTree = "<group>"; };
+		A2000000000000000000007C /* AgeOptionCardView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AgeOptionCardView.h; sourceTree = "<group>"; };
+		A20000000000000000000073 /* age_status_signal.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = age_status_signal.png; sourceTree = "<group>"; };
+		A20000000000000000000074 /* age_status_wifi.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = age_status_wifi.png; sourceTree = "<group>"; };
+		A20000000000000000000075 /* age_status_battery.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = age_status_battery.png; sourceTree = "<group>"; };
+		A20000000000000000000076 /* age_nav_back.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = age_nav_back.png; sourceTree = "<group>"; };
+		A20000000000000000000077 /* age_hero_background.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = age_hero_background.png; sourceTree = "<group>"; };
+		A20000000000000000000078 /* age_cta_background.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = age_cta_background.png; sourceTree = "<group>"; };
+		A20000000000000000000080 /* BrushSelectionViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = BrushSelectionViewController.m; sourceTree = "<group>"; };
+		A20000000000000000000081 /* BrushSelectionStyle.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = BrushSelectionStyle.m; sourceTree = "<group>"; };
+		A20000000000000000000082 /* BrushOptionCardView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = BrushOptionCardView.m; sourceTree = "<group>"; };
+		A20000000000000000000083 /* BrushSelectionViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BrushSelectionViewController.h; sourceTree = "<group>"; };
+		A20000000000000000000084 /* BrushSelectionStyle.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BrushSelectionStyle.h; sourceTree = "<group>"; };
+		A20000000000000000000085 /* BrushOptionCardView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BrushOptionCardView.h; sourceTree = "<group>"; };
+		A20000000000000000000086 /* brush_hero_background.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = brush_hero_background.png; sourceTree = "<group>"; };
+		A20000000000000000000087 /* brush_nav_back.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = brush_nav_back.png; sourceTree = "<group>"; };
+		A20000000000000000000088 /* brush_bottom_scrim.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = brush_bottom_scrim.png; sourceTree = "<group>"; };
+		A20000000000000000000089 /* brush_cta_background.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = brush_cta_background.png; sourceTree = "<group>"; };
+		A2000000000000000000008A /* brush_option_paint_brush_art.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = brush_option_paint_brush_art.png; sourceTree = "<group>"; };
+		A2000000000000000000008B /* brush_option_pencil_art.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = brush_option_pencil_art.png; sourceTree = "<group>"; };
+		A2000000000000000000008C /* brush_option_watercolor_art.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = brush_option_watercolor_art.png; sourceTree = "<group>"; };
+		A2000000000000000000008D /* brush_option_pastel_art.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = brush_option_pastel_art.png; sourceTree = "<group>"; };
+		A2000000000000000000008E /* brush_option_pastel_smear_art.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = brush_option_pastel_smear_art.png; sourceTree = "<group>"; };
+		A2000000000000000000008F /* brush_option_pastel_smear_inner_art.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = brush_option_pastel_smear_inner_art.png; sourceTree = "<group>"; };
+		A20000000000000000000090 /* brush_option_pastel_smear_tip_art.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = brush_option_pastel_smear_tip_art.png; sourceTree = "<group>"; };
+		A20000000000000000000091 /* brush_option_spray_paint_art.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = brush_option_spray_paint_art.png; sourceTree = "<group>"; };
+		A20000000000000000000092 /* brush_option_marker_art.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = brush_option_marker_art.png; sourceTree = "<group>"; };
+		A20000000000000000000093 /* brush_option_flat_brush_art.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = brush_option_flat_brush_art.png; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -120,6 +231,69 @@
 				A20000000000000000000023 /* special_offer_weekly_card_background.png */,
 				A20000000000000000000024 /* special_offer_yearly_card_background.png */,
 				A20000000000000000000025 /* special_offer_cta_background.png */,
+				A20000000000000000000040 /* StyleSelectionViewController.m */,
+				A20000000000000000000041 /* StyleSelectionStyle.m */,
+				A20000000000000000000042 /* StyleSelectionHeroView.m */,
+				A20000000000000000000043 /* StyleSelectionNavRowView.m */,
+				A20000000000000000000044 /* StyleSelectionHeadlineView.m */,
+				A20000000000000000000045 /* StyleSelectionOptionRowView.m */,
+				A20000000000000000000046 /* StyleSelectionOptionCardView.m */,
+				A20000000000000000000047 /* StyleSelectionGridRegionView.m */,
+				A20000000000000000000048 /* StyleSelectionFooterView.m */,
+				A20000000000000000000060 /* StyleSelectionViewController.h */,
+				A20000000000000000000061 /* StyleSelectionStyle.h */,
+				A20000000000000000000062 /* StyleSelectionHeroView.h */,
+				A20000000000000000000063 /* StyleSelectionNavRowView.h */,
+				A20000000000000000000064 /* StyleSelectionHeadlineView.h */,
+				A20000000000000000000065 /* StyleSelectionOptionRowView.h */,
+				A20000000000000000000066 /* StyleSelectionOptionCardView.h */,
+				A20000000000000000000067 /* StyleSelectionGridRegionView.h */,
+				A20000000000000000000068 /* StyleSelectionFooterView.h */,
+				A20000000000000000000050 /* style_selection_hero_wash.png */,
+				A20000000000000000000051 /* style_selection_option_animal_art.png */,
+				A20000000000000000000052 /* style_selection_option_manga_art.png */,
+				A20000000000000000000053 /* style_selection_option_people_art.png */,
+				A20000000000000000000054 /* style_selection_option_cute_art.png */,
+				A20000000000000000000055 /* style_selection_option_food_art.png */,
+				A20000000000000000000056 /* style_selection_option_mandala_art.png */,
+				A20000000000000000000057 /* style_selection_option_flower_art.png */,
+				A20000000000000000000058 /* style_selection_option_easy_art.png */,
+				A20000000000000000000059 /* style_selection_option_chip_scrim.png */,
+				A2000000000000000000005A /* style_selection_bottom_scrim.png */,
+				A2000000000000000000005B /* style_selection_continue_button_background.png */,
+				A2000000000000000000005C /* style_selection_back_chevron.png */,
+				A2000000000000000000007A /* AgeSelectionViewController.h */,
+				A20000000000000000000070 /* AgeSelectionViewController.m */,
+				A2000000000000000000007B /* AgeSelectionStyle.h */,
+				A20000000000000000000071 /* AgeSelectionStyle.m */,
+				A2000000000000000000007C /* AgeOptionCardView.h */,
+				A20000000000000000000072 /* AgeOptionCardView.m */,
+				A20000000000000000000073 /* age_status_signal.png */,
+				A20000000000000000000074 /* age_status_wifi.png */,
+				A20000000000000000000075 /* age_status_battery.png */,
+				A20000000000000000000076 /* age_nav_back.png */,
+				A20000000000000000000077 /* age_hero_background.png */,
+				A20000000000000000000078 /* age_cta_background.png */,
+				A20000000000000000000083 /* BrushSelectionViewController.h */,
+				A20000000000000000000084 /* BrushSelectionStyle.h */,
+				A20000000000000000000085 /* BrushOptionCardView.h */,
+				A20000000000000000000080 /* BrushSelectionViewController.m */,
+				A20000000000000000000081 /* BrushSelectionStyle.m */,
+				A20000000000000000000082 /* BrushOptionCardView.m */,
+				A20000000000000000000086 /* brush_hero_background.png */,
+				A20000000000000000000087 /* brush_nav_back.png */,
+				A20000000000000000000088 /* brush_bottom_scrim.png */,
+				A20000000000000000000089 /* brush_cta_background.png */,
+				A2000000000000000000008A /* brush_option_paint_brush_art.png */,
+				A2000000000000000000008B /* brush_option_pencil_art.png */,
+				A2000000000000000000008C /* brush_option_watercolor_art.png */,
+				A2000000000000000000008D /* brush_option_pastel_art.png */,
+				A2000000000000000000008E /* brush_option_pastel_smear_art.png */,
+				A2000000000000000000008F /* brush_option_pastel_smear_inner_art.png */,
+				A20000000000000000000090 /* brush_option_pastel_smear_tip_art.png */,
+				A20000000000000000000091 /* brush_option_spray_paint_art.png */,
+				A20000000000000000000092 /* brush_option_marker_art.png */,
+				A20000000000000000000093 /* brush_option_flat_brush_art.png */,
 			);
 			path = testUIProject;
 			sourceTree = "<group>";
@@ -286,6 +460,39 @@
 				A10000000000000000000023 /* special_offer_weekly_card_background.png in Resources */,
 				A10000000000000000000024 /* special_offer_yearly_card_background.png in Resources */,
 				A10000000000000000000025 /* special_offer_cta_background.png in Resources */,
+				A10000000000000000000050 /* style_selection_hero_wash.png in Resources */,
+				A10000000000000000000051 /* style_selection_option_animal_art.png in Resources */,
+				A10000000000000000000052 /* style_selection_option_manga_art.png in Resources */,
+				A10000000000000000000053 /* style_selection_option_people_art.png in Resources */,
+				A10000000000000000000054 /* style_selection_option_cute_art.png in Resources */,
+				A10000000000000000000055 /* style_selection_option_food_art.png in Resources */,
+				A10000000000000000000056 /* style_selection_option_mandala_art.png in Resources */,
+				A10000000000000000000057 /* style_selection_option_flower_art.png in Resources */,
+				A10000000000000000000058 /* style_selection_option_easy_art.png in Resources */,
+				A10000000000000000000059 /* style_selection_option_chip_scrim.png in Resources */,
+				A1000000000000000000005A /* style_selection_bottom_scrim.png in Resources */,
+				A1000000000000000000005B /* style_selection_continue_button_background.png in Resources */,
+				A1000000000000000000005C /* style_selection_back_chevron.png in Resources */,
+				A10000000000000000000073 /* age_status_signal.png in Resources */,
+				A10000000000000000000074 /* age_status_wifi.png in Resources */,
+				A10000000000000000000075 /* age_status_battery.png in Resources */,
+				A10000000000000000000076 /* age_nav_back.png in Resources */,
+				A10000000000000000000077 /* age_hero_background.png in Resources */,
+				A10000000000000000000078 /* age_cta_background.png in Resources */,
+				A10000000000000000000083 /* brush_hero_background.png in Resources */,
+				A10000000000000000000084 /* brush_nav_back.png in Resources */,
+				A10000000000000000000085 /* brush_bottom_scrim.png in Resources */,
+				A10000000000000000000086 /* brush_cta_background.png in Resources */,
+				A10000000000000000000087 /* brush_option_paint_brush_art.png in Resources */,
+				A10000000000000000000088 /* brush_option_pencil_art.png in Resources */,
+				A10000000000000000000089 /* brush_option_watercolor_art.png in Resources */,
+				A1000000000000000000008A /* brush_option_pastel_art.png in Resources */,
+				A1000000000000000000008B /* brush_option_pastel_smear_art.png in Resources */,
+				A1000000000000000000008C /* brush_option_pastel_smear_inner_art.png in Resources */,
+				A1000000000000000000008D /* brush_option_pastel_smear_tip_art.png in Resources */,
+				A1000000000000000000008E /* brush_option_spray_paint_art.png in Resources */,
+				A1000000000000000000008F /* brush_option_marker_art.png in Resources */,
+				A10000000000000000000090 /* brush_option_flat_brush_art.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -319,6 +526,21 @@
 				A10000000000000000000012 /* SpecialOfferPlanCardView.m in Sources */,
 				A10000000000000000000013 /* SpecialOfferStyle.m in Sources */,
 				A10000000000000000000014 /* SpecialOfferPrimaryButton.m in Sources */,
+				A10000000000000000000040 /* StyleSelectionViewController.m in Sources */,
+				A10000000000000000000041 /* StyleSelectionStyle.m in Sources */,
+				A10000000000000000000042 /* StyleSelectionHeroView.m in Sources */,
+				A10000000000000000000043 /* StyleSelectionNavRowView.m in Sources */,
+				A10000000000000000000044 /* StyleSelectionHeadlineView.m in Sources */,
+				A10000000000000000000045 /* StyleSelectionOptionRowView.m in Sources */,
+				A10000000000000000000046 /* StyleSelectionOptionCardView.m in Sources */,
+				A10000000000000000000047 /* StyleSelectionGridRegionView.m in Sources */,
+				A10000000000000000000048 /* StyleSelectionFooterView.m in Sources */,
+				A10000000000000000000070 /* AgeSelectionViewController.m in Sources */,
+				A10000000000000000000071 /* AgeSelectionStyle.m in Sources */,
+				A10000000000000000000072 /* AgeOptionCardView.m in Sources */,
+				A10000000000000000000080 /* BrushSelectionViewController.m in Sources */,
+				A10000000000000000000081 /* BrushSelectionStyle.m in Sources */,
+				A10000000000000000000082 /* BrushOptionCardView.m in Sources */,
 				5FEFB75904DA9EC33990765E /* ViewController.m in Sources */,
 				5C3506ED7FC0B267121AE287 /* main.m in Sources */,
 			);
