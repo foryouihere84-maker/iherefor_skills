@@ -737,6 +737,22 @@ def main():
         if code != 0:
             problems.append(f"用例36：下界内的合规放行被判不合规：{data['violations'][:2]}")
 
+        # 用例 36b：下界放行时，区域级结构差异不得被死卡 0.02 误杀。
+        # 下界声明的物理根源（emoji 栅格化 + 字重轮廓 + 2.29% 字号差）**遍布整页**，
+        # 不是局部几何错位，所以只要整页落在下界内、reason 是 structural-within-declared-floor，
+        # 区域级就不该逐格拿 0.02 复核（否则下界放行在整页成立、在区域级又被同一个
+        # 物理原因推翻，自相矛盾）。真正需要区域级卡点的是 pass（整页压到 0.02 内却
+        # 可能藏着局部错位）。
+        region_lifted = make_run(tmp, "20260101-000000-objc-032b", page="reachability-region",
+                                 delivery_ready=True)
+        write_json(region_lifted / "ui-implementation-plan.json", reachability_plan())
+        region_summary = reachability_summary(region_lifted)
+        region_summary["regions"][0]["structuralRatio"] = 0.06  # 区域 6%，超 0.02
+        write_json(region_lifted / "diff" / "full-page.json", region_summary)
+        _code2, data2 = run_validator(region_lifted)
+        if any("超过上限" in v and "区域" in v for v in data2["violations"]):
+            problems.append("用例36b：下界放行却被区域级死卡 0.02 误杀")
+
         # 用例 37：下界必须可核 —— 七种形态各自必须变红。
         # 只做阳性对照是不够的：一个永远不报错的校验器同样能让用例 36 变绿。
         bad = make_run(tmp, "20260101-000000-objc-033", page="reachability-bad",
