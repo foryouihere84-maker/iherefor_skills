@@ -55,16 +55,25 @@ python3 scripts/check_lanhu_mcp.py --registries /path/to/my-registries.json
 
 1. 调用 `lanhu_set_project({url})`，使用用户提供的完整 URL；不截断或自行拼接 UUID。
 2. 调用 `lanhu_get_designs({projectId})`，根据用户指定的设计名、image_id 或 URL 解析结果选择页面。若存在多个候选，记录选择依据；不能猜错页面。
-3. 对每个选定页面调用 `lanhu_get_design_detail`，确认 image_id、版本、画布尺寸和原始 URL。
+   **设备稿判定规则（同一设计名常同时存在手机稿与 iPad 稿）**：设计名**不带「iPad」后缀 = 手机稿**；
+   带「iPad」后缀 = iPad 稿。用户给的是 URL（只有 image_id、没有设计名）时，先按 image_id 精确匹配，
+   再读它对应的 `name` 确认设备形态；若用户意图是「手机端页面」，却匹配到带「iPad」后缀的稿，属选错了要纠正。
+3. 对每个选定页面调用 `lanhu_get_design_detail`，确认 image_id、版本和原始 URL。
+   **注意：`get_design_detail` 的 `width`/`height` 是封面图（导出图）像素尺寸，不是画布尺寸。**
+   画布尺寸的唯一权威来源是 `lanhu_get_design_document` 的 `canvas`（第 5 步），不要在 detail 里读画布。
 4. 调用 `lanhu_download_design({imageId, projectId, outputPath})`，把官方生成的 `index.html/index.css/common.css/flexible.js/img/` 下载到 `.ihereforUI/pages/<page-id>/source/`。这是视觉基准输入；不要调用 `lanhu_generate_code` 作为原生代码生成器。
 5. **调用 `lanhu_get_design_document`（必调）并解析成设计事实摘要**：
+   - **必须传 `depth: 99`**（工具默认只展开 2 层，漏传只会拿到残缺层级，父视图归属就废了）；
    - 把返回体存到 `.ihereforUI/pages/<page-id>/reference/design-document.json`；
    - 运行 `scripts/lanhu_design_facts.py --document <该文件> --output .ihereforUI/pages/<page-id>/reference/design-facts.json`；
-   - 解析器会抽出**父视图归属**（`metadata.parentId`/`depth`）、**字号/字体/文本/颜色**（`style.typography`）、**描边/填充/阴影**（`style.borders`/`fills`/`shadows`）——这些正是第 3 步「目标实现计划」里 `regions[].parentIndex`、`unsupported[typography]`、描边判据的权威来源，**不应再由 Agent 从渲染 DOM 反向推断**（否则每个 region 都只能写 `kindSource: "agent-decided"`）。
-   - `lanhu_get_annotations` 与 `lanhu_get_design_document` 的图层树/字号/文本基本重叠，**不用重复调用**；`lanhu_get_layer_detail` 仅在某一层与渲染事实对不上、需要看 Sketch 原始帧时按需调用；`lanhu_get_tokens` 仅在需要具名设计 token 时调用。
-6. 对每个成功读取或下载的资源执行 Lanhu cache hook，保存到项目 `.lanhu-cache/<project-id>/`；禁止缓存 Cookie、Authorization 或原始 MCP envelope。
-7. 校验 `source/index.html`、CSS/JS 和 `img/` 非空，记录文件清单、sha256、image_id、版本和来源 URL 到 `source/manifest.json`。
-8. 只有 source manifest 校验通过后，才运行 Playwright reference、page-facts 和目标平台 Agent loop。
+   - 解析器会抽出**父视图归属**（由 `children` 树推导，`metadata.parentId` 实测全 null 不可靠）、
+     **字号/字体/文本/颜色**（`style.typography`，字号已按 `canvas.scale` 还原、`fontSizeRaw` 保留原文）、
+     **描边/填充/阴影**（`style.borders`/`fills`/`shadows`）——这些正是第 3 步「目标实现计划」里
+     `regions[].parentIndex`、`unsupported[typography]`、描边判据的权威来源，**不应再由 Agent 从渲染 DOM
+     反向推断**（否则每个 region 都只能写 `kindSource: "agent-decided"`）。
+   - `lanhu_get_annotations` 与 `lanhu_get_design_document` 的图层树/字号/文本基本重叠，**不用重复调用**；
+     `lanhu_get_layer_detail` 仅在某一层与渲染事实对不上、需要看 Sketch 原始帧时按需调用；
+     `lanhu_get_tokens` 仅在需要具名设计 token 时调用。
 6. 对每个成功读取或下载的资源执行 Lanhu cache hook，保存到项目 `.lanhu-cache/<project-id>/`；禁止缓存 Cookie、Authorization 或原始 MCP envelope。
 7. 校验 `source/index.html`、CSS/JS 和 `img/` 非空，记录文件清单、sha256、image_id、版本和来源 URL 到 `source/manifest.json`。
 8. 只有 source manifest 校验通过后，才运行 Playwright reference、page-facts 和目标平台 Agent loop。
@@ -83,8 +92,8 @@ python3 scripts/check_lanhu_mcp.py --registries /path/to/my-registries.json
   此时页面上 `CodeMirror` 实例还是空的。**不要据此判定「这个设计稿没有 HTML」**——先原样重试一次；
   连续两次都失败，再用 `CHROME_PATH` 确认 Chrome 可执行文件、并检查 Cookie 是否过期。
 - **`lanhu_get_design_detail` 的 `width`/`height` 不是画布尺寸。** 它返回的是导出图（cover）的像素尺寸，
-  可能是画布的一半（实测：detail 报 `405x540`，实际画布是 `810x1080`，`exportScale=1`）。画布尺寸以
-  `lanhu_get_annotations` 里根 artboard 的 `width`/`height` 为准；所有标注坐标都在这个画布坐标系里。
+  可能是画布的一半（实测：detail 报 `196.5x426`，实际画布是 `393x852`，`canvas.scale=2`）。画布尺寸以
+  `lanhu_get_design_document` 的 `canvas.width`/`canvas.height` 为准；所有图层 `rect` 坐标都在这个画布坐标系里。
 - **`layout_data` / `version_layout_data` 里的 `file_info.format: "png"` 不代表设计稿没有图层。** 它只描述
   导出格式；同一份设计稿照样能拿到完整图层树和 DDS HTML。不要因为它就跳过 `download_design`。
 
@@ -97,8 +106,9 @@ python3 scripts/check_lanhu_mcp.py --registries /path/to/my-registries.json
 - **`type` 对文本、形状、组全返回 `"artboard"`**——不要用它判断「这是不是文本层」。
 - **文本在 `style.typography`**（`fontFamily`/`fontSize`/`fontWeight`/`lineHeight`/`letterSpacing`/`textAlign`/`color`/`text`），不在 `style.text`。`color` 是 `{r,g,b,a,value}` 双份，`value` 可能是 `#hex` 或 `rgba(...)`。
 - **描边/填充/阴影在 `style.borders` / `style.fills` / `style.shadows`**，每个 border 形如 `{color,width,style,radius}`。
-- **`parentId` / `depth` / `hasExportImage` / `exportFormats` 在 `metadata`**，不在顶层。
-- 画布尺寸因稿而异（同一项目不同 device 稿可能一个 393×852、一个 810×1080），**按稿读根 artboard，不能假设**；`design_document.canvas.scale` 会告诉你字号/坐标带不带 scale 语义。
+- **`depth` / `hasExportImage` / `exportFormats` 在 `metadata`；但 `metadata.parentId` 实测全为 null、不可靠**，父视图归属必须按 `children` 嵌套树推导（`lanhu_design_facts.py` 已这么处理）。
+- **`canvas.scale` 语义**：`rect` 坐标是**未缩放**的画布点坐标（实测最大 = 画布尺寸）；但 `typography.fontSize` 是**除过 scale 的**（scale=2 稿里 fontSize=7 = 真实 14/2）。解析器已按 scale 还原字号。
+- 画布尺寸因稿而异（同一项目不同 device 稿可能一个 393×852、一个 810×1080），**按稿读根 artboard，不能假设**。
 
 ## 失败与凭据
 

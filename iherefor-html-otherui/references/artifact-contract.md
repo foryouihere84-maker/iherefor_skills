@@ -180,18 +180,21 @@ v3 起每个元素都带 `parentIndex` / `parentHops` / `positioningContextIndex
 
 ```json
 {
-  "source": {"name": "笔刷-iPad", "imageId": "…", "projectId": "…",
-             "canvas": {"width": 810, "height": 1080, "scale": 2, "device": "iOS @1x"}},
-  "summary": {"layerCount": 94, "rootCount": 12, "typographyCount": 13,
-              "borderCount": 14, "fillCount": 23, "shadowCount": 0,
-              "visibleFalseCount": 0, "exportImageCount": 47,
-              "depthDistribution": {"0": 12, "1": 45, "2": 22, "3": 12, "4": 3}},
-  "roots": [{"id": "…", "name": "Which brushes are yo"}],
-  "hierarchy": [{"id": "…", "name": "…", "parentId": null, "depth": 0}],
-  "typography": [{"id": "…", "name": "Skip", "rect": {"x": 365.5, "y": 31, "width": 35, "height": 22},
-                  "parentId": null, "depth": 1, "text": "Skip", "fontFamily": "PingFang SC",
-                  "fontSize": 7, "fontWeight": 400, "lineHeight": 7, "letterSpacing": 0,
-                  "textAlign": "left", "color": "#1A1A1A"}],
+  "source": {"name": "目的", "imageId": "…", "projectId": "…",
+             "canvas": {"width": 393, "height": 852, "scale": 2, "device": "iOS @1x"}},
+  "scale": {"canvasScale": 2.0, "fontSizeScaled": true,
+            "note": "rect 坐标未缩放；fontSize 已按 canvas.scale 还原，fontSizeRaw 是 document 原文"},
+  "summary": {"layerCount": 64, "rootCount": 8, "typographyCount": 15,
+              "borderCount": 7, "fillCount": 20, "shadowCount": 0,
+              "visibleFalseCount": 0, "exportImageCount": 22,
+              "depthDistribution": {"0": 8, "1": 31, "2": 19, "3": 4, "4": 1, "5": 1}},
+  "roots": [{"id": "…", "name": "矩形"}],
+  "hierarchy": [{"id": "…", "name": "椭圆形", "parentId": "4D8E1C99…", "depth": 1}],
+  "typography": [{"id": "…", "name": "Continue", "rect": {"x": 77, "y": 372.5, "width": 68, "height": 22},
+                  "parentId": "4D8E1C99…", "depth": 1, "text": "Continue",
+                  "fontFamily": "Avenir-Black", "fontFamilyRaw": "AvenirLT-Black",
+                  "fontSize": 14.0, "fontSizeRaw": 7, "fontWeight": 400,
+                  "lineHeight": 14, "letterSpacing": 0, "textAlign": "left", "color": "#1A1A1A"}],
   "borders": [{"id": "…", "name": "Border", "borders": [{"color": {"…": "rgba(0,0,0,1)"}, "width": 0.5, "style": "solid", "radius": 0}]}],
   "fills": [], "shadows": []
 }
@@ -201,9 +204,10 @@ v3 起每个元素都带 `parentIndex` / `parentHops` / `positioningContextIndex
 
 | 字段 | 含义 |
 |---|---|
-| `source.canvas.scale` | design_document 报的画布 scale；**字号与坐标可能带 scale 语义**，引用前先看它 |
-| `hierarchy[].parentId` / `depth` | 来自 `metadata`（不是顶层）；`parentId == null` 即根层。**这是 `regions[].parentIndex` 的权威来源** |
-| `typography[]` | 来自 `style.typography`，`color` 是 `value` 字符串（`#hex` 或 `rgba(...)`） |
+| `scale.canvasScale` / `scale.fontSizeScaled` | 画布 scale 及「是否对字号做了还原」。**`rect` 坐标是未缩放的画布点坐标，但 `fontSize` 已按 scale 还原**（`fontSizeRaw` 是 document 原文） |
+| `hierarchy[].parentId` / `depth` | 父视图归属**由 `children` 树推导**（`metadata.parentId` 实测全 null 不可靠）；`parentId == null` 即根层。**这是 `regions[].parentIndex` 的权威来源** |
+| `typography[].fontSize` / `fontSizeRaw` | `fontSize` 是还原后的真实字号（可直接填实现计划），`fontSizeRaw` 是 document 原文（已除过 scale） |
+| `typography[].fontFamily` / `fontFamilyRaw` | `fontFamily` 已 normalize（`AvenirLT-*` → `Avenir-*`），`fontFamilyRaw` 是 document 原声明 |
 | `borders[].borders[].width` | 描边粗细，回答「描边画在 frame 上还是独立装饰层」 |
 | `summary.depthDistribution` | 层级深度分布，快速判断画布叠层复杂度 |
 

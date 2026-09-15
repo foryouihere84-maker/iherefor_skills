@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 """回归：设计事实解析必须还原真实 API 的字段嵌套结构，不得按理想化 schema 猜字段。
 
-真实 `lanhu_get_design_document` 返回体有三个容易写错的坑，本用例专门盯住：
+真实 `lanhu_get_design_document` 返回体有几个容易写错的坑，本用例专门盯住：
 
 1. ``type`` 对文本/形状/组**全是 ``artboard``** —— 解析器不得用 ``type`` 判断文本层；
 2. 文本在 ``style.typography``（不在 ``style.text``），且 ``color`` 是 ``{r,g,b,a,value}``；
-3. ``parentId`` / ``depth`` / ``hasExportImage`` 在 ``metadata``（不在顶层）。
+3. ``metadata.parentId`` **实测全 null、不可靠** —— 父视图归属必须由 ``children`` 树推导；
+4. ``typography.fontSize`` 是**除过 ``canvas.scale`` 的**（scale=2 稿里 fontSize=7 = 真实 14/2），
+   解析器必须按 scale 还原，并保留 ``fontSizeRaw`` 供追溯；
+5. 字体族名 ``AvenirLT-*``（带 LT 后缀，系统里不存在）要 normalize 成 ``Avenir-*``。
 
-本用例用内联构造的最小返回体（对照组），再配一段真实返回体切片做「真值对照」，
-确保解析器在字段名、嵌套层级上都不偏离实际。
+本用例用内联构造的最小返回体做对照，确保解析器在字段名、嵌套层级、scale 语义上都不偏离实际。
 """
 import json
 import subprocess
@@ -32,7 +34,11 @@ def run_facts(document, output):
 
 
 def minimal_document():
-    """构造一个能暴露三个坑的最小返回体。"""
+    """构造一个能暴露「scale 语义 + parentId 空 + 字体族名」三个坑的最小返回体。
+
+    canvas.scale=2、fontSize=7（真实应 14）、metadata.parentId 全 null、
+    fontFamily=AvenirLT-Black（应 normalize 成 Avenir-Black）。
+    """
     return {
         "name": "测试稿",
         "imageId": "img-1",
@@ -65,7 +71,7 @@ def minimal_document():
                             "opacity": 100, "blendMode": "normal",
                             "visible": True, "locked": False, "rotation": 0,
                             "typography": {
-                                "fontFamily": "PingFang SC", "fontSize": 12,
+                                "fontFamily": "AvenirLT-Black", "fontSize": 7,
                                 "fontWeight": 400, "lineHeight": 12,
                                 "letterSpacing": 0, "textAlign": "left",
                                 "color": {"r": 26, "g": 26, "b": 26, "a": 1, "value": "#1A1A1A"},
@@ -73,7 +79,7 @@ def minimal_document():
                             },
                         },
                         "children": [],
-                        "metadata": {"depth": 1, "parentId": "ROOT",
+                        "metadata": {"depth": 1, "parentId": None,
                                      "hasExportImage": False, "exportFormats": []},
                     },
                 ],
@@ -85,29 +91,57 @@ def minimal_document():
 
 
 def test_typography_is_not_type():
-    """坑 1&2：type 是 artboard，但文本仍须从 style.typography 取出。"""
+    """type 是 artboard，但文本仍须从 style.typography 取出。"""
     out = Path(tempfile.mkdtemp()) / "facts.json"
     facts = run_facts(minimal_document(), out)
     assert facts["summary"]["typographyCount"] == 1, facts["summary"]
     row = facts["typography"][0]
     assert row["text"] == "Hello"
-    assert row["fontFamily"] == "PingFang SC"
-    assert row["fontSize"] == 12
     assert row["color"] == "#1A1A1A"
-
     # 含 typography 的那个节点，其 type 也必须是 artboard（契约里可断言）
     assert facts["hierarchy"][1]["id"] == "TITLE"
 
 
-def test_parent_comes_from_metadata():
-    """坑 3：parentId / depth 读 metadata，不是顶层。"""
+def test_font_size_restored_by_scale():
+    """坑 4：fontSize 是除过 canvas.scale 的，必须还原，并保留 fontSizeRaw。"""
+    out = Path(tempfile.mkdtemp()) / "facts.json"
+    facts = run_facts(minimal_document(), out)
+    row = facts["typography"][0]
+    assert row["fontSizeRaw"] == 7          # document 原文
+    assert row["fontSize"] == 14.0          # 7 * scale(2)
+    assert facts["scale"]["canvasScale"] == 2.0
+    assert facts["scale"]["fontSizeScaled"] is True
+
+
+def test_font_family_normalized():
+    """坑 5：AvenirLT-Black 应 normalize 成 Avenir-Black（保留 fontFamilyRaw 追溯）。"""
+    out = Path(tempfile.mkdtemp()) / "facts.json"
+    facts = run_facts(minimal_document(), out)
+    row = facts["typography"][0]
+    assert row["fontFamily"] == "Avenir-Black"
+    assert row["fontFamilyRaw"] == "AvenirLT-Black"
+
+
+def test_parent_derived_from_children_not_metadata():
+    """坑 3：metadata.parentId 全 null 时，父视图归属仍须由 children 树推导出来。"""
     out = Path(tempfile.mkdtemp()) / "facts.json"
     facts = run_facts(minimal_document(), out)
     by_id = {h["id"]: h for h in facts["hierarchy"]}
     assert by_id["ROOT"]["depth"] == 0
-    assert by_id["ROOT"]["parentId"] is None
+    assert by_id["ROOT"]["parentId"] is None      # 根层无父
     assert by_id["TITLE"]["depth"] == 1
-    assert by_id["TITLE"]["parentId"] == "ROOT"
+    assert by_id["TITLE"]["parentId"] == "ROOT"   # 由 children 推导，而非 metadata
+
+
+def test_scale_absent_no_restore():
+    """canvas.scale 缺失或无效时，fontSize 原样返回、不做还原。"""
+    doc = minimal_document()
+    doc["canvas"].pop("scale")
+    out = Path(tempfile.mkdtemp()) / "facts.json"
+    facts = run_facts(doc, out)
+    row = facts["typography"][0]
+    assert row["fontSize"] == row["fontSizeRaw"] == 7
+    assert facts["scale"]["fontSizeScaled"] is False
 
 
 def test_borders_extracted():
@@ -143,7 +177,10 @@ def test_rgba_fallback_hexless_color():
 
 if __name__ == "__main__":
     test_typography_is_not_type()
-    test_parent_comes_from_metadata()
+    test_font_size_restored_by_scale()
+    test_font_family_normalized()
+    test_parent_derived_from_children_not_metadata()
+    test_scale_absent_no_restore()
     test_borders_extracted()
     test_summary_counts()
     test_rgba_fallback_hexless_color()

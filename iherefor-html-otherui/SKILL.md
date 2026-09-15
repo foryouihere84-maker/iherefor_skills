@@ -387,12 +387,13 @@ Agent 必须查看运行中的页面和基准截图，建立页面事实表：�
 输出 `ui-implementation-plan.json`，至少包含目标模式、参考 viewport、组件边界、坐标系、布局策略、资源映射、可访问性标识、交互候选和 `unsupported` 项。布局策略分两段：`layoutProportions`（尺寸轴 + 位置轴）与 `adaptiveLayout`（宽度轴，见「宽度轴与平板适配」）。该文件是 Agent 决策记录，不是生产源码生成器的输入模板。
 
 **布局与字号的权威来源是 ``design-facts.json``，不是渲染 DOM 的反推。** 第 1 步已调用
-`lanhu_get_design_document` 并经 `scripts/lanhu_design_facts.py` 解析成 `reference/design-facts.json`：
-父视图归属（`metadata.parentId`/`depth`）→ `regions[].parentIndex`；字号/字体/文本/颜色
-（`style.typography`）→ `unsupported[typography]` 与字号常量；描边/填充/阴影
-（`style.borders`/`fills`/`shadows`）→ 覆盖式装饰层与 border 内缩判据。**凡是 design-facts 已给出、
-Agent 却写成 `kindSource: "agent-decided"` 或靠 CDP/`advanceWidth` 反推的，都属于可消除的推断，应回填。**
-渲染 DOM 事实只负责 design-facts 给不了的那一半（字体实际命中、计算后样式、`rectInReference`）。
+`lanhu_get_design_document`（**必须 `depth: 99`**，默认只展开 2 层）并经 `scripts/lanhu_design_facts.py`
+解析成 `reference/design-facts.json`：父视图归属（由 `children` 树推导，`metadata.parentId` 实测全 null
+不可靠）→ `regions[].parentIndex`；字号/字体/文本/颜色（`style.typography`，字号已按 `canvas.scale` 还原）
+→ `unsupported[typography]` 与字号常量；描边/填充/阴影（`style.borders`/`fills`/`shadows`）→ 覆盖式装饰层
+与 border 内缩判据。**凡是 design-facts 已给出、Agent 却写成 `kindSource: "agent-decided"` 或靠 CDP/
+`advanceWidth` 反推的，都属于可消除的推断，应回填。** 渲染 DOM 事实只负责 design-facts 给不了的那一半
+（字体实际命中、计算后样式、`rectInReference`）。
 
 计划里还必须有一份 `runtimeRisks` —— 把「只能在运行期暴露、但**现在就能决策**」的风险提前写下来，
 逐条给出决策与理由。第 5 步是分钟级的取证门，这些问题一旦漏到那里才发现，就要重走一次编译截图：
