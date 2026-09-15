@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "targetMode": "ios-uikit-objective-c",
+  "canvasTransform": {
+    "canvasSize": {"width": 393, "height": 852},
+    "deviceSize": {"width": 402, "height": 874},
+    "policy": "fit",
+    "scaleX": 1.02290076,
+    "scaleY": 1.02290076,
+    "coordinateMapper": {
+      "forward": {
+        "x": "(lanhuX - letterbox.x) * scaleX + origin.x",
+        "y": "(lanhuY - letterbox.y) * scaleY + origin.y",
+        "width": "lanhuWidth * scaleX",
+        "height": "lanhuHeight * scaleY"
+      },
+      "inverse": {
+        "x": "(deviceX - origin.x) / scaleX + letterbox.x",
+        "y": "(deviceY - origin.y) / scaleY + letterbox.y",
+        "width": "deviceWidth / scaleX",
+        "height": "deviceHeight / scaleY"
+      }
+    }
+  },
+  "adaptiveLayout": {
+    "model": "continuous-window-width",
+    "windowSamples": [
+      {"id": "phone-compact", "widthClass": "compact", "width": 393, "height": 852,
+       "required": true},
+      {"id": "tablet-regular-portrait", "widthClass": "medium", "width": 1024,
+       "height": 1366, "required": true},
+      {"id": "tablet-regular-landscape", "widthClass": "expanded", "width": 1366,
+       "height": 1024, "required": true},
+      {"id": "phone-regular-landscape", "widthClass": "medium", "width": 852,
+       "height": 393, "required": false}
+    ],
+    "firstLevelWidthClass": "compact",
+    "regions": [
+      {"region": "hero", "widthPolicy": "full-bleed",
+       "reason": "HTML 基准里 hero 四边贴 0，背景延伸到状态栏下方"},
+      {"region": "offers", "widthPolicy": "max-content-width",
+       "maxContentWidth": {"value": 600, "of": "root",
+                           "reason": "卖点卡片组是单列内容，在 1024pt 上拉满会破坏阅读节奏"},
+       "columnCount": {"compact": 1, "medium": 1, "expanded": 1}},
+      {"region": "cta", "widthPolicy": "max-content-width",
+       "maxContentWidth": {"value": 600, "of": "root",
+                           "reason": "主按钮跟随内容列，不与卡片组脱开"}},
+      {"region": "legal", "widthPolicy": "stacked",
+       "reason": "页脚法律信息按内容固有宽度居中，不参与拉宽"}
+    ],
+    "axisSwitch": [],
+    "navigation": {"compact": "tabbar", "regular": "sidebar"},
+    "forbiddenAdaptations": ["uniform-scale", "stretch-full-width", "font-scale"]
+  },
+  "unsupported": {"count": 0, "items": []}
+}

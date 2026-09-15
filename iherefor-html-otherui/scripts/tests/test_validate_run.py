@@ -315,6 +315,42 @@ def alignment_summary(run_dir, status="aligned", reason=None):
     return payload
 
 
+def adaptive_plan():
+    """一份合规的宽度轴声明（四个采样覆盖三个宽度档）。"""
+    return {
+        "schemaVersion": 1,
+        "adaptiveLayout": {
+            "model": "continuous-window-width",
+            "windowSamples": [
+                {"id": "phone-compact", "widthClass": "compact",
+                 "width": 393, "height": 852},
+                {"id": "tablet-regular-portrait", "widthClass": "medium",
+                 "width": 1024, "height": 1366},
+                {"id": "tablet-regular-landscape", "widthClass": "expanded",
+                 "width": 1366, "height": 1024},
+                {"id": "phone-regular-landscape", "widthClass": "medium",
+                 "width": 852, "height": 393, "required": False},
+            ],
+            "firstLevelWidthClass": "compact",
+            "regions": [{"region": "form", "widthPolicy": "max-content-width",
+                         "maxContentWidth": {"value": 600, "of": "root",
+                                             "reason": "单列表单拉满会破坏阅读节奏"}}],
+            "forbiddenAdaptations": ["uniform-scale", "stretch-full-width", "font-scale"],
+        },
+    }
+
+
+def adaptive_targets():
+    return {"schemaVersion": 1, "platform": "iOS Simulator", "deviceFamily": "1,2",
+            "samples": [{"id": "phone-compact", "widthClass": "compact", "required": True,
+                         "geometry": "actual/geometry-phone-compact.json"}]}
+
+
+def adaptive_audit_report(status="pass"):
+    return {"schemaVersion": 1, "model": "continuous-window-width", "status": status,
+            "tolerancePt": 2.0, "checks": {}, "violations": [], "warnings": []}
+
+
 def main():
     problems = []
     with tempfile.TemporaryDirectory() as tmp:
@@ -794,6 +830,76 @@ def main():
         if any("visualDiff" in v for v in violations):
             problems.append(f"用例38d：占位件被误判：{violations[:2]}")
 
+        # ---- 用例 39：第八项闸门是**条件必需**的 ----
+        # 声明了宽度轴（adaptiveLayout）时多一项 adaptiveAudit；未声明时不要求。
+        # 做成条件式是因为「未声明宽度轴」本身是合法状态 —— 它等于明确声明
+        # 「本页只交付手机档」。强行要求会让所有手机档 run 凭空多一项 not-run。
+        def adaptive_run(run_id, gate_status, delivery_ready, plan_doc, with_targets=True,
+                         audit_status=None):
+            run_dir = make_run(tmp, run_id, page=f"adaptive-{run_id[-3:]}",
+                               gate_status=gate_status, delivery_ready=delivery_ready)
+            write_json(run_dir / "ui-implementation-plan.json", plan_doc)
+            if with_targets:
+                write_json(run_dir / "adaptive-targets.json", adaptive_targets())
+            if audit_status is not None:
+                write_json(run_dir / "diff" / "adaptive-audit.json",
+                           adaptive_audit_report(audit_status))
+            return run_validator(run_dir)
+
+        # 39a：声明了宽度轴却没写第八项闸门 —— 少一项最容易伪装成「全绿」
+        _code, data = adaptive_run(
+            "20260101-000000-objc-039a", dict(GATE_PASS), False, adaptive_plan())
+        if not any("adaptiveAudit" in v for v in data["violations"]):
+            problems.append(
+                f"用例39a：声明宽度轴却缺 adaptiveAudit 未被拦下：{data['violations'][:3]}")
+
+        # 39b：几何审计判 fail，闸门不得记 pass
+        _code, data = adaptive_run(
+            "20260101-000000-objc-039b",
+            {**GATE_PASS, "adaptiveAudit": "pass"}, True, adaptive_plan(),
+            audit_status="fail")
+        if not any("adaptiveAudit" in v and "pass" in v for v in data["violations"]):
+            problems.append(
+                f"用例39b：审计判 fail 而闸门记 pass 未被拦下：{data['violations'][:3]}")
+
+        # 39c：阳性对照 —— 声明齐、闸门齐、审计通过，不得误报
+        _code, data = adaptive_run(
+            "20260101-000000-objc-039c",
+            {**GATE_PASS, "adaptiveAudit": "pass"}, True, adaptive_plan(),
+            audit_status="pass")
+        if any("adaptive" in v.lower() for v in data["violations"]):
+            problems.append(f"用例39c：合规的自适应形态被误拦：{data['violations'][:3]}")
+
+        # 39d：未声明宽度轴时不得要求第八项闸门（手机档 run 是合法状态）
+        _code, data = adaptive_run(
+            "20260101-000000-objc-039d", dict(GATE_PASS), True,
+            {"schemaVersion": 1}, with_targets=False)
+        if any("adaptiveAudit" in v for v in data["violations"]):
+            problems.append(
+                f"用例39d：未声明宽度轴却被要求 adaptiveAudit：{data['violations'][:3]}")
+        if not any("adaptiveLayout" in w for w in data["warnings"]):
+            problems.append("用例39d：未声明宽度轴必须留下告警，不能静默")
+
+        # 39e：声明了宽度轴却没有采样清单 —— 采样只写在计划里就没有几何证据可采
+        _code, data = adaptive_run(
+            "20260101-000000-objc-039e",
+            {**GATE_PASS, "adaptiveAudit": "not-run"}, False, adaptive_plan(),
+            with_targets=False)
+        if not any("adaptive-targets.json" in v for v in data["violations"]):
+            problems.append(
+                f"用例39e：缺 adaptive-targets.json 未被拦下：{data['violations'][:3]}")
+
+        # 39f：计划硬伤（把「拉满」写成 policy）不得等到编译才发现
+        broken = adaptive_plan()
+        broken["adaptiveLayout"]["regions"].append(
+            {"region": "list", "widthPolicy": "stretch-full-width"})
+        _code, data = adaptive_run(
+            "20260101-000000-objc-039f",
+            {**GATE_PASS, "adaptiveAudit": "pass"}, True, broken, audit_status="pass")
+        if not any("stretch-full-width" in v for v in data["violations"]):
+            problems.append(
+                f"用例39f：widthPolicy 写成 stretch-full-width 未被拦下：{data['violations'][:3]}")
+
     for p in problems:
         print(p)
     if problems:
@@ -803,6 +909,7 @@ def main():
           "区域级结构证据与对齐审计交叉校验、布局约束的计划质量/源码合规/闸门交叉三层均正确、"
           "基准字体链的替换检出与闸门交叉均正确、声明的结构差异下界既放行合规形态又拦下七种误用、"
           "视觉闸门记 pass 时比较结论必须支持它（下界内放行是唯一可升格的情形）、"
+          "第八项闸门按宽度轴声明条件必需且与几何审计交叉核对、"
           "deliveryReady 在结构不全时判「不推导」而不是猜")
     return 0
 

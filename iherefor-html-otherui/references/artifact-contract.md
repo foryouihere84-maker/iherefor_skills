@@ -174,13 +174,14 @@ v3 起每个元素都带 `parentIndex` / `parentHops` / `positioningContextIndex
 |---|---|---|
 | `run.json` | always | 运行标识、目标模式、父 run、基准哈希、状态 |
 | `review.json` | always | 观察 / 假设 / 变更 / 验证 / 下一步（含 `parentRunId`） |
-| `delivery-gate.json` | always | 7 项闸门状态、`unsupported` 计数、`deliveryReady` |
-| `ui-implementation-plan.json` | always | 本次实现的区域、坐标系、资源映射、`runtimeRisks`、`gateReachability` 与 `unsupported` |
+| `delivery-gate.json` | always | 7 项基础闸门状态（声明 `adaptiveLayout` 时为 8 项）、`unsupported` 计数、`deliveryReady` |
+| `ui-implementation-plan.json` | always | 本次实现的区域、坐标系、资源映射、`runtimeRisks`、`gateReachability`、`adaptiveLayout` 与 `unsupported` |
 | `resource-policy.json` | always | 资源目录决策、复用与新增、语义命名 |
 | `runtime-device.json` | 所有目标模式 | 运行时尺寸 API 返回值与截图像素尺寸 |
+| `adaptive-targets.json` | 声明了 `adaptiveLayout` | 宽度档采样清单与各自的几何证据位置 |
 | `ios-environment.json` | iOS 目标模式 | 工程入口、scheme、destination 探测结果 |
-| `actual/` | always | 目标 App 截图、构建/测试日志 |
-| `diff/` | always | 结构/纹理/填充三分与区域差异摘要；元素级对齐审计 `alignment.json`；基准字体链 `font-chain.json` |
+| `actual/` | always | 目标 App 截图、构建/测试日志、各采样的几何转储 |
+| `diff/` | always | 结构/纹理/填充三分与区域差异摘要；元素级对齐审计 `alignment.json`；基准字体链 `font-chain.json`；自适应几何审计 `adaptive-audit.json`（声明 `adaptiveLayout` 时必需） |
 
 ### `run.json`
 
@@ -232,7 +233,8 @@ v3 起每个元素都带 `parentIndex` / `parentHops` / `positioningContextIndex
     "implementation": "pass",
     "build": "pass",
     "tests": "pass",
-    "visualDiff": "fail"
+    "visualDiff": "fail",
+    "adaptiveAudit": "not-run"
   },
   "unsupported": {"count": 0, "reviewedCount": 0, "items": []},
   "deliveryReady": false,
@@ -241,6 +243,12 @@ v3 起每个元素都带 `parentIndex` / `parentHops` / `positioningContextIndex
 ```
 
 每个状态取值：`pass` | `pass-with-review` | `fail` | `not-run`。
+
+**`adaptiveAudit` 是条件必需的第八项**：`ui-implementation-plan.json` 声明了
+`adaptiveLayout` 时，`status` 必须包含该键；未声明时不要求，写进去也必须取合法值。
+它是**几何契约审计**，不做像素比对 —— 理由见
+[adaptive-layout.md §7](adaptive-layout.md#7-验证adaptiveaudit-与为什么不做像素-diff)。
+它与 `diff/adaptive-audit.json` 交叉核对：审计判 `fail` 时闸门不得记 `pass`。
 
 `visualDiff` 的取值受 `diff/` 的证据约束，不能只看整页比例：
 
@@ -269,7 +277,8 @@ v3 起每个元素都带 `parentIndex` / `parentHops` / `positioningContextIndex
 
 `deliveryReady` 为 `true` 的**充要条件**（校验脚本按此判定，不接受手写覆盖）：
 
-1. 上述 7 项全部为 `pass`；
+1. **本次适用的全部闸门**为 `pass` —— 基础 7 项，加上声明了 `adaptiveLayout` 时的
+   `adaptiveAudit`（第 8 项）；
 2. `unsupported.count == unsupported.reviewedCount`（不存在未审查的降级项）；
 3. `unsupported` 的两个计数必须是**可读的整数**。
 
@@ -622,6 +631,126 @@ Lanhu 坐标的分析代码都得自己反解，而手写反解正是「多乘�
 
 注释里的数字、`100%`、`colorWithRed:22 / 255.0` 这类非布局数字一律跳过。
 
+#### `ui-implementation-plan.json` 的 `adaptiveLayout`
+
+`layoutProportions` 管的是**两轴**（尺寸是常量、位置相对直接父视图），它只保证
+「换设备不崩」。它回答不了第三个问题：**父视图宽到 1024pt 时，内容怎么收敛？**
+这一段就是那个缺失的宽度轴。完整规范见 [adaptive-layout.md](adaptive-layout.md)。
+
+```json
+{
+  "adaptiveLayout": {
+    "model": "continuous-window-width",
+    "windowSamples": [
+      {"id": "phone-compact", "widthClass": "compact", "width": 393, "height": 852, "required": true},
+      {"id": "tablet-regular-portrait", "widthClass": "medium", "width": 1024, "height": 1366, "required": true},
+      {"id": "tablet-regular-landscape", "widthClass": "expanded", "width": 1366, "height": 1024, "required": true},
+      {"id": "phone-regular-landscape", "widthClass": "medium", "width": 852, "height": 393, "required": false}
+    ],
+    "regions": [
+      {"region": "hero", "widthPolicy": "full-bleed",
+       "reason": "HTML 事实为四边贴 0，背景与主视觉铺满"},
+      {"region": "form", "widthPolicy": "max-content-width",
+       "maxContentWidth": {"value": 600, "of": "root",
+                           "reason": "单列表单在 1024pt 上拉满会破坏阅读节奏"},
+       "columnCount": {"compact": 1, "medium": 1, "expanded": 1}}
+    ],
+    "axisSwitch": [{"region": "cardRow", "compact": "horizontal", "regular": "vertical"}],
+    "navigation": {"compact": "tabbar", "regular": "sidebar"},
+    "forbiddenAdaptations": ["uniform-scale", "stretch-full-width", "font-scale"]
+  }
+}
+```
+
+字段约束：
+
+| 字段 | 类型 | 约束 |
+|---|---|---|
+| `model` | string | 固定 `continuous-window-width`。它不是装饰：值不同说明用的是旧的两断点口径 |
+| `windowSamples` | array | **非空**。每项必须有 `id` / `widthClass`（`compact` / `medium` / `expanded`）/ `width`；`required` 缺省为 `true` |
+| `windowSamples[].id` | string | 采样标识，只用于证据索引。**不得**出现在生产代码里 |
+| `regions[].widthPolicy` | string | `full-bleed` / `max-content-width` / `centered-column` / `grid` / `pane` / `stacked` 之一。**`stretch-full-width` 不在枚举内** —— 单列拉满是本契约要拦的头号问题 |
+| `regions[].maxContentWidth` | object | `widthPolicy` 为 `max-content-width` / `centered-column` 时**必需**，含 `value`（>0 的设计常量）、`of`、`reason` |
+| `regions[].columnCount` | object | `widthPolicy` 为 `grid` 时必需，含 `compact` / `medium` / `expanded` 三个正整数且**单调不减** |
+| `axisSwitch` | array | 需要切主轴的区域。每项含 `region` 与至少一对档位映射 |
+| `forbiddenAdaptations` | array | **非空**，至少含 `uniform-scale` / `stretch-full-width` / `font-scale` |
+| `firstLevelWidthClass` | string | 缺省 `compact`。限定 [sizing-and-positioning.md §3.1.1](sizing-and-positioning.md#311-第一层子视图位置按页面比例重排设备尺寸--设计稿尺寸时的适配核心) 的「第一层位置按页面比例」**只在哪一档生效** —— 见下 |
+
+**`firstLevelWidthClass` 是必需的收口，不是可选开关。** 第一层位置比例规则在
+`393×852 → 402×874` 上成立（差 2.3%），推到 1024pt 就出事：位置按比例 ×2.6、
+而尺寸按契约 ×1，于是卡片左起 33pt 变 86pt、宽度仍是 327pt、右侧空出 611pt、
+卡片间距从 13pt 被拉成 285pt。所以该规则必须被显式限定在 `compact` 档；
+regular / medium / expanded 档下第一层位置改由 `widthPolicy` 重排。
+
+判定分两档，与 `layoutProportions` 同形：**计划怎么声明，源码就得怎么实现**。
+声明 `max-content-width` 的区域源码里没有封顶原语、声明 `grid` 的区域写了固定列数、
+声明里出现 `stretch-full-width`、`forbiddenAdaptations` 为空、`columnCount` 非单调 ——
+都由 `scripts/check_adaptive_layout.py` 拦下。源码侧另查四类禁止模式
+（`UIScreen.main.bounds` / `DisplayMetrics.widthPixels` 参与布局、方向锁定、
+`UIRequiresFullScreen`、把设计常量乘屏幕系数的表达式）。
+
+### `adaptive-targets.json`
+
+声明了 `adaptiveLayout` 的计划，必须把「宽度档采样」落成可执行的目标清单。
+它是 `runtime-device.json` 的**复数扩展**，不是替代：`runtime-device.json` 仍然是
+像素基准所在的探针设备，`adaptive-targets.json` 列出全部必须取几何证据的采样。
+
+```json
+{
+  "schemaVersion": 1,
+  "platform": "iOS Simulator",
+  "deviceFamily": "1,2",
+  "samples": [
+    {"id": "phone-compact", "required": true, "device": "iPhone 17",
+     "windowBoundsPoints": {"width": 402, "height": 874},
+     "screenshotScale": 3,
+     "source": "runtime NSLog of view.bounds",
+     "geometry": "actual/geometry-phone-compact.json"},
+    {"id": "tablet-regular-portrait", "required": true, "device": "iPad Pro 13-inch (M4)",
+     "windowBoundsPoints": {"width": 1024, "height": 1366},
+     "screenshotScale": 2,
+     "source": "runtime NSLog of view.bounds",
+     "geometry": "actual/geometry-tablet-regular-portrait.json"}
+  ]
+}
+```
+
+`windowBoundsPoints` 必须来自运行时 API（`view.bounds` / `WindowMetricsCalculator`），
+**禁止**由设备型号推断 —— 分屏与自由窗口下型号不变而窗口宽度变了。
+`deviceFamily` 对 iOS 记录 `TARGETED_DEVICE_FAMILY`，Android 记录 `sw600dp` 资源目录是否存在。
+
+### 各采样的几何转储（`actual/geometry-<sample-id>.json`）
+
+`adaptiveAudit` 的输入是**几何**，不是像素。每份转储由目标 App 运行时打印后整理：
+
+```json
+{
+  "schemaVersion": 1,
+  "sampleId": "tablet-regular-portrait",
+  "source": "runtime NSLog of view.bounds and element frames",
+  "windowBoundsPoints": {"width": 1024, "height": 1366},
+  "screenshotScale": 2,
+  "compatibilityMode": false,
+  "letterbox": {"x": 0, "y": 0, "width": 0, "height": 0},
+  "touchTargetMinimum": 44,
+  "elements": [
+    {"id": "offers", "region": "offers", "kind": "fixed",
+     "rect": {"x": 212, "y": 793, "width": 347, "height": 68},
+     "interactive": false, "overflowOk": false, "overlapAllowed": false}
+  ]
+}
+```
+
+| 字段 | 含义 |
+|---|---|
+| `compatibilityMode` | 是否以 iPhone 兼容缩放模式运行。`true` 直接判 `fail` —— 那是「声称支持平板但没适配」 |
+| `letterbox` | 非零表示有黑边。同样判 `fail` |
+| `touchTargetMinimum` | 平台最小点击区（iOS 44 / Android 48）。缺省按平台推断 |
+| `elements[].kind` | 取自计划 `layoutProportions` 的 `kind`。`sizeInvariance` 只对 `fixed` 断言 |
+| `elements[].interactive` | 参与 `touchTarget` 断言的元素 |
+| `elements[].overflowOk` | 显式声明「这个元素允许越界」（如故意出血的装饰）。缺省 `false` |
+| `elements[].overlapAllowed` | 参与 `continuity` 的重叠断言。缺省 `false` |
+
 ### `diff/` 的三类结论
 
 | 文件 | 产出脚本 | 作用 |
@@ -629,6 +758,42 @@ Lanhu 坐标的分析代码都得自己反解，而手写反解正是「多乘�
 | `comparison.json`（或 `full-page.json`） | `scripts/compare_reference.py` | 像素比较：`structuralRatio` / `textureRatio` / `fillRatio` 三分 + `regions` 网格明细 + `attribution` 具名区域归因 |
 | `alignment.json` | `scripts/audit_alignment.py` | 元素级位移：`domVsReference` 与 `referenceVsActual` 两组比较 |
 | `font-chain.json` | `scripts/audit_fonts.py` | 基准字体链：逐元素比对 CSS 声明的族与运行时实际用上的族 |
+| `layout-proportions.json` | `scripts/check_layout_proportions.py` | 计划声明的布局关系有没有被源码照做（两轴口径） |
+| `adaptive-layout.json` | `scripts/check_adaptive_layout.py` | 宽度轴：声明与源码是否一致（封顶原语存在性、禁止模式） |
+| `adaptive-audit.json` | `scripts/audit_adaptive.py` | 多宽度采样的**几何**契约审计（`sizeInvariance` 等八项），**不做像素比对** |
+
+`adaptive-audit.json` 的结构：
+
+```json
+{
+  "schemaVersion": 1,
+  "model": "continuous-window-width",
+  "status": "pass",
+  "tolerancePt": 2.0,
+  "samples": [{"id": "tablet-regular-portrait", "widthClass": "medium",
+               "windowBoundsPoints": {"width": 1024, "height": 1366},
+               "geometry": "actual/geometry-tablet-regular-portrait.json"}],
+  "checks": {
+    "sampleCoverage": {"status": "pass", "required": 3, "present": 3, "missing": []},
+    "sizeInvariance": {"status": "pass", "compared": 12, "violations": []},
+    "insetPreservation": {"status": "pass", "compared": 4, "violations": []},
+    "noOverflow": {"status": "pass", "violations": []},
+    "maxContentWidth": {"status": "pass", "compared": 2, "violations": []},
+    "touchTarget": {"status": "pass", "compared": 6, "minimum": 44, "violations": []},
+    "noLetterbox": {"status": "pass", "violations": []},
+    "continuity": {"status": "pass", "violations": []}
+  },
+  "violations": [],
+  "warnings": [],
+  "exitCode": 0
+}
+```
+
+`status` 取 `pass` / `fail` / `insufficient-evidence`。**证据不足不等于通过**：
+必需采样缺几何转储时 `sampleCoverage` 判 `fail`，因为其余七项检查会在缺采样的情况下
+「全绿」—— 那是假绿。`sizeInvariance` 是本审计最有价值的一项：它把
+[sizing-and-positioning.md §2.2](sizing-and-positioning.md#22-哪些量永远不缩放)
+的「尺寸不缩放」从文档口号变成了可执行断言。
 
 `comparison.json` 的 `regions` 与 `attribution` 分工不同，**不要互相替代**：
 

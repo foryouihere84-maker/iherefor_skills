@@ -1,0 +1,75 @@
+id: adaptive-ipad-requires-width-axis
+title: 平板适配必须真的落到源码，且要分清「计划没问题、源码没照做」
+description: |
+  回归本 skill 的第三条轴（宽度轴）。前两条轴（尺寸是常量、位置相对直接父视图）
+  只保证「换设备不崩」，回答不了「父视图宽到 1024pt 时内容怎么收敛」。
+  平板适配要补的正是这一条。
+
+  素材是一个已经「通过」自检的 iOS 实现：`delivery-gate.json` 里七项闸门全 pass、
+  `deliveryReady=true`。它的实现计划**声明是完整的** —— `adaptiveLayout` 有四个采样
+  覆盖 compact / medium / expanded、每个区域都有 `widthPolicy`、`maxContentWidth`
+  给了 600pt 与理由、`forbiddenAdaptations` 三项齐全。
+
+  但源码一处都没照做：
+
+  - `src/SpecialOfferViewController.m:27` 用 `UIScreen.main.bounds.width` 取宽度 ——
+    分屏与自由窗口下它返回的是**整块屏**而不是窗口；
+  - 源码里**没有任何封顶原语**（无 `maxContentWidth` / `readableContentGuide` /
+    `lessThanOrEqualToConstant`），计划声明的两个 `max-content-width` 区域没有落地；
+  - `src/Info.plist` 只声明 `UIInterfaceOrientationPortrait` —— 竖屏锁死后
+    regular 宽度档（iPad 竖 1024、手机横屏）都拿不到。
+
+  **这三条截图全都看不出来**：全屏下 `UIScreen.main.bounds` 与 `view.bounds` 恰好相等，
+  竖屏手机上永远走不到别的宽度档，封顶在手机档下与不封顶视觉一致。
+  所以它们只能靠静态门拦，而这正是本用例要考的动作。
+
+  本用例同时考**精度**：计划本身是完整的，把它报成违规（例如说采样不足、
+  `forbiddenAdaptations` 不全、`widthPolicy` 非法）是误报。误报比漏报更伤 ——
+  它会训练出「看到告警就忽略」的习惯。
+
+  另外考一件容易漏的事：计划声明了 `adaptiveLayout`，交付闸门因此是 **8 项**，
+  而 `delivery-gate.json` 只有 7 项 —— 少一项最容易伪装成「全绿」。
+
+  判分只看产物，不看 Agent 的自述。
+input:
+  prompt: |
+    这个 run 自己记的是已交付：`delivery-gate.json` 里 implementation=pass、
+    deliveryReady=true。
+
+    但它要上平板。请核对：**这份实现真的能在 iPad 上跑对吗？**
+
+    工作区里有：
+    - ui-implementation-plan.json —— 本次的实现计划（含宽度轴声明）
+    - adaptive-targets.json —— 声明的宽度档采样
+    - src/SpecialOfferViewController.m、src/Info.plist —— 本次的 iOS 实现
+    - delivery-gate.json —— 该 run 的交付闸门
+
+    请用 skill 自带的脚本得出证据，并把结论落到文件里，不要只写在回答里：
+
+    - `diff/adaptive-layout.json` —— 宽度轴静态核对的**原始产出**（用 `--output`
+      落盘），不要手工总结成段落；
+    - `diff/adaptive-verdict.json`，至少包含：
+      - `status`：`"fail"` 或 `"pass"`
+      - `deliveryReady`：`true` 或 `false`
+      - `violations`：数组，每项至少含 `kind` 与 `file`
+      - `reason`：一句话说明判据
+
+    注意区分两类问题：
+
+    - **计划（`adaptiveLayout`）本身是完整的**：采样覆盖了三个宽度档、每个区域都有
+      widthPolicy、封顶值给了、禁止清单齐全 —— **不要**把计划判成违规；
+    - **源码没照它声明的方式实现** —— 这一类才是要报的。
+
+    另外请说明：这个 run 的 `delivery-gate.json` 还缺了什么？
+
+    不要把源码改掉，只出结论。
+context:
+  repo_fixture: evals/fixtures/adaptive-ipad/workspace
+expect:
+  files_exist:
+    - "diff/adaptive-layout.json"
+    - "diff/adaptive-verdict.json"
+judge:
+  type: script
+  script_path: evals/fixtures/scripts/check-adaptive-ipad.sh
+  timeout_seconds: 60

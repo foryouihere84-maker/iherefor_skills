@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "model": "continuous-window-width",
+  "plan": "ui-implementation-plan.json",
+  "sources": [],
+  "declared": true,
+  "sourceChecked": false,
+  "status": "pass",
+  "windowSampleCount": 4,
+  "policyCounts": {
+    "full-bleed": 1,
+    "max-content-width": 2,
+    "stacked": 1
+  },
+  "checkedFiles": 0,
+  "violations": [],
+  "warnings": [
+    "未核对源码（未传 --source）：计划声明了宽度轴，但「封顶原语在不在、有没有方向锁与 UIScreen.main」尚未验证"
+  ],
+  "exitCode": 0
+}

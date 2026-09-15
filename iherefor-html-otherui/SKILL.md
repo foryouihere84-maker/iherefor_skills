@@ -112,6 +112,77 @@ python3 scripts/validate_run.py --run <run-dir> --source <原生源码根>
 否则是拿 `fit` 的预测框去量比例布局，把模型差报成实现错误。用
 `python3 scripts/canvas_map.py --self-test` 后的 `axis_deviation()` 读这个值，不要凭感觉判断。
 
+## 宽度轴与平板适配（强制）
+
+上两节只保证「换设备不崩」，回答不了第三个问题：**父视图宽到 1024pt 时，内容怎么收敛？**
+缺这一轴时，`393×852 → 402×874` 上成立的那条「第一层位置按页面比例」推到 1024pt 会给出
+**错的**结果：位置 ×2.6、尺寸 ×1，卡片左起 33pt 变 86pt、宽度仍是 327pt、右侧空出 611pt，
+间距 13pt 被拉成 285pt。所以平板适配要补的不是「iPad 布局代码」，而是**宽度轴**。
+
+**布局是窗口宽度的连续函数，不是「手机一套、平板一套」的两张快照。** iPad 不是一个尺寸：
+全屏竖 1024×1366pt、横 1366×1024pt，分屏 1/3 与 Slide Over 回落到 ~320pt，
+Stage Manager 与 iPadOS 26 自由窗口下宽度在 320~1366pt 之间连续可变。Android 同理
+（折叠屏、自由窗口、桌面模式）。所以按**宽度档做决策**，但布局必须对档位之间的任意宽度
+都不崩 —— 「两个断点」的写法在分屏与自由窗口下必然失效。
+
+实现计划必须给出 `adaptiveLayout`，至少包含四个采样（`phone-compact` /
+`tablet-regular-portrait` / `tablet-regular-landscape` / `phone-regular-landscape`）、
+每个区域的 `widthPolicy`、以及非空的 `forbiddenAdaptations`：
+
+- `widthPolicy` 六档 —— `full-bleed` / `max-content-width` / `centered-column` / `grid` /
+  `pane` / `stacked`。**`stretch-full-width` 不在枚举里**：单列内容拉满 1024pt 是本契约要拦的
+  头号问题 —— 元素没越界、尺寸也没变，断言全绿，但阅读节奏彻底坏了。「拉满」必须由
+  `full-bleed` 显式声明，不能是默认行为。
+- `max-content-width` / `centered-column` 必须给 `maxContentWidth.value`（设计常量，
+  600~700pt 量级，**不随窗口缩放**）与 `reason`；`grid` 必须给 `columnCount` 的三档
+  且单调不减。
+- **`firstLevelWidthClass` 缺省 `compact`**：上一节的「第一层位置按页面比例」只在这一档
+  生效；regular / medium / expanded 档下第一层位置改由 `widthPolicy` 重排。这条是必需的收口，
+  不是可选开关。
+
+三条交界规则：
+
+1. **宽度轴只改「容器宽度」与「第一层位置」，不改任何尺寸。** 字号、行高、圆角、描边宽度、
+   最小点击区（≥44pt / 48dp）在全部宽度档上逐字相同。「平板上字大一点更好看」是错的 ——
+   设计稿只有一套排版，那不是适配，是重新设计。
+2. **第一层位置比例规则只在 `compact` 档成立**，见上。
+3. **窗口 ≠ 屏幕。** 分屏与自由窗口下 `UIScreen.main.bounds` / `DisplayMetrics.widthPixels`
+   返回的是**整块屏**，不是你的窗口，用它做布局基准会得到错的原点与错的可用宽度。
+   iOS 用 `view.bounds` / `windowScene`，Android 用 `WindowMetrics` / `WindowSizeClass`。
+   另外 Android 15（API 35）起，`sw >= 600dp` 设备上系统会忽略方向锁定并强制可调整大小，
+   Android 16 在平板上完全忽略 —— 锁方向不是「只支持手机」的保险，是直接变成信箱模式。
+
+**「预留」的含义是「接口在、值仍是手机值」，不是第二套布局。** 写两套布局（一套在手机档
+不生效）会污染像素 diff、在门 1 里变成死代码，还隐含了「宽度只有两档」这个错误前提。
+六模式各自必须留的 hook 与可核判据见
+[references/adaptive-layout.md](references/adaptive-layout.md)。
+
+**平板这一关不做像素比对。** Lanhu 只提供一份设计稿，`reference.png` 是某一台设备的像素
+基准；拿它比 iPad 截图是拿两个不同画布比对，`audit_alignment.py` 的 `domVsReference` 会直接判
+「基准不可信」。所以验证拆成两半：**静态**并入门 1（禁止模式、封顶原语存在性、方向锁、
+设备族与资源目录），**运行期**做几何契约审计（多宽度采样，八项断言）。
+
+```bash
+# 门 0：宽度轴声明自检（采样、policy、maxContentWidth、columnCount 单调性）
+python3 scripts/check_adaptive_layout.py --plan <run>/ui-implementation-plan.json --plan-only
+
+# 门 1：声明与源码逐条核对（写码完成后、编译之前）
+python3 scripts/check_adaptive_layout.py --plan <run>/ui-implementation-plan.json \
+    --source <原生源码根>
+
+# 交付前：多宽度采样的几何契约审计（不做像素比对）
+python3 scripts/audit_adaptive.py --targets <run>/adaptive-targets.json \
+    --plan <run>/ui-implementation-plan.json --output <run>/diff/adaptive-audit.json
+```
+
+`audit_adaptive.py` 的八项里，`sizeInvariance`（同一 `fixed` 元素在全部采样上点值**逐字
+相等**）最有价值 —— 它把上两节的「尺寸不缩放」从文档口号变成可执行断言。`sampleCoverage`
+缺必需采样时判 `fail`：缺采样会让其余七项「全绿」，那是**假绿**。
+
+完整规范、六模式原语对照、反例清单与落地检查清单见
+[references/adaptive-layout.md](references/adaptive-layout.md)；字段契约见
+[references/artifact-contract.md](references/artifact-contract.md#ui-implementation-planjson-的-adaptivelayout)。
+
 ## 可移植性契约（强制约束）
 
 本 skill 必须能在任意 coding agent / CLI 宿主下运行，**不得绑定任何具体宿主**。改写本 skill 时遵守：
@@ -295,7 +366,9 @@ python3 scripts/audit_fonts.py \
     --output       <run>/diff/font-chain.json
 ```
 
-它逐元素比对「CSS 声明的族」与「运行时实际用上的族」（`primaryFont` / `fontsResolved`，来自 CDP `CSS.getPlatformFontsForNode`），退出码 0 = 一致，1 = 发生替换（账在**基准**侧），2 = 证据不足。判出替换时不得把 `reference` 记为 `pass`；`scripts/validate_run.py` 会拦住这种矛盾。修法是补 `@font-face` 或把声明的族换成运行时真实存在的族，然后**重新渲染基准、重新测量**，再判断 App 侧还有没有残余差异。
+它逐元素比对「CSS 声明的族」与「运行时实际用上的族」（`primaryFont` / `fontsResolved`，来自 CDP `CSS.getPlatformFontsForNode`），退出码 0 = 一致，1 = 发生替换（账在**基准**侧），2 = 证据不足。判出替换时不得把 `reference` 记为 `pass`；`scripts/validate_run.py` 会拦住这种矛盾。
+
+**修法只有一种：把 CSS 声明的族改成 CDP 实际报回的那个名字，然后重新渲染基准、重新测量**，再判断 App 侧还有没有残余差异。**不要指望 `@font-face` 能救** —— CDP 报回的是**底层字体自己的名字**，不是 `@font-face` 里的 `font-family` 别名：实测 `@font-face{font-family:'MyAlias';src:url('Outfit-Bold.ttf')}` 报回 `Outfit`，`@font-face{font-family:'AvenirLT-Black';src:local('Avenir Black')}` 报回 `Avenir Black` —— 别名只会让「声明 vs 结果」继续对不上，闸门照样判替换。同理，macOS 上 CDP 报回的是**带字重的族名**（`font-family:Avenir` + `font-weight:900` 报回 `Avenir Black`），所以「声明裸族名 + 字重」也不成立。正确顺序是**先探宿主真实有什么**（读 `primaryFont`，或用一个临时页面跑一次 `CSS.getPlatformFontsForNode`），再照那个字符串写声明。实测数据与逐步配方见 [references/browser-runtime.md](references/browser-runtime.md#基准字体链的修法)。
 
 三条判定纪律，都指向同一件事——**闸门要准，不是要响**：
 
@@ -311,7 +384,7 @@ Agent 必须查看运行中的页面和基准截图，建立页面事实表：�
 
 ### 3. 目标实现计划
 
-输出 `ui-implementation-plan.json`，至少包含目标模式、参考 viewport、组件边界、坐标系、布局策略、资源映射、可访问性标识、交互候选和 `unsupported` 项。该文件是 Agent 决策记录，不是生产源码生成器的输入模板。
+输出 `ui-implementation-plan.json`，至少包含目标模式、参考 viewport、组件边界、坐标系、布局策略、资源映射、可访问性标识、交互候选和 `unsupported` 项。布局策略分两段：`layoutProportions`（尺寸轴 + 位置轴）与 `adaptiveLayout`（宽度轴，见「宽度轴与平板适配」）。该文件是 Agent 决策记录，不是生产源码生成器的输入模板。
 
 计划里还必须有一份 `runtimeRisks` —— 把「只能在运行期暴露、但**现在就能决策**」的风险提前写下来，
 逐条给出决策与理由。第 5 步是分钟级的取证门，这些问题一旦漏到那里才发现，就要重走一次编译截图：
@@ -324,6 +397,11 @@ Agent 必须查看运行中的页面和基准截图，建立页面事实表：�
 - `fontAvailability`：目标平台上每个字族**实际存在**的字重（用 `.ttc` 的 name 表核对，
   不要猜）。例如 `PingFangUI.ttc` 里只有 `PingFangTC-Medium`，没有 `PingFangTC-Semibold`；
   `fontWithName:` 会落到同族其它字重，而不是掉到系统 UI 字体。
+- `windowSizing`：目标工程会不会以**兼容缩放模式**（iPhone 2x 放大）或信箱模式跑在平板上。
+  判据是设备族与 iPad 资源/方向声明是否齐备（`TARGETED_DEVICE_FAMILY` 含 2、
+  `Assets.xcassets` 有 iPad idiom、Info.plist 有 `UISupportedInterfaceOrientations~ipad`；
+  Android 侧是 `sw600dp` 资源目录与 `resizeableActivity`）。这一条**截图看得出来**
+  （黑边、整体模糊），但等到截图才发现就要重走一次编译装机。
 
 计划里还要有一份 `gateReachability` —— 文字密集页的 `structuralRatio` 有一个**物理下界**
 （基准画布 `scale(1.0229)` 使基准字形 = 设计字号 × 1.0229，而字号不得缩放，相差 2.29%
@@ -360,6 +438,20 @@ python3 scripts/check_layout_proportions.py --plan <run>/ui-implementation-plan.
 
 `violations == 0` 才允许进入编译（`ambiguousLiterals` 是 ≤48pt 的待人工确认项，不计违规）。
 有违规就改源码后重跑本门 —— **这一步的迭代不消耗编译，也不计入 `feedback-loop` 的轮次**。
+
+**宽度轴的自适应检查也归在本门**，理由完全相同：封顶原语在不在、有没有出现方向锁与
+`UIScreen.main.bounds`、`sw600dp` 资源目录在不在，全是静态可判的。把它留在编译之后，
+等于为一次「平板上单列拉满 1024pt」付一次编译装机截图的成本 —— 而截图还**证明不了**它
+（元素没越界、尺寸也没变，像素 diff 看不出来）。
+
+```bash
+# 宽度轴：门 0（声明自检）与门 1（声明 ↔ 源码逐条核对）
+python3 scripts/check_adaptive_layout.py --plan <run>/ui-implementation-plan.json --plan-only
+python3 scripts/check_adaptive_layout.py --plan <run>/ui-implementation-plan.json \
+    --source <原生源码根>
+```
+
+两门的 `violations == 0` 都满足才允许进入编译。
 
 本门的 stdout 是**人类可读摘要**（关系计数、违规逐条、待判清单）。要拿结构化结论
 （逐条 `kind` / `file` / `line` / `relation`）就加 `--output <path>` 写 JSON —— 不要按 JSON
@@ -441,6 +533,11 @@ Agent 修改 canonical 源码后重新编译和截图，直到达到任务指定
 
 只有在所选目标模式的编译、资源接入、测试和视觉比较都通过时才标记 `deliveryReady=true`。缺失基准、编译失败、测试未运行、存在未处理 `unsupported` 或重大视觉差异时，只能标记 `pass-with-review`、`fail` 或 `not-run`。
 
+**闸门是 7 项还是 8 项，取决于计划有没有声明 `adaptiveLayout`。** 声明了就多一项
+`adaptiveAudit`（多宽度采样的几何契约审计），且它的取值受 `diff/adaptive-audit.json` 约束：
+审计判 `fail` 时闸门不得记 `pass`，与「对齐审计 needs-review 却 visualDiff=pass」是同一类
+自相矛盾。未声明的计划不要求该项 —— 但那样也就等于明确声明了「本页只交付手机档」。
+
 `visualDiff` 这一项**不能凭手写凑**，它的取值受 `diff/` 的证据约束：
 
 - 比较器判 `fail` ⇒ `visualDiff` 不得为 `pass`；
@@ -482,22 +579,27 @@ skill 根目录的 `index.html` 是一个纯静态差异查看器（无需服务
 |---|---|
 | `page-facts.json` | `elements[]`：`rect`（CSS px）/ `rectInReference`（基准图像素，比对只用它）/ `parentIndex`·`parentHops`·`positioningContextIndex`（层级）/ `ownText`·`ownsText`（文本元素判定）/ `primaryFont`·`fontsResolved`·`textMetrics`；`images[].alphaBounds` |
 | `browser-meta.json` | `fontMeasurement`（`method` / `glyphCountScope`）/ `fontMeasurementCoverage` / `fontJoin.ok`（`false` ⇒ 整份字体数据作废）/ `fontProbe` |
-| `ui-implementation-plan.json` | `canvasTransform.policy` + `coordinateMapper.forward`·`inverse`（**测量用**）；`layoutProportions.regions[].basis`·`parentIndex` + `relations[].kind`·`of`·`why` + `forbiddenLiterals`（**实现用**）；`runtimeRisks`（`interactionCoverage` / `scrollInset` / `systemBars` / `fontAvailability`）；`gateReachability.expectedStructuralFloor` + `unavoidable[].cause`·`measuredShare`；`unsupported` |
+| `ui-implementation-plan.json` | `canvasTransform.policy` + `coordinateMapper.forward`·`inverse`（**测量用**）；`layoutProportions.regions[].basis`·`parentIndex` + `relations[].kind`·`of`·`why` + `forbiddenLiterals`（**实现用**）；`adaptiveLayout.windowSamples[]` + `regions[].widthPolicy`·`maxContentWidth` + `firstLevelWidthClass` + `forbiddenAdaptations`（**宽度轴**）；`runtimeRisks`（`interactionCoverage` / `scrollInset` / `systemBars` / `fontAvailability` / `windowSizing`）；`gateReachability.expectedStructuralFloor` + `unavoidable[].cause`·`measuredShare`；`unsupported` |
 | `runtime-device.json` | 运行时尺寸 API 返回值、根 view bounds、截图像素尺寸、device scale |
+| `adaptive-targets.json` | `samples[].id`·`widthClass`·`required`·`windowBoundsPoints`·`geometry`；`deviceFamily` |
 | `diff/comparison.json` | `structuralRatio` / `fillRatio` / `textureRatio` / `changedRatio`；`regions[]`（`row`·`col`·`box`）；`attribution.status`·`declaredUnsupported`·`residual`·`unattributed` |
 | `diff/alignment.json` | `domVsReference`（基准是否可信）/ `referenceVsActual`（App 是否对齐）；`coverage.excludedLowCoverage`；`offsetFit`；`crossCheckRequired`·`crossCheck` |
 | `diff/font-chain.json` | 逐元素「声明族 vs 运行时族」比对结果与替换判定 |
+| `diff/adaptive-audit.json` | `checks.sizeInvariance`·`insetPreservation`·`noOverflow`·`maxContentWidth`·`touchTarget`·`noLetterbox`·`continuity`·`sampleCoverage`；`status`·`violations` |
 | `review.json` | `runId`·`parentRunId`·`decision`·`feedback`·`observations`·`hypotheses`·`changes`·`verification`·`nextAction` |
-| `delivery-gate.json` | 7 项闸门状态、`unsupported.count`、`deliveryReady`（只由脚本推导） |
+| `delivery-gate.json` | 7 项基础闸门状态（声明 `adaptiveLayout` 时为 8 项，多一项 `adaptiveAudit`）、`unsupported.count`、`deliveryReady`（只由脚本推导） |
 
-两个容易混的点：
+三个容易混的点：
 
 - **`kind` 五档**：`fixed` / `pinned` / `proportional` / `intrinsic` / `centered`，见「尺寸与定位契约」。
 - **`basis` 与 `of` 不是两个概念**：region 级的位置基准字段叫 `basis`，relation 级叫 `of`，两者都指向**直接父视图**（`"root"` 仅在直接父即整屏画布时用）。不要因为名字不同就写成两个基准。
+- **三轴不是三套字段**：尺寸轴与位置轴都在 `layoutProportions` 里，宽度轴在 `adaptiveLayout` 里。`canvasTransform` 是**测量桥**，不参与这两者。
+
 
 ## 参考资料
 
 - 尺寸与位置两条轴的完整规范、推演与反例清单：`references/sizing-and-positioning.md`
+- 平板与宽屏自适应的完整规范（宽度轴、六模式原语、预留 hook、几何审计）：`references/adaptive-layout.md`
 - 浏览器启动、隔离 session、字体/资源稳定化和截图契约：`references/browser-runtime.md`
 - 六种输出模式的技术边界和选择规则：`references/target-modes.md`
 - 页面事实表、实现计划和交付证据 schema：`references/artifact-contract.md`
@@ -517,9 +619,11 @@ skill 根目录的 `index.html` 是一个纯静态差异查看器（无需服务
 | `scripts/render_reference.mjs` | 确定性渲染基准图与事实表（含 `rectInReference`、`alphaBounds`、`textMetrics`、运行时字体） | 第 1 步建立基准 |
 | `scripts/layout_proportions.py` | 把事实表位置转成 `layoutProportions` 约束规格（尺寸是常量、位置相对直接父视图），并列出「探针设备推导值」禁止清单 | 第 2 步写实现计划时；缺它就没法核对「有没有写成探针设备上的固定 pt」 |
 | `scripts/check_layout_proportions.py` | 计划驱动地核对源码有没有照计划声明的 `kind` 实现；`--plan-only` 只校验计划 | **门 0（`--plan-only`）在写码前，门 1 在写码完成后、编译之前**；改了布局代码就重跑。纯静态（只读计划与源码文本），秒级，不编译不起浏览器 |
+| `scripts/check_adaptive_layout.py` | 宽度轴静态核对：`adaptiveLayout` 声明自身完整，且源码里有封顶原语、无方向锁 / `UIScreen.main` / 屏幕系数；`--plan-only` 只校验计划 | 同上，与布局约束同属门 0 / 门 1；声明了 `adaptiveLayout` 就必须跑。纯静态，秒级 |
 | `scripts/compare_reference.py` | 像素比较，输出结构/纹理/填充三分、网格 `regions`，以及具名区域 `attribution`（含 `declaredUnsupported` 与扣除后的 `residual`） | 每次截图后 |
 | `scripts/audit_alignment.py` | 元素级对齐审计，区分「基准不可信」与「App 不对」；框内近乎空白的图片/容器元素判 `insufficient-evidence`，不参与位移与比例拟合 | 每次截图后；尺寸一致也必须跑 |
 | `scripts/audit_fonts.py` | 字体链审计：逐元素比对「CSS 声明的族」与「运行时实际用上的族」，判出静默字体替换 | 每次截图后；`alignment.json` 说「问题在 App 侧」时更要跑 |
-| `scripts/validate_run.py` | run 产物契约校验，交叉核对闸门与证据；带 `--source` 时连同布局约束一起判 | 每次写完 run |
+| `scripts/audit_adaptive.py` | 多宽度采样的**几何**契约审计（八项：`sampleCoverage` / `sizeInvariance` / `insetPreservation` / `noOverflow` / `maxContentWidth` / `touchTarget` / `noLetterbox` / `continuity`），**不做像素比对** | 交付前；声明了 `adaptiveLayout` 就必须跑，结果落 `diff/adaptive-audit.json` |
+| `scripts/validate_run.py` | run 产物契约校验，交叉核对闸门与证据；带 `--source` 时连同布局约束与宽度轴一起判 | 每次写完 run |
 
 脚本级回归见 `scripts/tests/run_all.sh`（不需要 LLM，CI 每次跑）；Agent 行为红线见 `evals/README.md`。

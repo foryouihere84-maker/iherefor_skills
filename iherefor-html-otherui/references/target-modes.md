@@ -20,6 +20,34 @@ SwiftUI、UIKit Swift 和 UIKit Objective-C 是三个独立输出目标；不能
 - 提供关键区域的 accessibility identifier；
 - 通过目标平台编译和截图验证。
 - 在运行时使用平台尺寸 API 获取真实窗口/根容器尺寸，保存 `runtime-device.json`；禁止使用设备型号对应的固定宽高或截图像素直接作为布局尺寸。
+- **声明宽度轴**：每个区域必须归入一个 `widthPolicy`（见 [adaptive-layout.md](adaptive-layout.md)），
+  并把该模式的预留 hook 写进代码（「接口在、值仍是手机值」）。单列内容拉满宽屏不在枚举内，
+  必须由 `full-bleed` 显式声明。
+
+## 每模式的自适应原语
+
+三轴分工见 [adaptive-layout.md](adaptive-layout.md)：尺寸轴与位置轴保证「换设备不崩」，
+宽度轴保证「换设备不难看」。下表是宽度轴在各模式上的落点 —— **同一个视觉目标，
+不同技术栈的表达方式不同，不得互相照抄**。
+
+| 模式 | 判断宽度档 | 内容列封顶 | 列数切换 | 结构升级 | 预留 hook |
+|---|---|---|---|---|---|
+| `ios-swiftui` | `@Environment(\.horizontalSizeClass)` | `.frame(maxWidth:)`、`.containerRelativeFrame` | `Grid` + 自适应列 | `NavigationSplitView`、`ViewThatFits` | `LayoutMetrics` 类型（`maxContentWidth` / `columns(for:)`）+ 内容区根视图上的 `.frame(maxWidth:)` |
+| `ios-uikit-swift` | `traitCollection.horizontalSizeClass`、`registerForTraitChanges` | `readableContentGuide`、`maxContentWidth` 约束 | `UICollectionViewCompositionalLayout` + `NSCollectionLayoutEnvironment` | `UISplitViewController`、`popoverPresentationController` | `registerForTraitChanges` 分支点 + `readableContentGuide` 基准 + 一条手机档不生效的 `maxContentWidth` 约束 |
+| `ios-uikit-objective-c` | `traitCollection.horizontalSizeClass`、`traitCollectionDidChange:` | 同上 | 同上 | 同上 | 同上（ObjC 写法） |
+| `android-compose-kotlin` | `currentWindowAdaptiveInfo()` / `WindowSizeClass` | `Modifier.widthIn(max = …)`、`contentMaxWidth()` | `GridCells.Adaptive` | `NavigationSuiteScaffold`、`ListDetailPaneScaffold` | 根部提供 `WindowSizeClass` + `Modifier.contentMaxWidth()` 扩展 + 用 `Adaptive` 而非 `Fixed` |
+| `android-views-kotlin` | `WindowSizeClass`（`androidx.window`） | `layout_constraintWidth_max="@dimen/content_max_width"` | `GridLayoutManager` 的 `spanCount` | `NavigationRailView`、`SlidingPaneLayout` | `values/dimens.xml` 的 `0dp` + `values-sw600dp/dimens.xml` 的 `600dp`，约束**已接上** |
+| `android-views-java` | 同上 | 同上 | 同上 | 同上 | 同上 |
+
+Android 最省事的一条原语是 ConstraintLayout 的
+`layout_constraintWidth_percent="1"` + `layout_constraintWidth_max="@dimen/content_max_width"`：
+一个约束同时表达「手机拉满、平板封顶」。`values/dimens.xml` 给 `0dp`（不限）、
+`values-sw600dp/dimens.xml` 给 `600dp`，约束现在就接上，填值即生效。
+
+**两个模式之间唯一可以共享的是「视觉目标」，不是「实现形状」。** 例如 iOS 的
+`readableContentGuide` 与 Android 的 `content_max_width` 都在表达「内容列封顶并居中」，
+但把其中一个的值直接搬到另一个平台、或让 UIKit 与 SwiftUI 共享同一份布局代码，
+都不构成验证 —— 三个 iOS 目标、三个 Android 目标各自独立编译与截图。
 
 ## 系统栏/安全区实现规则
 

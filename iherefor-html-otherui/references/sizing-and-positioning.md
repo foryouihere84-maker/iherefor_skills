@@ -126,6 +126,28 @@
 判定「第一层」的依据是事实表：`parentIndex == page 外框的 index`（即直接父视图就是页面）。
 生成端据此对这些元素的位置关系标记 `forced: "first-level"`，检查端据此要求比例原语。
 
+#### 3.1.2 这条规则只在 `compact` 宽度档生效（收口）
+
+**「第一层位置按页面比例」不是一条通用规则，它只在小宽度差下成立。**
+
+它在 `393×852 → 402×874` 上是对的：两轴比例分别 1.0229 与 1.0258，位置跟着动 2.3%，
+视觉上是「同一张稿子略微铺开」。但推到平板宽度（1024pt）就会出事 ——
+**位置按比例 ×2.6、而尺寸按 §2 的契约 ×1**，两者不再同步：
+
+| 元素 | 手机 393pt | 按比例推到 1024pt | 结果 |
+|---|---|---|---|
+| 卡片左起 | 33pt | 86pt（33 × 2.604） | — |
+| 卡片宽度 | 327pt（`fixed`） | **仍是 327pt** | 右侧空出 611pt |
+| 卡片间距 | 13pt（设计常量） | **285pt** | 视觉关系断裂 |
+
+所以计划声明了 `adaptiveLayout`（宽度轴，见 [adaptive-layout.md](adaptive-layout.md)）时，
+本节规则**只在 `compact` 档生效**；regular / medium / expanded 档下第一层位置改由
+`widthPolicy` 重排（`max-content-width` 就是把它们收进居中的内容列里）。
+
+这条收口由 `adaptiveLayout.firstLevelWidthClass` 表达（缺省 `compact`），
+由 `scripts/check_adaptive_layout.py` 核对。**没有这条收口时，本节规则与宽度轴会互相打架**：
+两条都自称管「第一层位置」，而结论相反 —— 一条要按页面比例铺开，一条要收进内容列。
+
 ### 3.2 位置关系的四种表达（按优先级）
 
 | 优先 | 形式 | 何时用 | 例 |
@@ -214,6 +236,8 @@
 - [ ] 字号、圆角、描边、最小点击区在全部目标设备上数值一致；
 - [ ] 尺寸轴没有被写成比例 `multiplier`（除 §2.3 的动态字体例外，且已声明）；
 - [ ] 位置关系全部指向直接父视图（或屏幕画布），无混合基准；
+- [ ] 声明了 `adaptiveLayout` 时，第一层位置比例已收口在 `compact` 档（§3.1.2），
+      宽档下的第一层位置由 `widthPolicy` 重排；
 - [ ] 对齐关系用对齐锚点表达，而不是用两个各自算出来的数值凑巧相等；
 - [ ] `structuralRatio` 高于上限时，先判它是不是 §2.2 的物理下界：是则声明
       `gateReachability` 并记 `pass-with-review`，**不是**去改字号 / 行高 / 整体缩放
@@ -224,6 +248,7 @@
 | 规范条款 | 落点 |
 |---|---|
 | §3.1 基准 = 直接父视图 | `page-facts.json` 的 `parentIndex` / `parentHops` / `positioningContextIndex`（`parentIndex == null` 表示直接父即整屏画布，这是 `of: "root"` 唯一的适用场景） |
+| §3.1.2 第一层比例只在 `compact` 档 | `ui-implementation-plan.json` 的 `adaptiveLayout.firstLevelWidthClass`（缺省 `compact`）+ `scripts/check_adaptive_layout.py`；宽档重排规则见 [adaptive-layout.md](adaptive-layout.md) §3 |
 | §2 尺寸轴三类 | `layout_proportions.py` 产出的 `relations[].kind`，五档 `fixed` / `pinned` / `proportional` / `intrinsic` / `centered`；`model` 为 `fixed-size-parent-relative-position` |
 | §3.1 每个区域声明基准 | region 的 `basis` / `parentIndex` / `parent` —— `basis` 与 relation 的 `of` 都指向直接父视图，只是分处 region 级与 relation 级，不是两个基准 |
 | §6 反例清单 | `forbiddenLiterals` —— 只收 **`proportional`** 关系的值；`fixed` 的 44/68/48、`pinned` 的 23/25、设计常量 12/1/44 都**应当**写成字面量 |

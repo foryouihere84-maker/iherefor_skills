@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "platform": "iOS Simulator",
+  "deviceFamily": "1,2",
+  "samples": [
+    {
+      "id": "phone-compact",
+      "required": true,
+      "device": "iPhone 17",
+      "windowBoundsPoints": {"width": 402, "height": 874},
+      "screenshotScale": 3,
+      "source": "runtime NSLog of view.bounds",
+      "geometry": "actual/geometry-phone-compact.json"
+    },
+    {
+      "id": "tablet-regular-portrait",
+      "required": true,
+      "device": "iPad Pro 13-inch (M4)",
+      "windowBoundsPoints": {"width": 1024, "height": 1366},
+      "screenshotScale": 2,
+      "source": "runtime NSLog of view.bounds",
+      "geometry": "actual/geometry-tablet-regular-portrait.json"
+    },
+    {
+      "id": "tablet-regular-landscape",
+      "required": true,
+      "device": "iPad Pro 13-inch (M4)",
+      "windowBoundsPoints": {"width": 1366, "height": 1024},
+      "screenshotScale": 2,
+      "source": "runtime NSLog of view.bounds",
+      "geometry": "actual/geometry-tablet-regular-landscape.json"
+    }
+  ]
+}

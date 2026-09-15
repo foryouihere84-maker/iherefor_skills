@@ -9,7 +9,7 @@ iherefor-html-otherui 的 skill-up 评测套件。它测的**不是脚本能不�
 | --- | --- | --- |
 | 被测对象 | 脚本本身 | 读了 skill 的 Agent |
 | 需要 LLM | 否 | 是 |
-| 单次成本 | 0 | 9 个用例的 Agent 执行 |
+| 单次成本 | 0 | 10 个用例的 Agent 执行 |
 | 何时跑 | 每次提交（CI） | 改 `SKILL.md` / `references/` 后、发版前 |
 | 失败含义 | 工具坏了 | 规则写得不清楚，或 Agent 没被约束住 |
 
@@ -29,6 +29,7 @@ iherefor-html-otherui 的 skill-up 评测套件。它测的**不是脚本能不�
 | `resource-semantic-naming` | 资源按 `<screen>_<region>_<role>` 命名 | script |
 | `scripts-must-not-generate-source` | 脚本不得生成或覆盖生产 UI 源码 | rule_based |
 | `layout-sizes-constant-positions-parent-relative` | 布局必须做到「尺寸是常量、位置相对直接父视图」，且不得把应当照原值写的设计值当成违规 | script |
+| `adaptive-ipad-requires-width-axis` | 平板适配必须真的落到源码（第三条轴），且要分清「计划没问题、源码没照做」 | script |
 
 前两个用例用的是同一对事故素材，但考的是不同层次：`diff-gate-blocks-high-diff` 只要求
 40% 的差异不被放行 —— 那用最粗糙的比例闸门也能拦住；`same-size-needs-region-evidence`
@@ -52,10 +53,24 @@ App 实现侧」，而这句话在审计脚本自己的视野内是对的（它�
 把设计常量报成违规是误报，**两头都算不过**。小数值与设计常量无法区分时，工具列进
 `ambiguousLiterals` 待人工判断，不计入违规 —— 闸门要准，不是要响。
 
+`adaptive-ipad-requires-width-axis` 考的是**第三条轴，以及「工具跑没跑对」**。前两条轴
+（尺寸是常量、位置相对直接父视图）只保证「换设备不崩」，回答不了「父视图宽到 1024pt 时
+内容怎么收敛」—— 而缺了这条轴，`393×852 → 402×874` 上成立的第一层位置比例推到 1024pt
+会给出**错的**结果（位置 ×2.6、尺寸 ×1，内容被挤到左侧）。素材里计划声明是完整的，
+源码却用 `UIScreen.main.bounds.width` 取宽度、没有任何封顶原语、`Info.plist` 只声明竖屏。
+这三条**截图全都看不出来**：全屏下屏幕 bounds 与 view bounds 恰好相等，竖屏手机上永远走不到
+别的宽度档，封顶在手机档下与不封顶视觉一致。所以这条红线只能靠静态门守。
+
+它同时考精度（**计划是完整的，报成违规是误报**）与一件容易漏的事（计划声明了宽度轴，
+交付闸门就是 **8 项**，而素材里只有 7 项 —— 少一项最容易伪装成「全绿」）。
+`fail` 样本复刻的是最常见的错误动作：**只跑 `--plan-only`** —— 那样只会得到 `status: pass`，
+因为计划确实没问题，问题在源码。
+
 ## 判分原则
 
-1. **能用产物判就不看自述**。三个 script judge 直接读 `diff/verdict.json`、
-   `diff/comparison.json`、`diff/font-substitution.json` 与 `resource-policy.json`；
+1. **能用产物判就不看自述**。script judge 直接读 `diff/verdict.json`、
+   `diff/comparison.json`、`diff/font-substitution.json`、`diff/layout-proportions.json`、
+   `diff/adaptive-layout.json` 与 `resource-policy.json`；
    Agent 说自己"判了 fail"不算数，文件内容才算数。
 2. **判分脚本双向验证过**：合规输入必须 PASS，违规输入必须 FAIL。只验证单向的判分器
    很容易变成永远通过的摆设。`font-fallback-belongs-to-baseline` 的判分器还额外做过
@@ -176,8 +191,9 @@ python3 evals/harness/run_case.py --case evals/cases/<id>.yaml \
   因此不需要 MCP 凭据。
 - 需要跑 `compare_reference.py` 的那两个 script judge（`diff-gate-blocks-high-diff`、
   `same-size-needs-region-evidence`）要求 Python 有 Pillow。skill 安装保留了 `.runtime/`，
-  `requirements.txt` 里有 `Pillow`。另外两个判分器（`resource-semantic-naming`、
-  `font-fallback-belongs-to-baseline`）是纯文件断言，只用标准库。
+  `requirements.txt` 里有 `Pillow`。其余 script judge（`resource-semantic-naming`、
+  `font-fallback-belongs-to-baseline`、`layout-sizes-constant-positions-parent-relative`、
+  `adaptive-ipad-requires-width-axis`）是纯文件断言，只用标准库。
 - `evals/` 由 skill-up **强制排除**，被测 Agent 看不到判分脚本与用例定义。
 - `diff-gate-blocks-high-diff` 与 `same-size-needs-region-evidence` 用 `context.repo_fixture`
   把对照图拷进工作区，fixture 在 [`fixtures/repo/`](fixtures/repo/)，**`repo_fixture` 指向的是
@@ -185,6 +201,10 @@ python3 evals/harness/run_case.py --case evals/cases/<id>.yaml \
 - `font-fallback-belongs-to-baseline` 的 fixture 是
   [`fixtures/font-fallback/`](fixtures/font-fallback/)，同样只指向它的 `workspace/` 子目录：
   那个目录的 `README.md` 记着正确结论，属于判分侧文档。
+- `adaptive-ipad-requires-width-axis` 的 fixture 是
+  [`fixtures/adaptive-ipad/`](fixtures/adaptive-ipad/)，同样只指向它的 `workspace/` 子目录。
+  判分器是纯文件断言（只用标准库），**不需要 Pillow、也不需要跑几何审计** ——
+  几何审计要真机多采样证据，`environment.type: none` 跑不出来，本用例只考静态那一半。
 - **所有 fixture 都必须分两层**：`README.md`（判分侧，记答案）留在 fixture 根，
   素材放 `workspace/`。`repo_fixture` 的语义是**拷贝目录内容到工作区根**，所以用例里的路径
   都是工作区相对路径，指向 `workspace/` 时与被拷进去的那一层同名，无需跟着改。

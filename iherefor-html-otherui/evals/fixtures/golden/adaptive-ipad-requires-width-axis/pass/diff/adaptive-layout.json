@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "model": "continuous-window-width",
+  "plan": "ui-implementation-plan.json",
+  "sources": [
+    "src"
+  ],
+  "declared": true,
+  "sourceChecked": true,
+  "status": "fail",
+  "windowSampleCount": 4,
+  "policyCounts": {
+    "full-bleed": 1,
+    "max-content-width": 2,
+    "stacked": 1
+  },
+  "checkedFiles": 2,
+  "violations": [
+    {
+      "kind": "screen-as-layout-source",
+      "detail": "用 UIScreen.main.bounds 当布局基准：分屏与自由窗口下它返回的是整块屏、不是你的窗口，原点与可用宽度都会错。改用 view.bounds / windowScene",
+      "file": "src/SpecialOfferViewController.m",
+      "line": 27,
+      "snippet": "CGFloat screenWidth = UIScreen.main.bounds.width;"
+    },
+    {
+      "kind": "orientation-locked",
+      "detail": "UISupportedInterfaceOrientations 只声明了 Portrait：竖屏锁死后 regular 宽度档（iPad 竖 1024、手机横屏）都拿不到，宽度轴无从验证",
+      "file": "src/Info.plist"
+    },
+    {
+      "kind": "missing-max-content-width-idiom",
+      "detail": "计划给 ['offers', 'cta'] 声明了内容列封顶，但源码里找不到任何封顶原语（maxContentWidth, readableContentGuide, maxWidth, lessThanOrEqualToConstant, containerRelativeFrame, layout_constraintWidth_max 等）：手机档下两者视觉一致，所以这一条只能在静态门里拦",
+      "region": "offers, cta"
+    }
+  ],
+  "warnings": [
+    "Info.plist 没有 UISupportedInterfaceOrientations~ipad：iPad 会回落到通用方向集。若本页确实只交付手机档，这是预期内的；否则应显式声明 iPad 方向集"
+  ],
+  "exitCode": 1
+}

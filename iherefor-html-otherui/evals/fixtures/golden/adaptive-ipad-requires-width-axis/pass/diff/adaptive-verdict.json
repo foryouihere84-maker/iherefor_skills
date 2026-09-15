@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "runId": "20260914-093000-objc-012",
+  "status": "fail",
+  "deliveryReady": false,
+  "missingGate": "adaptiveAudit",
+  "violations": [
+    {
+      "kind": "screen-as-layout-source",
+      "file": "src/SpecialOfferViewController.m",
+      "line": 27,
+      "detail": "UIScreen.main.bounds.width 被当成布局基准。分屏、Slide Over 与自由窗口下它返回的是整块屏而不是窗口，原点与可用宽度都会错。改用 view.bounds / windowScene"
+    },
+    {
+      "kind": "orientation-locked",
+      "file": "src/Info.plist",
+      "detail": "UISupportedInterfaceOrientations 只声明了 Portrait。竖屏锁死后 regular 宽度档（iPad 竖 1024、手机横屏）都拿不到，宽度轴无从验证"
+    },
+    {
+      "kind": "missing-max-content-width-idiom",
+      "file": "ui-implementation-plan.json",
+      "detail": "计划给 offers / cta 声明了 max-content-width（600pt 封顶），源码里没有任何封顶原语（无 maxContentWidth、无 readableContentGuide、无 lessThanOrEqualToConstant 约束），声明没有落地"
+    }
+  ],
+  "reason": "计划（adaptiveLayout）本身完整，问题在源码没照它声明的方式实现：用屏幕宽度做布局基准、没有内容列封顶原语、且锁死竖屏。另：计划声明了 adaptiveLayout，交付闸门应为 8 项，而 delivery-gate.json 只有 7 项，缺 adaptiveAudit。"
+}

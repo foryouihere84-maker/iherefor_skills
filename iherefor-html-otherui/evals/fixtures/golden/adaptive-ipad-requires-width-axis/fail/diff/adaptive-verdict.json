@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "runId": "20260914-093000-objc-012",
+  "status": "pass",
+  "deliveryReady": true,
+  "violations": [],
+  "reason": "计划里 adaptiveLayout 声明完整，校验器未报出违规，交付闸门七项全 pass，可以交付。"
+}
