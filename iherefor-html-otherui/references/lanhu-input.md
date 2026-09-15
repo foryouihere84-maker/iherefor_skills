@@ -69,6 +69,18 @@ python3 scripts/check_lanhu_mcp.py --registries /path/to/my-registries.json
 - 多个设计稿必须创建多个 `pages/<page-id>/`，每页独立下载、测量、实现和验收；不能把多个 HTML 合并到一个 source 目录。
 - 用户再次提供同一 image_id 时，创建新 run 并比较版本；不要覆盖已批准 reference。
 
+## 已知坑（实测，先读再排查）
+
+- **`lanhu_download_design` 首次调用可能报「未能从 DDS 页面提取代码」，重试即成功。** 该工具用固定
+  `wait 8000ms` 等 DDS 生成代码，冷启动（该 version_id 第一次打开、DDS worker 未预热）时会超时，
+  此时页面上 `CodeMirror` 实例还是空的。**不要据此判定「这个设计稿没有 HTML」**——先原样重试一次；
+  连续两次都失败，再用 `CHROME_PATH` 确认 Chrome 可执行文件、并检查 Cookie 是否过期。
+- **`lanhu_get_design_detail` 的 `width`/`height` 不是画布尺寸。** 它返回的是导出图（cover）的像素尺寸，
+  可能是画布的一半（实测：detail 报 `405x540`，实际画布是 `810x1080`，`exportScale=1`）。画布尺寸以
+  `lanhu_get_annotations` 里根 artboard 的 `width`/`height` 为准；所有标注坐标都在这个画布坐标系里。
+- **`layout_data` / `version_layout_data` 里的 `file_info.format: "png"` 不代表设计稿没有图层。** 它只描述
+  导出格式；同一份设计稿照样能拿到完整图层树和 DDS HTML。不要因为它就跳过 `download_design`。
+
 ## 失败与凭据
 
 - 401/登录失败：报告认证阻塞，不打印凭据；提示刷新同一浏览器会话的 Lanhu 登录状态。

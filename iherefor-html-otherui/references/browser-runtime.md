@@ -154,8 +154,56 @@ python3 scripts/audit_alignment.py \
 侧另有一套 `UIFontWeightBlack → Avenir-Heavy` 的映射（该系统里根本没有 Black 字重），
 两边叠起来就是审计里那个「标题偏移 24pt」——它从来不是坐标换算问题。
 
-这类差异归 `typography`，要在基准阶段就改写字体栈（补泛型兜底或改用真实存在的族名），
-**不要**拿一个字体已回落的基准图去要求 App 对齐。
+这类差异归 `typography`，要在基准阶段就改写字体栈，
+**不要**拿一个字体已回落的基准图去要求 App 对齐。怎么改才真的能让审计判 `clean`，
+见下一节 —— 「补 `@font-face`」和「补泛型兜底」这两个看起来最自然的动作，**都不是修复**。
+
+### 基准字体链的修法
+
+判定替换只完成了一半 —— **知道要改基准，不等于知道怎么改**。下面四种写法在真实 Chromium
+里逐个跑过 `CSS.getPlatformFontsForNode`（macOS 宿主），只有第 4 种能让 `audit_fonts.py`
+判 `clean`：
+
+| # | CSS 声明 | `@font-face` | CDP 报回的 `familyName` / `postScriptName` | `declared ∩ resolved` | 审计判定 |
+|---|---|---|---|---|---|
+| 1 | `AvenirLT-Black` | — | `Avenir Black` / `Avenir-Black` | ∅ | `substituted`（high） |
+| 2 | `AvenirLT-Black` | `src: local('Avenir Black')` | `Avenir Black` / `Avenir-Black` | ∅ | `substituted`（high） |
+| 3 | `Avenir` + `font-weight: 900` | — | `Avenir Black` / `Avenir-Black` | ∅ | `substituted`（high） |
+| 4 | `"Avenir Black"` | — | `Avenir Black` / `Avenir-Black` | `avenir black` | **`clean`** |
+
+三个结论，每一个都反直觉：
+
+1. **`@font-face` 别名救不了（第 2 行）。** CDP 报回的是**底层字体自己的名字**，不是
+   `@font-face` 里的 `font-family`。换成真实字体文件也一样：实测
+   `@font-face{font-family:'MyAlias';src:url('Outfit-Bold.ttf')}` 报回的是 `Outfit`，
+   不是 `MyAlias`。所以「补 `@font-face`」只在 **CSS 声明的族名与字体文件自己的族名恰好相同**
+   时才有意义；把它当通用修法，Agent 会在「改了还是报替换」里空转。
+2. **声明裸族名 + 字重也不行（第 3 行）。** macOS 上 CDP 报回的是**带字重的族名**
+   （`Avenir` + `900` → `Avenir Black`），`avenir` 与 `avenir black` 不相等。
+3. **加泛型兜底只是把严重度降一档，不会让判定变干净。** `AvenirLT-Black, sans-serif`
+   命中 `generic-fallback`，`kind` 仍是 `substituted`、`status` 仍是 `substituted`，
+   `validate_run.py` 照样拦住 `reference: pass`。它值得加（避免最坏情况下的静默衬线回落），
+   但**不构成修复**。
+
+**配方（按顺序做，不要跳步）：**
+
+1. **探。** 先读 `page-facts.json` 里目标元素的 `primaryFont.familyName`；还不确定就写一个
+   临时页面，把候选写法各放一个 `<span>`，跑一次 `CSS.getPlatformFontsForNode` 读出宿主
+   真实报回的字符串。不要猜、不要查字体列表 —— 要的是渲染引擎的实际选择。
+2. **改。** 把 `font-family` 改成**第 1 步读到的那个字符串**（带字重、带引号），后面缀上
+   generic 兜底防最坏情况。
+3. **留痕。** 原声明是设计事实，不能就这么从工程里消失。CSS 里留注释写明原声明与替换理由，
+   并把这条登记为**基准偏差**（`reference/baseline-deviations.json`）—— 它属于「基准 vs 设计稿」，
+   与「App vs 基准」的 run 级 diff 分开记账，否则下游会把已固化的偏差算到 App 头上。
+4. **重渲染 + 重测量。** 跑 `render_reference.mjs` 再跑 `audit_fonts.py`，退出码必须为 `0`。
+   然后**用墨迹范围而不是整页 MAE** 量化这次改动：整页 MAE 会被抗锯齿和背景稀释（实测同一处
+   修复整页 MAE 只有 `1.13`），而标题墨迹宽度从 `341px` 变成 `400px`（蓝湖官方 cover 是
+   `401px`）—— 后者才是这次修复真正的证据。
+
+**顺带一个对目标平台有利的副作用：** 设计里的 `AvenirLT-Black` 在 iOS 上同样不存在
+（iOS 提供的是 `Avenir-Black` / `Avenir-Medium`）。所以把基准改写成 `Avenir Black` 不只是
+「让基准自洽」，它同时把基准与目标平台的能力对齐了 —— 原生侧 `UIFont(name: "Avenir-Black")`
+能直接命中，不需要再发明一层 `UIFontWeightBlack → Avenir-Heavy` 的假映射。
 
 ## Agent 可见事实
 
