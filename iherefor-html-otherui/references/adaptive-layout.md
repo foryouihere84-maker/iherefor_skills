@@ -42,22 +42,23 @@
 
 多设备稿的硬规则，一句话：**「xx」和「xx-iPad」按两个独立 page 处理，逐维照各自稿还原，
 只在 md5 逐字节相同时才允许共享。** 具体分四维，每一维都有「手机稿值 vs iPad 稿值」要落到
-计划里，且取值必须来自**各自稿渲染后的 page-facts**（不是 design_document 图层坐标，见
-[lanhu-input.md](lanhu-input.md)）：
+计划里，且几何取值优先来自**各自稿的 `rowDims`**（`rowDims` 缺失时才是渲染后的 `page-facts`；
+不是 design_document 图层坐标，见 [lanhu-input.md](lanhu-input.md)）：
 
 | 维度 | 分档依据 | 校验门 |
 |---|---|---|
 | 几何宽/高 | `diff_device_variants.py` diff 同名容器，产出 `sizeVariants[]` | `audit_adaptive.py` `sizeInvariance` 白名单 |
 | 字号/字重 | 两稿 HTML 的 `font-size`/`font-family` 逐级对比（iPad 稿常更大，如标题 24→30） | 人工 + `resource-policy.json` 声明 |
-| 位图资源 | `check_device_asset_variants.py` 逐字节 md5 对比，md5 不同即分档 | 该脚本的 variants 清单 |
+| 位图资源 | 逐字节 md5 对比两稿同名资源，md5 不同即分档 | 人工 + `resource-policy.json` 声明 |
 | 颜色 | 两稿 CSS 的 `background-color`/`color` 逐元素对比（如 CTA 灰→蓝） | 人工 + 计划声明 |
 
 **数据源铁律（本次多轮踩坑的根）**：`design_document` 的图层 `rect` 有负偏移根画板、
-rect 是相对父容器的、字号是 scale 还原中间值、文字节点可能缺失——**任何一维都要用
-各自稿「下载渲染后的 page-facts」取值**，design_document 只在「父视图归属」上可靠。
+rect 是相对父容器的、字号是 scale 还原中间值、文字节点可能缺失——**几何维优先用各自稿的
+`rowDims`（`dds-schema.json`）取值，`rowDims` 缺失时才用「下载渲染后的 page-facts」**，
+design_document 只在「父视图归属」上可靠。
 
 历史教训（都写成了门）：① 复用手机稿资源到 iPad 档，得到低清/比例错/颜色错的画面——
-已由 `check_device_asset_variants.py` 拦；② 手动往 pbxproj 加资源时 Object ID 撞既有对象，
+需按每稿资源分档（md5 逐字节对比）；② 手动往 pbxproj 加资源时 Object ID 撞既有对象，
 资源静默不进 bundle、UI 渲染成 0×0 且编译仍 SUCCEEDED——已由 `check_pbxproj_ids.py` 拦。
 
 ## 1. 为什么不能只做两个断点
@@ -314,9 +315,9 @@ iPad 没有刘海与灵动岛，但有 home indicator、Stage Manager 的窗口�
 ### 7.1 平板这一关**不能**做像素比对
 
 Lanhu 只提供一份设计稿，`reference/reference.png` 是**某一台设备**的像素基准。
-拿它去比 iPad 截图，等于拿两个不同画布比对 —— `scripts/audit_alignment.py` 的
-`domVsReference` 会直接判「基准不可信」，因为基准的渲染 viewport 与采集事实表时的
-viewport 是同一套、而 iPad 截图不是。这不是「容差不够大」，是**证据类型不匹配**。
+拿它去比 iPad 截图，等于拿两个不同画布比对，会直接判「基准不可信」——因为基准的渲染
+viewport 与采集事实表时的 viewport 是同一套、而 iPad 截图不是。这不是「容差不够大」，
+是**证据类型不匹配**。
 
 所以 `adaptiveAudit` 是**几何契约审计**：只断言几何关系，不比对像素。这与本 skill 的
 优化方向（把问题从「需要截图诊断」降级为「静态告警并给出位置」）是同一个思路。

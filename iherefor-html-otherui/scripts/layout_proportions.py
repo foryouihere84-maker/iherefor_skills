@@ -458,6 +458,11 @@ def classify_position(lo: float, hi: float, parent_lo: float, parent_hi: float,
     位置按父容器比例重排，随设备尺寸变化而自适应 —— 这是「设备尺寸 ≠ 设计稿尺寸」
     场景下的适配核心。它**只作用于位置轴、且只作用于第一层**：更深层（第一层 → 第二层）
     的相对关系必须固定，所以嵌套层不强制。尺寸轴照旧，不受此参数影响。
+
+    注意：这里 x、y 都强制比例。x 的比例在计划声明 ``adaptiveLayout`` 后会被
+    ``firstLevelWidthClass``（宽度档收口）在宽档下改由 widthPolicy 重排（见
+    check_adaptive_layout.py）；而 y 的比例**不参与宽度收口** —— 垂直轴的参考要素
+    是页面高度不是宽度，较短手机/横屏下更必须按高度比例重排，否则底部缺失。
     """
     lead, trail = lo - parent_lo, parent_hi - hi
     span = parent_hi - parent_lo
@@ -465,7 +470,7 @@ def classify_position(lo: float, hi: float, parent_lo: float, parent_hi: float,
     if force_proportional:
         return dict(fallback, forced="first-level",
                     note="第一层子视图：位置按父容器（页面）比例重排，随设备尺寸自适应；"
-                         "水平与垂直都用比例，不用贴边/居中写死")
+                         "水平与垂直都用比例，不用贴边/居中写死（垂直以页面高度为参考，不随宽度档收口）")
     for edge, value in (("leading", lead), ("trailing", trail)):
         if not (-EDGE_SNAP_TOL_PT <= value <= DESIGN_INSET_MAX_PT):
             continue

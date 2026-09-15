@@ -1,5 +1,4 @@
 # Python 运行时依赖（skill 脚本使用）
 # 安装：python3 -m venv .runtime/venv && .runtime/venv/bin/pip install -r requirements.txt
-Pillow>=10,<13
 # 仅评测判分器需要（evals/harness/），skill 的正常执行链路不用它。
 PyYAML>=6,<7

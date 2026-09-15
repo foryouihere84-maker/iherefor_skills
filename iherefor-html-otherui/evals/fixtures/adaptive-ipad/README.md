@@ -63,6 +63,6 @@ max-content-width:2, stacked:1}` / 2 个源码文件 / 3 项违规 / exit 1**。
 ## 为什么这一关不做像素 diff
 
 Lanhu 只提供一份设计稿，`reference.png` 是某一台设备的像素基准。拿它比 iPad 截图是拿
-两个不同画布比对，`scripts/audit_alignment.py` 的 `domVsReference` 会直接判「基准不可信」。
+两个不同画布比对，会直接判「基准不可信」。
 所以平板这一关断言的是**几何关系**（`scripts/audit_adaptive.py`），不是像素。
 本用例只考静态那一半：几何审计需要真机多采样证据，`environment.type: none` 跑不出来。

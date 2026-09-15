@@ -1,22 +1,32 @@
 # Lanhu MCP 输入层
 
-当用户提供 Lanhu 项目或设计链接时，skill 必须先通过已配置的 `mcp__lanhu_mcp` 服务取得可运行页面资源，再开始 UI 实现。不要要求用户手工下载 HTML，也不要只使用结构化图层 JSON 代替页面资源。
+当用户提供 Lanhu 项目或设计链接时，skill 必须先通过已配置的 `mcp__lanhu_mcp` 服务取得设计数据，再开始 UI 实现。
+
+**坐标为王的双链路模型：**
+
+- **主链路（默认）**：`lanhu_get_dds_schema` 的 `rowDims`（`{left, top, width, height}` 绝对坐标）是**组件几何的权威来源**。它能拿到的 `rowDims` 直接用，据此生成布局契约与原生代码；不要再用「渲染 DOM 读位置」去反推坐标。
+- **样式与切图**：`lanhu_download_design` 的官方 HTML/CSS 管样式恒量（字号/颜色/圆角/描边）与切图资源。
+- **备用链路（fallback）**：只有当 `rowDims` 缺失/不可信时，才走旧的「下载官方 HTML → 渲染 DOM → 读几何」路径反推坐标。
+
+> 一句话：**能用 `rowDims` 就直接用；用不了 `rowDims` 才退回 DOM 渲染路径。** 不要因为"还保留了备用链路"就又默认退回 DOM 反推几何。
 
 ## MCP 未安装或未注册时
 
-这是阻塞状态，不得继续生成 UI。先运行 `scripts/check_lanhu_mcp.py`（只读，不打印凭据）。若 `lanhu-mcp-server/dist/index.js` 不存在，在 skill 目录下执行 `npm ci && npm run build`。
+这是阻塞状态，不得继续生成 UI。先运行 `scripts/check_lanhu_mcp.py`（只读，不打印凭据）。
 
 ### 注册（与客户端无关）
 
-本 skill 不绑定任何 coding agent。注册动作只有一种通用形态：**在你所用客户端的 MCP 配置里加一条 stdio server**，`command` 用 node 的绝对路径，`args` 指向 `<skill-root>/lanhu-mcp-server/dist/index.js`：
+本 skill 使用社区维护的 `dsphper/lanhu-mcp`（Python 版，源码随 skill 分发在 `<skill-root>/lanhu-mcp/`）。
+注册动作只有一种通用形态：**在你所用客户端的 MCP 配置里加一条 stdio server**，`command` 用
+Python 的绝对路径，`args` 指向 skill 内的 `lanhu-mcp/lanhu_mcp_server.py` 加 `--transport stdio`：
 
 ```json
 {
   "mcpServers": {
     "lanhu-mcp": {
       "type": "stdio",
-      "command": "<node 绝对路径>",
-      "args": ["<skill-root>/lanhu-mcp-server/dist/index.js"],
+      "command": "<python 绝对路径>",
+      "args": ["<skill-root>/lanhu-mcp/lanhu_mcp_server.py", "--transport", "stdio"],
       "env": {}
     }
   }
@@ -25,14 +35,29 @@
 
 要点：
 
-- `command` 必须写**绝对路径**。不要写裸 `node`：登录 shell 里的 `node` 可能版本过旧。
-- `env` 可以留空。凭据由 server 自行读取 `<skill-root>/lanhu-mcp-server/.env`；若该文件缺失，server 会转入交互式引导等待输入，表现为「启动挂起」。也可改用环境变量 `LANHU_COOKIE` / `LANHU_AUTHORIZATION` 注入。
-- 除了手改配置，也可以使用客户端自带的「新增 MCP server」命令注册同一组 command/args（不同客户端命令不同，按各自文档操作）。
-- 需要写到非默认位置时，用环境变量 `LANHU_MCP_CONFIG_PATH` 指向目标配置文件。
+- `command` 必须写**绝对路径**（Python 3.10+）。不要写裸 `python`：登录 shell 里的可能版本过旧。
+- 凭据放在 `<skill-root>/lanhu-mcp/.env`（`LANHU_COOKIE` 必填）。也可用环境变量 `LANHU_COOKIE` 注入；
+  首次配置步骤见下面的「首次配置引导」，凭据获取教程见 `<skill-root>/lanhu-mcp/GET-COOKIE-TUTORIAL.md`。
+- 除了手改配置，也可以使用客户端自带的「新增 MCP server」命令注册同一组 command/args。
+
+### 首次配置引导（.env 凭据）
+
+`lanhu-mcp` 需要一份 `.env` 才能读取蓝湖数据。首次使用时按下面步骤配置（只做一次，凭据不打印、不提交）：
+
+1. 在 `<skill-root>/lanhu-mcp/` 下从模板复制：`cp .env.example .env`。
+2. 打开 `.env`，填入 `LANHU_COOKIE`（必填，蓝湖登录 Cookie）。获取方式见
+   `<skill-root>/lanhu-mcp/GET-COOKIE-TUTORIAL.md`：登录 `lanhuapp.com` → 开发者工具 → Network →
+   任意请求的 `Cookie` 请求头，复制整个值（不含 `Cookie:` 前缀）。
+3. 其余键（`SERVER_HOST` / `SERVER_PORT` / `DATA_DIR` 等）用默认值即可，按需调整。
+4. 保存 `.env`，注册 MCP 后重启会话生效。
+
+> `.env` 含登录凭据，已被 `.gitignore` 忽略，**绝不提交**、绝不打印、绝不记录到任何日志或报告。
 
 ### 检查脚本如何找到注册
 
-`check_lanhu_mcp.py` 的判定逻辑不知道任何客户端名字，只认识三种通用形态：JSON 的 `mcpServers`、TOML 的 `[mcp_servers.*]`、以及能打印注册信息的命令。「去哪里找」由数据表 `scripts/mcp-registries.json` 描述；换客户端时只改那张表，或用参数显式指定：
+`check_lanhu_mcp.py` 的判定逻辑不知道任何客户端名字，只认识三种通用形态：JSON 的 `mcpServers`、
+TOML 的 `[mcp_servers.*]`、以及能打印注册信息的命令。「去哪里找」由数据表 `scripts/mcp-registries.json`
+描述；换客户端时只改那张表，或用参数显式指定：
 
 ```bash
 # 显式指定一个 MCP 配置文件（可重复）
@@ -47,9 +72,15 @@ python3 scripts/check_lanhu_mcp.py --registries /path/to/my-registries.json
 
 ### 判定标准
 
-注册后必须再跑一次 `scripts/check_lanhu_mcp.py`，确认 `status` 为 `ready` 且 `readyRegistries` 非空。**关键判定**：找到的入口必须与本地 `dist/index.js` 指向同一文件（`entrypointMatches`）。skill 目录迁移过、或注册仍指向其他 checkout 时，运行时启动即 `MODULE_NOT_FOUND`，而「已注册 + 本地已构建」两个条件依然成立，容易被误判为就绪——脚本会把每个来源的命中情况逐条列出，并在阻塞时给出 `suggestedRegistrations`。
+注册后必须再跑一次 `scripts/check_lanhu_mcp.py`，确认 `status` 为 `ready` 且 `readyRegistries` 非空。
+**关键判定**：找到的入口 `args` 必须指向 `lanhu_mcp_server.py`（`entrypointMatches`）。
+skill 目录迁移过、或注册仍指向其他 checkout 时，运行时启动即 `MODULE_NOT_FOUND`，而
+「已注册」条件依然成立，容易被误判为就绪——脚本会把每个来源的命中情况逐条列出，
+并在阻塞时给出 `suggestedRegistrations`。
 
-先用 `command -v node` 确认 Node >= 18。注册后通常需要在该客户端里信任/启用该 server，并重启会话才会生效。若缺少凭据，提示用户在同一浏览器会话重新配置，绝不猜测、抓取或记录凭据。检查通过并完成 MCP initialize/tools-list 或 `lanhu_list_projects` 验证后，才进入固定调用链；失败时页面保持 `source-incomplete` 或 `environment-blocked`。
+注册后通常需要在该客户端里信任/启用该 server，并重启会话才会生效。若缺少凭据，提示用户
+在同一浏览器会话重新配置，绝不猜测、抓取或记录凭据。检查通过并完成 MCP initialize/tools-list
+或 `lanhu_list_projects` 验证后，才进入固定调用链；失败时页面保持 `source-incomplete` 或 `environment-blocked`。
 
 ## 固定调用链
 
@@ -59,31 +90,38 @@ python3 scripts/check_lanhu_mcp.py --registries /path/to/my-registries.json
    带「iPad」后缀 = iPad 稿。用户给的是 URL（只有 image_id、没有设计名）时，先按 image_id 精确匹配，
    再读它对应的 `name` 确认设备形态；若用户意图是「手机端页面」，却匹配到带「iPad」后缀的稿，属选错了要纠正。
 3. 对每个选定页面调用 `lanhu_get_design_detail`，确认 image_id、版本和原始 URL。
-   **注意：`get_design_detail` 的 `width`/`height` 是封面图（导出图）像素尺寸，不是画布尺寸。**
-   画布尺寸的唯一权威来源是 `lanhu_get_design_document` 的 `canvas`（第 5 步），不要在 detail 里读画布。
-4. 调用 `lanhu_download_design({imageId, projectId, outputPath})`，把官方生成的 `index.html/index.css/common.css/flexible.js/img/` 下载到 `.ihereforUI/pages/<page-id>/source/`。这是视觉基准输入；不要调用 `lanhu_generate_code` 作为原生代码生成器。
-5. **调用 `lanhu_get_design_document`（必调）并解析成设计事实摘要**：
-   - **必须传 `depth: 99`**（工具默认只展开 2 层，漏传只会拿到残缺层级，父视图归属就废了）；
-   - 把返回体存到 `.ihereforUI/pages/<page-id>/reference/design-document.json`；
-   - 运行 `scripts/lanhu_design_facts.py --document <该文件> --output .ihereforUI/pages/<page-id>/reference/design-facts.json`；
-   - 解析器会抽出**父视图归属**（由 `children` 树推导，`metadata.parentId` 实测全 null 不可靠）、
-     **字号/字体/文本/颜色**（`style.typography`，字号已按 `canvas.scale` 还原、`fontSizeRaw` 保留原文）、
-     **描边/填充/阴影**（`style.borders`/`fills`/`shadows`）——这些正是第 3 步「目标实现计划」里
-     `regions[].parentIndex`、`unsupported[typography]`、描边判据的权威来源，**不应再由 Agent 从渲染 DOM
-     反向推断**（否则每个 region 都只能写 `kindSource: "agent-decided"`）。
+4. **（主链路，默认）调用 `lanhu_get_dds_schema({imageId})` 取语义化组件树。** 每个节点带
+   `rowDims`（`{left, top, width, height}` 绝对坐标）、`style`（含 `left/top/width/height/background/
+   padding/margin` 等 CSS 属性）、`type`/`componentName`/`uiType`（语义组件类型）、`layerId`，以及
+   `children` 嵌套树（给出父子层级 = `parentIndex` 的来源）。**`rowDims` 是组件几何的权威坐标来源：**
+   - 把返回体存到 `.ihereforUI/pages/<page-id>/reference/dds-schema.json`；
+   - 用 `rowDims` 生成布局契约（`layoutProportions` 的 `regions[].basis` 与 `relations[].kind`/`of`），
+     `left/top` 是位置、`width/height` 是尺寸；`style.background` 等给颜色/背景，`children` 给父子归属。
+   - **能拿到 `rowDims` 就直接用，不要退回 DOM 反推几何。** 只有当整棵 schema 拿不到、或某个区域
+     `rowDims` 明显不可信（坐标出界、与其它节点互相矛盾）时，才降级到备用链路。
+5. **（备用链路，仅主链路失效时）调用 `lanhu_download_design({imageId, projectId, outputPath})`**，
+   把官方生成的 `index.html/index.css/common.css/flexible.js/img/` 下载到 `.ihereforUI/pages/<page-id>/source/`，
+   再走旧的「渲染 DOM → 读 `page-facts.json`」路径反推几何。注意：
+   - 即使主链路已拿 `rowDims`，若需要**样式恒量**（字号/颜色/圆角/描边）与**切图**，仍应调
+     `lanhu_download_design` 拿官方 HTML/CSS 与 `img/`——它是样式与资源的权威、`rowDims` 是几何的权威，
+     两者分工、不是二选一。
+   - 不要调用 `lanhu_generate_code` 作为原生代码生成器。
+6. **（可选）调用 `lanhu_get_design_document` 并解析成设计事实摘要，仅作交叉佐证**：
+   - 只在 `rowDims` 与官方 HTML 在某处结论打架、需要回看 Sketch 原始帧时才调；
+   - 若调用则**必须传 `depth: 99`**（工具默认只展开 2 层，漏传只会拿到残缺层级）；
+   - 把返回体存到 `.ihereforUI/pages/<page-id>/reference/design-document.json`，运行
+     `scripts/lanhu_design_facts.py --document <该文件> --output .ihereforUI/pages/<page-id>/reference/design-facts.json`；
+   - 它只可靠地提供**图层几何（`rect`）与描边/纯色填充**这一小半，字号/渐变/文本语义存在系统性失真，**不得当权威**；
    - `lanhu_get_annotations` 与 `lanhu_get_design_document` 的图层树/字号/文本基本重叠，**不用重复调用**；
-     `lanhu_get_layer_detail` 仅在某一层与渲染事实对不上、需要看 Sketch 原始帧时按需调用；
-     `lanhu_get_tokens` 仅在需要具名设计 token 时调用。
-6. **字体族名预处理（下载后、渲染前，必做）**：运行
-   `scripts/normalize_lanhu_fonts.py --source .ihereforUI/pages/<page-id>/source`，
-   把 Lanhu 导出的「系统不存在族名」替换成真实族名（`AvenirLT-*` → `Avenir-*`）。
-   **这一步不能省、不能靠 Agent 手工 sed**：漏了它，基准图会带着回落字体（Times）渲染，
-   而且回落是静默的——DOM 与基准图互相印证、对齐审计判 `aligned`，等于「基准图自洽地错」，
-   后续所有 diff 都在跟错误基准比。实测「目的」页主标题 `How can we help you?` 就是
-   `AvenirLT-Black` 回落成 Times，替换后重渲染即正确命中 `Avenir Black`。
+     `lanhu_get_layer_detail` 仅在某一层需要看原始帧时按需调用；`lanhu_get_tokens` 仅在需要具名 token 时调用。
 7. 对每个成功读取或下载的资源执行 Lanhu cache hook，保存到项目 `.lanhu-cache/<project-id>/`；禁止缓存 Cookie、Authorization 或原始 MCP envelope。
 8. 校验 `source/index.html`、CSS/JS 和 `img/` 非空，记录文件清单、sha256、image_id、版本和来源 URL 到 `source/manifest.json`。
-9. 只有 source manifest 校验通过后，才运行 Playwright reference、page-facts 和目标平台 Agent loop。
+9. **主链路（rowDims 已拿到）**：直接用 `dds-schema.json` 生成布局契约并进入目标平台 Agent loop。
+   **备用链路（rowDims 缺失）**：走 `lanhu_download_design` → 渲染 → `page-facts.json`，此时它是
+   布局几何的权威来源（父视图归属、画布尺寸都以它为准）。
+   **两链路并存时的优先级**：几何坐标 `rowDims` 优先；`rowDims` 拿不到或不可信时，DOM 的 `page-facts.json`
+   是 fallback。样式恒量（字号/颜色/圆角/描边）与切图以官方 HTML/CSS 为准；`design_document` 只能交叉佐证，
+   不得覆盖以上任一来源。
 
 ## 页面命名与链接映射
 
@@ -100,11 +138,11 @@ python3 scripts/check_lanhu_mcp.py --registries /path/to/my-registries.json
   连续两次都失败，再用 `CHROME_PATH` 确认 Chrome 可执行文件、并检查 Cookie 是否过期。
 - **`lanhu_get_design_detail` 的 `width`/`height` 不是画布尺寸。** 它返回的是导出图（cover）的像素尺寸，
   可能是画布的一半（实测：detail 报 `196.5x426`，实际画布是 `393x852`，`canvas.scale=2`）。画布尺寸以
-  `lanhu_get_design_document` 的 `canvas.width`/`canvas.height` 为准；所有图层 `rect` 坐标都在这个画布坐标系里。
+  **渲染后 `page-facts.json` 的 `documentSize` 为准**（第 9 步实测得出）；`design_document.canvas` 只是可选佐证。
 - **`layout_data` / `version_layout_data` 里的 `file_info.format: "png"` 不代表设计稿没有图层。** 它只描述
   导出格式；同一份设计稿照样能拿到完整图层树和 DDS HTML。不要因为它就跳过 `download_design`。
 
-## design_document 真实结构速查（写解析/读数据前先看）
+## design_document 真实结构速查（可选辅助，写解析/读数据前先看）
 
 `lanhu_get_design_document` 的返回体**不是**散列字段平铺，而是 `layers[]` 嵌套树。几个踩过坑、别再猜的字段位置：
 

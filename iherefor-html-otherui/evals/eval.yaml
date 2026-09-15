@@ -11,12 +11,9 @@ skills:
   - source: local_path
     path: .
     # evals/ 由 skill-up 强制排除，不会被安装给被测 Agent。
-    # 下面三个目录与这批用例无关，排除后每个用例少拷约 170MB；
-    # 保留 .runtime（Pillow）与 scripts/，比较脚本才能直接跑。
+    # 下面目录与这批用例无关，排除后每个用例少拷约 170MB。
     exclude:
       - testUIProject/**
-      - lanhu-mcp-server/**
-      - node_modules/**
 
 engine:
   # 执行 prompt 的 Agent Engine。这是**评测运行器自己的设置**，不是被测 skill 的依赖：
@@ -28,10 +25,6 @@ engine:
 cases:
   # 用例清单，相对 Skill 根目录。
   files:
-    - evals/cases/diff-gate-blocks-high-diff.yaml
-    - evals/cases/same-size-needs-region-evidence.yaml
-    - evals/cases/font-fallback-belongs-to-baseline.yaml
-    - evals/cases/reference-must-share-device-canvas.yaml
     - evals/cases/image-scaling-hard-constraints.yaml
     - evals/cases/click-handler-naming.yaml
     - evals/cases/resource-semantic-naming.yaml

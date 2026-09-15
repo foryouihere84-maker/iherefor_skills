@@ -87,6 +87,22 @@
 		A1000000000000000000008E /* brush_option_spray_paint_art.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000091 /* brush_option_spray_paint_art.png */; };
 		A1000000000000000000008F /* brush_option_marker_art.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000092 /* brush_option_marker_art.png */; };
 		A10000000000000000000090 /* brush_option_flat_brush_art.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000093 /* brush_option_flat_brush_art.png */; };
+		C1000000000000000032 /* PaletteSelectionViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = C2000000000000000031 /* PaletteSelectionViewController.m */; };
+		C1000000000000000034 /* PaletteSelectionStyle.m in Sources */ = {isa = PBXBuildFile; fileRef = C2000000000000000033 /* PaletteSelectionStyle.m */; };
+		C1000000000000000036 /* PaletteCardView.m in Sources */ = {isa = PBXBuildFile; fileRef = C2000000000000000035 /* PaletteCardView.m */; };
+		C1000000000000000041 /* palette_status_cellular.png in Resources */ = {isa = PBXBuildFile; fileRef = C2000000000000000040 /* palette_status_cellular.png */; };
+		C1000000000000000043 /* palette_status_wifi.png in Resources */ = {isa = PBXBuildFile; fileRef = C2000000000000000042 /* palette_status_wifi.png */; };
+		C1000000000000000045 /* palette_status_battery.png in Resources */ = {isa = PBXBuildFile; fileRef = C2000000000000000044 /* palette_status_battery.png */; };
+		C1000000000000000047 /* palette_nav_back.png in Resources */ = {isa = PBXBuildFile; fileRef = C2000000000000000046 /* palette_nav_back.png */; };
+		C1000000000000000049 /* palette_card_basic_swatches.png in Resources */ = {isa = PBXBuildFile; fileRef = C2000000000000000048 /* palette_card_basic_swatches.png */; };
+		C1000000000000000051 /* palette_card_lively_swatches.png in Resources */ = {isa = PBXBuildFile; fileRef = C2000000000000000050 /* palette_card_lively_swatches.png */; };
+		C1000000000000000053 /* palette_card_pop_swatches.png in Resources */ = {isa = PBXBuildFile; fileRef = C2000000000000000052 /* palette_card_pop_swatches.png */; };
+		C1000000000000000055 /* palette_card_macaron_swatches.png in Resources */ = {isa = PBXBuildFile; fileRef = C2000000000000000054 /* palette_card_macaron_swatches.png */; };
+		C1000000000000000057 /* palette_card_flowers_swatches.png in Resources */ = {isa = PBXBuildFile; fileRef = C2000000000000000056 /* palette_card_flowers_swatches.png */; };
+		C1000000000000000059 /* palette_card_makeup_swatches.png in Resources */ = {isa = PBXBuildFile; fileRef = C2000000000000000058 /* palette_card_makeup_swatches.png */; };
+		C1000000000000000061 /* palette_header_background.png in Resources */ = {isa = PBXBuildFile; fileRef = C2000000000000000060 /* palette_header_background.png */; };
+		C1000000000000000063 /* palette_cta_background.png in Resources */ = {isa = PBXBuildFile; fileRef = C2000000000000000062 /* palette_cta_background.png */; };
+		C1000000000000000065 /* palette_cta_continue.png in Resources */ = {isa = PBXBuildFile; fileRef = C2000000000000000064 /* palette_cta_continue.png */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -211,6 +227,25 @@
 		A20000000000000000000091 /* brush_option_spray_paint_art.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = brush_option_spray_paint_art.png; sourceTree = "<group>"; };
 		A20000000000000000000092 /* brush_option_marker_art.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = brush_option_marker_art.png; sourceTree = "<group>"; };
 		A20000000000000000000093 /* brush_option_flat_brush_art.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = brush_option_flat_brush_art.png; sourceTree = "<group>"; };
+		C2000000000000000031 /* PaletteSelectionViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PaletteSelectionViewController.m; sourceTree = "<group>"; };
+		C2000000000000000033 /* PaletteSelectionStyle.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PaletteSelectionStyle.m; sourceTree = "<group>"; };
+		C2000000000000000035 /* PaletteCardView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PaletteCardView.m; sourceTree = "<group>"; };
+		C2000000000000000037 /* PaletteSelectionViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PaletteSelectionViewController.h; sourceTree = "<group>"; };
+		C2000000000000000038 /* PaletteSelectionStyle.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PaletteSelectionStyle.h; sourceTree = "<group>"; };
+		C2000000000000000039 /* PaletteCardView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PaletteCardView.h; sourceTree = "<group>"; };
+		C2000000000000000040 /* palette_status_cellular.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = palette_status_cellular.png; sourceTree = "<group>"; };
+		C2000000000000000042 /* palette_status_wifi.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = palette_status_wifi.png; sourceTree = "<group>"; };
+		C2000000000000000044 /* palette_status_battery.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = palette_status_battery.png; sourceTree = "<group>"; };
+		C2000000000000000046 /* palette_nav_back.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = palette_nav_back.png; sourceTree = "<group>"; };
+		C2000000000000000048 /* palette_card_basic_swatches.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = palette_card_basic_swatches.png; sourceTree = "<group>"; };
+		C2000000000000000050 /* palette_card_lively_swatches.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = palette_card_lively_swatches.png; sourceTree = "<group>"; };
+		C2000000000000000052 /* palette_card_pop_swatches.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = palette_card_pop_swatches.png; sourceTree = "<group>"; };
+		C2000000000000000054 /* palette_card_macaron_swatches.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = palette_card_macaron_swatches.png; sourceTree = "<group>"; };
+		C2000000000000000056 /* palette_card_flowers_swatches.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = palette_card_flowers_swatches.png; sourceTree = "<group>"; };
+		C2000000000000000058 /* palette_card_makeup_swatches.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = palette_card_makeup_swatches.png; sourceTree = "<group>"; };
+		C2000000000000000060 /* palette_header_background.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = palette_header_background.png; sourceTree = "<group>"; };
+		C2000000000000000062 /* palette_cta_background.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = palette_cta_background.png; sourceTree = "<group>"; };
+		C2000000000000000064 /* palette_cta_continue.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = palette_cta_continue.png; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -316,6 +351,25 @@
 				A20000000000000000000091 /* brush_option_spray_paint_art.png */,
 				A20000000000000000000092 /* brush_option_marker_art.png */,
 				A20000000000000000000093 /* brush_option_flat_brush_art.png */,
+				C2000000000000000037 /* PaletteSelectionViewController.h */,
+				C2000000000000000038 /* PaletteSelectionStyle.h */,
+				C2000000000000000039 /* PaletteCardView.h */,
+				C2000000000000000031 /* PaletteSelectionViewController.m */,
+				C2000000000000000033 /* PaletteSelectionStyle.m */,
+				C2000000000000000035 /* PaletteCardView.m */,
+				C2000000000000000040 /* palette_status_cellular.png */,
+				C2000000000000000042 /* palette_status_wifi.png */,
+				C2000000000000000044 /* palette_status_battery.png */,
+				C2000000000000000046 /* palette_nav_back.png */,
+				C2000000000000000048 /* palette_card_basic_swatches.png */,
+				C2000000000000000050 /* palette_card_lively_swatches.png */,
+				C2000000000000000052 /* palette_card_pop_swatches.png */,
+				C2000000000000000054 /* palette_card_macaron_swatches.png */,
+				C2000000000000000056 /* palette_card_flowers_swatches.png */,
+				C2000000000000000058 /* palette_card_makeup_swatches.png */,
+				C2000000000000000060 /* palette_header_background.png */,
+				C2000000000000000062 /* palette_cta_background.png */,
+				C2000000000000000064 /* palette_cta_continue.png */,
 			);
 			path = testUIProject;
 			sourceTree = "<group>";
@@ -519,6 +573,19 @@
 				A1000000000000000000008E /* brush_option_spray_paint_art.png in Resources */,
 				A1000000000000000000008F /* brush_option_marker_art.png in Resources */,
 				A10000000000000000000090 /* brush_option_flat_brush_art.png in Resources */,
+				C1000000000000000041 /* palette_status_cellular.png in Resources */,
+				C1000000000000000043 /* palette_status_wifi.png in Resources */,
+				C1000000000000000045 /* palette_status_battery.png in Resources */,
+				C1000000000000000047 /* palette_nav_back.png in Resources */,
+				C1000000000000000049 /* palette_card_basic_swatches.png in Resources */,
+				C1000000000000000051 /* palette_card_lively_swatches.png in Resources */,
+				C1000000000000000053 /* palette_card_pop_swatches.png in Resources */,
+				C1000000000000000055 /* palette_card_macaron_swatches.png in Resources */,
+				C1000000000000000057 /* palette_card_flowers_swatches.png in Resources */,
+				C1000000000000000059 /* palette_card_makeup_swatches.png in Resources */,
+				C1000000000000000061 /* palette_header_background.png in Resources */,
+				C1000000000000000063 /* palette_cta_background.png in Resources */,
+				C1000000000000000065 /* palette_cta_continue.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -571,6 +638,9 @@
 				A10000000000000000000082 /* BrushOptionCardView.m in Sources */,
 				5FEFB75904DA9EC33990765E /* ViewController.m in Sources */,
 				5C3506ED7FC0B267121AE287 /* main.m in Sources */,
+				C1000000000000000032 /* PaletteSelectionViewController.m in Sources */,
+				C1000000000000000034 /* PaletteSelectionStyle.m in Sources */,
+				C1000000000000000036 /* PaletteCardView.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

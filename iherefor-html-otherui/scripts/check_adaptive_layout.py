@@ -53,6 +53,36 @@ DEFAULT_FIRST_LEVEL_WIDTH_CLASS = 'compact'
 MODEL = 'continuous-window-width'
 MIN_WINDOW_SAMPLES = 4
 
+# 宽度档的数值阈值（用于「宽度档是否与实际宽度明显不符」的提示，不是硬判违规的边界）。
+# 注意：现有口径里「iPad 竖 1024」被约定为 medium，与这里的 medium < 840 有历史出入，
+# 所以只用「明显越界」（跨档越级）做 warning，不用它去判「1024 该是 medium 还是 expanded」。
+WIDTH_CLASS_RANGES = {'compact': (0, 600), 'medium': (600, 840),
+                      'expanded': (840, float('inf'))}
+
+# 「设备平台」维度（phone/tablet），与「窗口宽度档」（compact/medium/expanded）正交。
+# sizeVariants 声明的跨平台分档，要求 phone 与 tablet 两档都有采样覆盖。
+DEVICE_CLASSES = ('phone', 'tablet')
+
+
+def infer_device_class(sample):
+    """从采样的 deviceClass / device / id 推断设备平台，返回 phone / tablet / None。"""
+    device_class = sample.get('deviceClass')
+    if device_class in DEVICE_CLASSES:
+        return device_class
+    sid = (sample.get('id') or '').lower()
+    if 'phone' in sid:
+        return 'phone'
+    if 'tablet' in sid or sid.startswith('pad') or 'ipad' in sid:
+        return 'tablet'
+    device = sample.get('device')
+    if isinstance(device, str):
+        dev = device.lower()
+        if 'iphone' in dev or 'pixel' in dev or 'galaxy' in dev:
+            return 'phone'
+        if 'ipad' in dev or 'tablet' in dev or 'fold' in dev:
+            return 'tablet'
+    return None
+
 SOURCE_SUFFIXES = ('.swift', '.m', '.mm', '.h', '.kt', '.java', '.xml')
 EXTRA_SOURCE_NAMES = ('Info.plist', 'AndroidManifest.xml', 'project.pbxproj')
 
@@ -214,6 +244,7 @@ def check_plan(plan):
                 'phone-regular-landscape。漏掉手机横屏就会把「medium 一定来自平板」'
                 '写成假设'))
         seen = set()
+        seen_devices = set()
         for index, sample in enumerate(samples):
             if not isinstance(sample, dict):
                 violations.append(violation(
@@ -232,10 +263,33 @@ def check_plan(plan):
                     sample=sample.get('id')))
             else:
                 seen.add(width_class)
+            declared_device_class = sample.get('deviceClass')
+            if declared_device_class is not None and declared_device_class not in DEVICE_CLASSES:
+                violations.append(violation(
+                    'window-sample-bad-device-class',
+                    f'windowSamples[{index}].deviceClass 取值非法：{declared_device_class!r}，'
+                    f'应为 {DEVICE_CLASSES} 之一（或省略，由 id 前缀 / 机型名推断）',
+                    sample=sample.get('id')))
+            else:
+                inferred_device = infer_device_class(sample)
+                if inferred_device in DEVICE_CLASSES:
+                    seen_devices.add(inferred_device)
             if not is_number(sample.get('width')):
                 violations.append(violation(
                     'window-sample-missing-width',
                     f'windowSamples[{index}] 缺少数值 width', sample=sample.get('id')))
+            elif width_class in WIDTH_CLASSES:
+                # 宽度档由「实际窗口宽度」决定，不是随设备名写死。这里只提示「明显越界」
+                # （把手机宽度标成 medium/expanded、或把平板宽度标成 compact 这种跨档越级），
+                # 不去判「1024 该归 medium 还是 expanded」——那涉及既有历史口径，见 adaptive-layout.md §2。
+                width = float(sample['width'])
+                lo, hi = WIDTH_CLASS_RANGES[width_class]
+                if width < lo or width >= hi:
+                    warnings.append(
+                        f'windowSamples[{index}]（{sample.get("id")}）width={width} 但标注 '
+                        f'{width_class}（阈值 {lo}–{hi}）：宽度档应按实际窗口宽度归类，'
+                        '请确认这个采样真的落在它所声明的档位。iPad 稿画布可能是 810 这类'
+                        '非标值（不是只有 1024/1366），照实际宽度就近归类')
         for width_class in WIDTH_CLASSES:
             if width_class not in seen:
                 violations.append(violation(
@@ -251,8 +305,9 @@ def check_plan(plan):
     elif first_level != DEFAULT_FIRST_LEVEL_WIDTH_CLASS:
         warnings.append(
             f'firstLevelWidthClass = {first_level!r}（非缺省 compact）：'
-            '「第一层位置按页面比例」被放宽到了更宽的档。该规则的位置按比例 ×N 而尺寸 ×1，'
-            '在宽档上会把内容挤到左侧，确认这是有意为之')
+            '「第一层水平位置按页面比例」被放宽到了更宽的档。该规则的水平位置按比例 ×N 而尺寸 ×1，'
+            '在宽档上会把内容挤到左侧，确认这是有意为之。'
+            '（垂直位置不受此开关影响：它在所有宽度档下都按页面高度比例重排。）')
 
     forbidden = layout.get('forbiddenAdaptations')
     if not isinstance(forbidden, list) or not forbidden:
@@ -268,6 +323,44 @@ def check_plan(plan):
                 f'forbiddenAdaptations 缺少 {missing}：'
                 'uniform-scale（整页等比放大）、stretch-full-width（单列拉满）、'
                 'font-scale（平板上把字号调大）是平板适配的三种典型错解，必须逐条禁止'))
+
+    # sizeVariants 是「跨平台分档」的声明：它说「xx 稿给 A、xx-iPad 稿给 B，照各自稿还原」。
+    # 既然谈的是 phone vs tablet 的差异，就必须先有 phone 和 tablet 两档的采样，否则
+    # 「分档」没有可指认的两个平台，sizeInvariance 也无法判定「同设备内」是否仍然不变。
+    size_variants = layout.get('sizeVariants')
+    if isinstance(size_variants, list) and size_variants:
+        missing_dims = [dim for dim in DEVICE_CLASSES if dim not in seen_devices]
+        if missing_dims:
+            violations.append(violation(
+                'size-variants-without-device-coverage',
+                f'声明了 adaptiveLayout.sizeVariants（跨平台分档），但采样里没有覆盖 '
+                f'{missing_dims} 平台：跨平台分档必须能指认「是哪两个平台在分」，'
+                '且 sizeInvariance 要靠设备维度去判断「同设备内是否仍然不变」。'
+                '请在 windowSamples 补上对应平台的采样（或显式标 deviceClass）'))
+        for index, entry in enumerate(size_variants):
+            if not isinstance(entry, dict):
+                violations.append(violation(
+                    'size-variant-not-object', f'sizeVariants[{index}] 必须是对象'))
+                continue
+            if not entry.get('region'):
+                violations.append(violation(
+                    'size-variant-missing-region',
+                    f'sizeVariants[{index}] 缺少 region：分档必须指认是哪个元素分档'))
+            if not entry.get('basis'):
+                violations.append(violation(
+                    'size-variant-missing-basis',
+                    f'sizeVariants[{index}] 缺少 basis：分档必须说明照哪份稿'
+                    '（xx / xx-iPad 的 design 名 + image_id）'))
+            if not entry.get('why'):
+                violations.append(violation(
+                    'size-variant-missing-why',
+                    f'sizeVariants[{index}] 缺少 why：分档必须说明为什么这一档尺寸不同'
+                    '（照稿还原，非缩放）'))
+            if not isinstance(entry.get('values'), dict) or not entry.get('values'):
+                violations.append(violation(
+                    'size-variant-missing-values',
+                    f'sizeVariants[{index}] 缺少 values：分档必须给出至少两个采样档的'
+                    '宽/高值，且与稿一致'))
 
     regions = layout.get('regions')
     if not isinstance(regions, list) or not regions:

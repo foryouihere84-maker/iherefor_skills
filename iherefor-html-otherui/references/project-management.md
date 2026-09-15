@@ -19,9 +19,7 @@
 │       │   ├── manifest.json      # 文件清单、sha256、image_id、版本、来源 URL
 │       │   └── assets-manifest.json
 │       ├── reference/            # 当前「已批准」的冻结基准
-│       │   ├── reference.png
-│       │   ├── page-facts.json
-│       │   ├── browser-meta.json
+│       │   ├── dds-schema.json    # rowDims 几何事实（主链路）
 │       │   └── approved.json
 │       ├── plans/                # 页面实现计划、接入计划、unsupported 清单
 │       │   ├── ui-implementation-plan.json
@@ -35,8 +33,7 @@
 │       │       ├── resource-policy.json
 │       │       ├── runtime-device.json
 │       │       ├── ios-environment.json   # 仅 iOS 目标模式
-│       │       ├── actual/       # 各目标模式截图和日志
-│       │       └── diff/         # 整页/区域 diff 与摘要
+│       │       └── actual/       # 编译日志
 │       └── status.json           # 页面级交付状态
 ├── reports/
 │   ├── project-status.json       # 跨页面汇总
@@ -49,11 +46,11 @@
 ## 生命周期
 
 1. **注册页面**：为每个 Lanhu HTML 入口创建 `pages/<page-id>/page.json`，记录 source path、reference viewport、页面顺序和目标模式。
-2. **冻结基准**：在该页面的 `reference/` 生成 screenshot、`page-facts.json`、`browser-meta.json`。只有明确批准后，才更新 `reference/approved.json`；重新渲染不能自动替换批准基准。
+2. **冻结基准**：在该页面的 `reference/` 保存 `dds-schema.json`（rowDims 几何事实）。只有明确批准后，才更新 `reference/approved.json`。
 3. **建立计划**：把页面按 hero、标题/说明、每张卡片、CTA、页脚等区域写入 `plans/ui-implementation-plan.json`，每个区域引用 source selector 和事实来源。
-4. **创建运行**：每次生成或修复创建新的 `<run-id>`，例如 `20260906-133147-objc-001`。run 目录只追加产物，不覆盖旧 run；`run.json` 记录 git revision、target mode、设备、坐标变换和输入基准哈希。
-5. **页面审查**：在 `review.json` 记录每轮 before/after、diff 数值、受影响区域、事实来源和下一步动作。上下文压缩或换手后先读 `project.json`、当前页 `status.json` 和最新 run 的 `run.json`/`review.json`。
-6. **页面交付**：页面只有在自身 build/test/visual diff/unsupported 闸门通过后才标记 `ready`。单页失败不能污染其他页面状态。
+4. **创建运行**：每次生成或修复创建新的 `<run-id>`，例如 `20260906-133147-objc-001`。run 目录只追加产物，不覆盖旧 run；`run.json` 记录 git revision、target mode、设备、坐标变换和输入基准哈希。编译时 `xcodebuild -derivedDataPath <run>/DerivedData` 会往 run 里塞一份完整编译缓存，它**不在 run 产物契约内**（契约见 [artifact-contract.md](artifact-contract.md)），是回收对象而非证据。
+5. **页面审查**：在 `review.json` 记录每轮修改原因、受影响区域、事实来源和下一步动作。上下文压缩或换手后先读 `project.json`、当前页 `status.json` 和最新 run 的 `run.json`/`review.json`。
+6. **页面交付**：页面只有在自身编译/unsupported 闸门通过后才标记 `ready`。单页失败不能污染其他页面状态。交付落定后，用 `python3 scripts/cleanup_run.py --run <run-dir> --yes` 回收该 run 的 `DerivedData`；不立即回收则体积会随 run 数线性累积（单个 run 的缓存常达 50~100MB）。
 7. **项目汇总**：管理脚本读取所有 `status.json` 生成 `reports/project-status.json` 和 `reports/delivery-gate.json`。项目只有所有选定页面和目标模式均 ready 才能 `deliveryReady=true`。
 
 ## 页面与代码的边界
@@ -62,7 +59,7 @@
 - `page.json` 的 `implementationPaths` 指向生产代码，禁止复制出第二份可编辑源码导致漂移。
 - 资源必须在页面级 `source/assets-manifest.json` 建立 URL→原生资源的映射；共享资源可在项目级登记，但页面仍记录引用。
 - Lanhu MCP 下载的 HTML/CSS/JS/资源必须进入页面级 `source/`，并由 `source/manifest.json` 记录 image_id、版本、来源 URL、文件清单和哈希。
-- 同一页面的不同目标模式必须使用不同 run ID；不能把 iOS 截图或 diff 当作 Android 的通过证据。
+- 同一页面的不同目标模式必须使用不同 run ID；不能把 iOS 的编译通过当作 Android 的通过证据。
 
 ## 推荐最小 schema
 

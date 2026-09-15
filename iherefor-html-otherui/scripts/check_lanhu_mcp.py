@@ -14,8 +14,8 @@
 也可用 ``--mcp-config`` / ``--registry-cmd`` 直接指定单个来源。
 因此接入表里没有的客户端不需要改动本脚本。
 
-核心判定（与客户端无关）：找到的入口必须与本地 ``lanhu-mcp-server/dist/index.js``
-指向同一文件。否则「已注册」与「本地已构建」会同时成立、链路却是断的——运行时
+核心判定（与客户端无关）：找到的入口必须与本地 ``lanhu-mcp/lanhu_mcp_server.py``
+指向同一文件。否则「已注册」与「本地已就位」会同时成立、链路却是断的——运行时
 加载的是别的 checkout，或者根本加载不到。只要有一条来源真正指向本 checkout，
 就算就绪；一条都对不上才算阻塞。
 """
@@ -25,10 +25,13 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
-# 入口必须是脚本文件：args 里除入口外还可能带参数（如 ``--flag``）。
-ENTRYPOINT_SUFFIXES = ('.js', '.mjs', '.cjs')
+# 入口必须是脚本文件：args 里除入口外还可能带参数（如 ``--transport stdio``）。
+# 新主链路是 Python 版 lanhu-mcp，入口为 ``lanhu_mcp_server.py``；
+# 保留 .js/.mjs/.cjs 仅为兼容历史 node 版注册（备用）。
+ENTRYPOINT_SUFFIXES = ('.py', '.js', '.mjs', '.cjs')
 
 CREDENTIAL_KEYS = ('LANHU_COOKIE', 'LANHU_AUTHORIZATION')
 
@@ -327,8 +330,8 @@ def main():
     args = ap.parse_args()
 
     root = Path(args.skill_dir).resolve()
-    server = root / 'lanhu-mcp-server'
-    dist = server / 'dist' / 'index.js'
+    server = root / 'lanhu-mcp'
+    dist = server / 'lanhu_mcp_server.py'
     cwd = Path.cwd()
 
     # 环境变量注入的配置文件与命令行参数等价，便于宿主/harness 在调用时指定。
@@ -361,7 +364,7 @@ def main():
 
     blocking = []
     if not dist.is_file():
-        blocking.append(f'本地未构建 lanhu-mcp-server：{dist}')
+        blocking.append(f'本地缺少 lanhu-mcp 入口脚本：{dist}')
     if not found:
         blocking.append(
             f'未在任何 MCP 配置或注册命令中找到 {server_name}'
@@ -406,14 +409,15 @@ def main():
     }
 
     if not wired:
-        node = shutil.which('node') or 'node'
+        # 建议用当前运行本脚本的 Python（sys.executable）作为 command，因为它是「此刻可用的解释器」。
+        python = sys.executable or shutil.which('python3') or 'python3'
         result['suggestedRegistrations'] = {
             'mcpJson': {
                 'mcpServers': {
                     server_name: {
                         'type': 'stdio',
-                        'command': node,
-                        'args': [str(dist)],
+                        'command': python,
+                        'args': [str(dist), '--transport', 'stdio'],
                         'env': {},
                     }
                 }
@@ -421,10 +425,10 @@ def main():
             'howTo': [
                 '把上面的 mcpJson 片段合并进你所使用客户端的 MCP 配置文件的 mcpServers；',
                 '或使用该客户端自带的「新增 MCP server」命令注册同一 command/args；',
-                f'凭据无需写进配置——server 会自行读取 {server / ".env"}；',
+                f'凭据无需写进配置——server 会自行读取 {server / ".env"}（LANHU_COOKIE 必填）；',
                 '注册后 MCP 通常需要信任/启用，并重启会话才会生效。',
             ],
-            'verifyCommand': f'{node} {dist}',
+            'verifyCommand': f'{python} {dist} --version',
         }
         if table_error:
             result['suggestedRegistrations']['howTo'].append(

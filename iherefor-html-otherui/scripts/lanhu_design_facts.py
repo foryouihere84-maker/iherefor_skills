@@ -1,21 +1,22 @@
 #!/usr/bin/env python3
-"""把 lanhu_get_design_document 的返回体解析成实现计划可直接引用的设计事实摘要。
+"""把 lanhu_get_design_document 的返回体解析成紧凑设计事实摘要（**仅作交叉佐证**）。
 
 背景：`lanhu_get_design_document` 是全量图层树 JSON（一个典型稿 105KB、94 节点），
-**全量喂给 Agent 不划算**，但里面藏着写实现计划最贵的几类事实——父视图归属、字号、
-字体、文本、颜色、描边、填充。在此之前这些全是 Agent 从渲染 DOM 反向推断出来的
-（实现计划里每个 region 都是 ``kindSource: "agent-decided"``），推断即成本，判错即一轮门 2。
+**全量喂给 Agent 不划算**，里面只有**图层几何（``rect``）与描边/纯色填充**这一小半是可靠的——
+字号、渐变、文本语义存在系统性失真（``canvas.scale`` 会把字号折半、``metadata.parentId`` 实测
+全 null）。**布局与字号的权威来源是渲染后浏览器 DOM 实测值（``page-facts.json``），不是本摘要。**
 
-本脚本只做**解析与降噪**，产出紧凑 ``design-facts.json``，供第 3 步「目标实现计划」引用：
+本脚本只做**解析与降噪**，产出紧凑 ``design-facts.json``，供第 3 步「目标实现计划」交叉佐证：
 
-- ``hierarchy``：每个图层的真实父视图归属。**由 ``children`` 嵌套推导（``metadata.parentId``
-  实测全为 null，不可靠）**。这是 ``layoutProportions.regions[].parentIndex`` 的权威来源。
+- ``hierarchy``：每个图层的父视图归属。**由 ``children`` 嵌套推导（``metadata.parentId``
+  实测全为 null，不可靠）**。仅佐证，``layoutProportions.regions[].parentIndex`` 的权威来源是
+  ``page-facts.json`` 的 ``parentIndex``/``parentHops``。
 - ``typography``：字号 / 字体族 / 字重 / 文本 / 颜色。**字号已按 ``canvas.scale`` 还原**，
   因为 document 把字号除了 scale（实测 scale=2 稿里所有 fontSize=7，但下载 HTML 里真实
   字号是 14）。字体族名做过 normalize（``AvenirLT-*`` → ``Avenir-*``，带 LT 后缀的族名
-  系统里不存在）。
+  系统里不存在）。**权威字号/字体以渲染 DOM 实测（computed style / CDP 字体）为准。**
 - ``borders`` / ``fills`` / ``shadows``：描边/填充/阴影的粗细与颜色，回答「描边是画在
-  frame 上还是独立装饰层」——正是覆盖式装饰子视图吞点击、CSS border 内缩两个坑的判据。
+  frame 上还是独立装饰层」——可佐证覆盖式装饰子视图吞点击、CSS border 内缩两个坑的判据。
 
 **关键结构事实（踩过坑，勿再猜字段名）**：`layers[]` 是嵌套树（子层在 ``children``）；
 ``type`` 对文本/形状/组**全是 ``artboard``**，不能靠它切组件；文本在 ``style.typography``
@@ -27,8 +28,9 @@
 本脚本只还原 fontSize（坐标为真、字号待还原），并在输出里保留 ``canvas.scale`` 与
 ``fontSizeRaw``，让下游能追溯。
 
-只读脚本：不改 MCP、不下载、不打印凭据。位置与坐标仍以浏览器事实表为准——这份摘要
-回答「设计稿说应该什么样」，渲染事实回答「实际成了什么样」，两者互补而非替代。
+只读脚本：不改 MCP、不下载、不打印凭据。位置与坐标、布局与字号**一律以浏览器 DOM 实测值
+（``page-facts.json``）为准**——这份摘要回答「设计稿说应该什么样」，渲染事实回答「实际成了
+什么样」。两者不一致时以渲染事实为准，本摘要仅作交叉佐证，不作为权威来源。
 """
 import argparse
 import json

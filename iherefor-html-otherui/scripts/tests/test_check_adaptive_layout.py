@@ -314,6 +314,19 @@ class MainActivity {
         check(proc.returncode == 2 and "Traceback" not in proc.stderr,
               f"用例10：计划不存在应退出 2，得到 {proc.returncode}：{proc.stderr[:200]}")
 
+        # ---- 用例 11：宽度列与档位明显越界 → 只警告、不硬判（宽度档应由实际宽度归类）----
+        mismatched = good_plan()
+        mismatched["adaptiveLayout"]["windowSamples"][0]["width"] = 900
+        # phone-compact 的 width 改成 900（≥840）却仍标 compact —— 明显越界（平板宽度标 compact）
+        mm_path = tmp / "mismatch.json"
+        write_json(mm_path, mismatched)
+        proc, report = run(mm_path, [src], plan_only=True)
+        check(proc.returncode == 0 and report.get("status") == "pass",
+              f"用例11：宽度档明显越界应只警告不硬判，得到 {report.get('status')}"
+              f"（{report.get('violations')}）")
+        check(any("宽度档" in w or "宽度" in w for w in report.get("warnings") or []),
+              "用例11：宽度与档位明显越界必须留下警告提示自查")
+
     for problem in problems:
         print(problem)
     if problems:
@@ -324,7 +337,7 @@ class MainActivity {
           "逐条拦下、源码四类禁止模式与 UIRequiresFullScreen 拦下、"
           "iPhone 竖屏 + iPad 全方向的合法组合不误报、"
           "view.bounds 与 values-sw600dp 等正确做法不误报、固定列数与缺采样拦下、"
-          "用法错误干净退出")
+          "宽度档明显越界只警告不硬判、用法错误干净退出")
     return 0
 
 

@@ -161,25 +161,29 @@ def main():
               "用例1：sizeInvariance 应真的比过 fixed 元素，"
               f"得到 compared={checks.get('sizeInvariance', {}).get('compared')}")
 
-        # ---- 用例 2：整页等比放大 → sizeInvariance 必须炸 ----
-        # 这是平板适配里最典型的缺陷，而「基准只有一份」意味着像素 diff 发现不了它。
+        # ---- 用例 2：跨设备整页等比放大 → sizeInvariance 必须炸 ----
+        # 平板适配里最典型的缺陷：手机稿的尺寸被放大到两个 tablet 采样（portrait+landscape
+        # 一致放大，说明是「跨设备放大」而非「同设备内不一致」），而「基准只有一份」意味着
+        # 像素 diff 发现不了它。无 sizeVariants 声明 → size-not-invariant。
         scaled = [
             {"id": "cta", "region": "form", "kind": "fixed",
              "rect": {"x": 0, "y": 300, "width": 903, "height": 125}, "interactive": True},
             {"id": "offers", "region": "form", "kind": "fixed",
              "rect": {"x": 0, "y": 500, "width": 903, "height": 177}},
         ]
-        bad = geometry(tmp, "tablet-regular-portrait", (1024, 1366), elements=scaled)
-        proc, report = run(path, plan, {"tablet-regular-portrait": bad})
+        bad_portrait = geometry(tmp, "tablet-regular-portrait", (1024, 1366), elements=scaled)
+        bad_landscape = geometry(tmp, "tablet-regular-landscape", (1366, 1024), elements=scaled)
+        proc, report = run(path, plan, {"tablet-regular-portrait": bad_portrait,
+                                        "tablet-regular-landscape": bad_landscape})
         check("size-not-invariant" in kinds(report),
-              f"用例2：等比放大未被 sizeInvariance 拦下，实得 {sorted(kinds(report))}")
+              f"用例2：跨设备等比放大未被 sizeInvariance 拦下，实得 {sorted(kinds(report))}")
         check((report.get("checks") or {}).get("sizeInvariance", {}).get("status") == "fail",
               "用例2：sizeInvariance 未记 fail")
 
-        # ---- 用例 2b：多设备稿照稿分档 + 声明 sizeVariants → 合法通过 ----
-        # 同一设计有 xx + xx-iPad 两份稿，iPad 稿给出更大的按钮框（字号不变）。这是
-        # 合规的「照稿分档」，不是等比放大 —— 前提是 plan 里逐档声明了 sizeVariants。
-        # 用 off 的 offers（非交互、68 高，不触发 touchTarget）做分档，避免噪声。
+        # ---- 用例 2b：跨设备照稿分档 + 声明 sizeVariants → 合法通过 ----
+        # 同一设计有 xx + xx-iPad 两份稿，iPad 稿给出更大的卡片框（字号不变）。这是
+        # 合规的「跨设备照稿分档」，不是等比放大 —— 前提是 plan 里逐档声明了 sizeVariants，
+        # 且两个 tablet 采样（portrait/landscape）的尺寸**一致**（同设备内不变）。
         variant_fixed = [
             {"id": "cta", "region": "form", "kind": "fixed",
              "rect": {"x": 16, "y": 300, "width": 347, "height": 48}, "interactive": True},
@@ -194,6 +198,7 @@ def main():
              "rect": {"x": 16, "y": 400, "width": 500, "height": 90}},
         ]
         geometry(tmp, "tablet-regular-portrait", (1024, 1366), elements=variant_ipad)
+        geometry(tmp, "tablet-regular-landscape", (1366, 1024), elements=variant_ipad)
         variant_plan = tmp / "plan-variant.json"
         write_json(variant_plan, {"adaptiveLayout": {
             "model": "continuous-window-width",
@@ -205,15 +210,18 @@ def main():
                 "values": {
                     "phone-compact": {"width": 347, "height": 68},
                     "tablet-regular-portrait": {"width": 500, "height": 90},
+                    "tablet-regular-landscape": {"width": 500, "height": 90},
                 },
                 "why": "iPad 稿给出更大的卡片框，字号未缩放",
             }],
         }})
         proc, report = run(path, variant_plan)
-        check("size-not-invariant" not in kinds(report),
-              f"用例2b：声明了 sizeVariants 的照稿分档仍被判违规，实得 {sorted(kinds(report))}")
+        check("size-not-invariant" not in kinds(report)
+              and "size-not-invariant-within-device" not in kinds(report),
+              f"用例2b：声明了 sizeVariants 的跨设备分档仍被判违规，实得 {sorted(kinds(report))}")
 
-        # ---- 用例 2c：尺寸分档但**没声明** sizeVariants → 仍判违规（守住防线）----
+        # ---- 用例 2c：跨设备尺寸分档但**没声明** sizeVariants → 仍判违规（守住防线）----
+        # 两个 tablet 采样一致地用了 500×90（同设备内不变），只是没声明分档。
         undeclared_ipad = [
             {"id": "cta", "region": "form", "kind": "fixed",
              "rect": {"x": 16, "y": 300, "width": 347, "height": 48}, "interactive": True},
@@ -221,9 +229,29 @@ def main():
              "rect": {"x": 16, "y": 400, "width": 500, "height": 90}},
         ]
         geometry(tmp, "tablet-regular-portrait", (1024, 1366), elements=undeclared_ipad)
+        geometry(tmp, "tablet-regular-landscape", (1366, 1024), elements=undeclared_ipad)
         proc, report = run(path, plan)   # plan 无 sizeVariants
-        check("size-not-invariant" in kinds(report),
-              f"用例2c：未声明 sizeVariants 的尺寸分档未被拦下，实得 {sorted(kinds(report))}")
+        check("size-not-invariant" in kinds(report)
+              and "size-not-invariant-within-device" not in kinds(report),
+              f"用例2c：未声明 sizeVariants 的跨设备分档未被拦下，实得 {sorted(kinds(report))}")
+
+        # ---- 用例 2d：同设备内尺寸不一致，即使声明 sizeVariants 也必须拦（新的硬线）----
+        # 「尺寸不缩放」作用域是设备平台：同一台 tablet 的 portrait 与 landscape 之间尺寸
+        # 必须逐字相等，sizeVariants 不能豁免这条 —— 分档只许跨设备（phone vs tablet）。
+        within_device_portrait = [
+            {"id": "offers", "region": "form", "kind": "fixed",
+             "rect": {"x": 16, "y": 400, "width": 500, "height": 90}},
+        ]
+        within_device_landscape = [
+            {"id": "offers", "region": "form", "kind": "fixed",
+             "rect": {"x": 16, "y": 400, "width": 347, "height": 68}},
+        ]
+        geometry(tmp, "tablet-regular-portrait", (1024, 1366), elements=within_device_portrait)
+        geometry(tmp, "tablet-regular-landscape", (1366, 1024), elements=within_device_landscape)
+        proc, report = run(path, variant_plan)   # 即便声明了 sizeVariants 也不豁免
+        check("size-not-invariant-within-device" in kinds(report),
+              f"用例2d：同设备内尺寸不一致未被拦下（sizeVariants 不应豁免），"
+              f"实得 {sorted(kinds(report))}")
 
         # ---- 用例 3：内边距被撑大 → insetPreservation ----
         stretched = [

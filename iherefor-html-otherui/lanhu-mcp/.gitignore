@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+build/
+dist/
+.eggs/
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+uv.lock
+
+# Test/coverage
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Runtime data
+logs/
+data/
+
+# Editors
+.DS_Store
+.idea/
+.vscode/

@@ -3,6 +3,12 @@
 本文件是 `.ihereforUI` 产物结构的**唯一事实来源**。`SKILL.md`、`project-management.md`
 与 `scripts/validate_run.py` 都以本文件为准；出现分歧时先改本文件，再同步其他两处。
 
+> **`v3` 起的主链路变更**：几何坐标以 `dds-schema.json` 的 `rowDims` 为主链路（见页面级
+> `reference/`），渲染 DOM 的 `page-facts.json`、像素 `diff/`、`canvasTransform` 坐标换算、
+> `gateReachability` 等渲染链产物已**降级为备用链路或废弃**，不再属于默认流程的必要产物。
+> 下文保留这些章节仅为文档完整性与向后兼容；`scripts/validate_run.py` 对缺失的渲染链产物
+> 一律按「未提供」跳过，不判 fail。
+
 机器校验入口：
 
 ```bash
@@ -47,10 +53,10 @@ pages/<page-id>/
 │   └── integration-plan.json     # 仅既有项目接入时需要
 └── reference/                   # 当前**已批准**的视觉基准（冻结）
     ├── reference.png            # HTML 基准截图
-    ├── page-facts.json          # 页面事实表（rect / rectInReference / textMetrics / 资源）
+    ├── page-facts.json          # 页面事实表（rect / rectInReference / textMetrics / 资源 / 父视图归属）
     ├── browser-meta.json        # 浏览器版本、viewport、运行时字体、注入记录、加载错误
-    ├── design-document.json     # lanhu_get_design_document 原始返回体（未加工）
-    ├── design-facts.json        # 设计事实摘要（父视图归属 / 字号字体文本颜色 / 描边填充阴影）
+    ├── design-document.json     # （可选）lanhu_get_design_document 原始返回体，仅交叉佐证用
+    ├── design-facts.json        # （可选）设计事实摘要，仅佐证图层几何/描边/纯色填充，不参与权威判定
     └── approved.json            # 批准记录：sha256、批准时间、批准人
 ```
 
@@ -141,6 +147,8 @@ v3 起每个元素都带 `parentIndex` / `parentHops` / `positioningContextIndex
 | `textMetrics.hasDescendantTextElement` | 该文本元素内部还嵌着别的文本元素。为 `true` 时 `rects` 与 `glyphCount` 的语义都变宽，做断言前必须看这一位 |
 | `textMetrics.advanceWidth` | 排版宽度。字体被 fallback 替换时必然变化，是判断「字体没生效」的可靠信号 |
 | `fontsResolved` / `primaryFont` | 运行时**实际用上**的字体（来自 CDP `CSS.getPlatformFontsForNode`，附 `glyphCount`）。CSS 声明的 `fontFamily` 只是请求，不是结果 |
+| `style` | 元素的 computed style 快照（`display`/`position`/`overflow`/`color`/`backgroundColor`/`backgroundImage`/`fontFamily`/`fontSize`/`fontWeight`/`lineHeight`/`letterSpacing`/`borderRadius`/`boxShadow`/`opacity`/`transform`/`objectFit`/`backgroundSize` + 四边 `border*Width`/`borderStyle`/`borderColor`）。它是样式恒量溯源（`typeFacts`）的取值来源 |
+| `border` | 归一化描边事实：`widthPx`（四边最大）、`color`、`style`。用于判「描边画在 frame 上还是独立装饰层」——后者是覆盖式装饰子视图吞点击的根因 |
 | `alphaBounds` | 图片非透明内容 bounds。「frame 已缩放」不等于「图片已缩放」—— 透明留白会让两者不一致 |
 
 **文本元素的定义必须只有一个**：`innerText` 会把所有后代文字聚合上来，于是每一个容器都成了
@@ -170,13 +178,16 @@ v3 起每个元素都带 `parentIndex` / `parentHops` / `positioningContextIndex
 `glyphCount == charCount` 成立；对内部还嵌着文本的元素，它是整棵子树的合计。断言前先看
 `hasDescendantTextElement`，否则会误判成「量错了」。
 
-### `design-facts.json`（由 `scripts/lanhu_design_facts.py` 产出）
+### `design-facts.json`（可选，由 `scripts/lanhu_design_facts.py` 产出）
 
 `design-facts.json` 是 `lanhu_get_design_document` 返回体的**降噪摘要**，回答「设计稿说
-应该什么样」（渲染事实 `page-facts.json` 回答「实际成了什么样」，两者互补）。它是
-`ui-implementation-plan.json` 里 `regions[].parentIndex`、`unsupported[typography]`、描边判据
-的权威来源——**凡是这里已给出、计划却写成 `kindSource: "agent-decided"` 或改用 CDP 反推的，
-都属可消除推断**。
+应该什么样」。它是**可选交叉佐证**，只可靠地覆盖**图层几何（`rect`）与描边/纯色填充**这一小半；
+字号、渐变、文本语义存在系统性失真（`canvas.scale` 折半字号、`metadata.parentId` 全 null）。
+
+**几何的权威来源是 `dds-schema.json` 的 `rowDims`（主链路），渲染 DOM 的 `page-facts.json` 是备用链路**
+——凡是 rowDims 或 page-facts 已给出、计划却写成 `kindSource: "agent-decided"` 或
+凭空编造常量值的，都属可消除推断。`rowDims` 缺失/不可信时以渲染 DOM 为准；`design-facts` 与
+两个权威来源不一致时，以权威来源为准并记归因信号。
 
 ```json
 {
@@ -205,16 +216,16 @@ v3 起每个元素都带 `parentIndex` / `parentHops` / `positioningContextIndex
 | 字段 | 含义 |
 |---|---|
 | `scale.canvasScale` / `scale.fontSizeScaled` | 画布 scale 及「是否对字号做了还原」。**`rect` 坐标是未缩放的画布点坐标，但 `fontSize` 已按 scale 还原**（`fontSizeRaw` 是 document 原文） |
-| `hierarchy[].parentId` / `depth` | 父视图归属**由 `children` 树推导**（`metadata.parentId` 实测全 null 不可靠）；`parentId == null` 即根层。**这是 `regions[].parentIndex` 的权威来源** |
-| `typography[].fontSize` / `fontSizeRaw` | `fontSize` 是还原后的真实字号（可直接填实现计划），`fontSizeRaw` 是 document 原文（已除过 scale） |
-| `typography[].fontFamily` / `fontFamilyRaw` | `fontFamily` 已 normalize（`AvenirLT-*` → `Avenir-*`），`fontFamilyRaw` 是 document 原声明 |
+| `hierarchy[].parentId` / `depth` | 父视图归属**由 `children` 树推导**（`metadata.parentId` 实测全 null 不可靠）；`parentId == null` 即根层。**仅供佐证，`regions[].parentIndex` 的权威来源是 `dds-schema.json` 的 `children` 树（主链路），`rowDims` 缺失时才是 `page-facts.json` 的 `parentIndex`/`parentHops`** |
+| `typography[].fontSize` / `fontSizeRaw` | `fontSize` 是还原后的字号（**可能存在 scale 折半失真，勿当权威**），`fontSizeRaw` 是 document 原文（已除过 scale） |
+| `typography[].fontFamily` / `fontFamilyRaw` | `fontFamily` 已 normalize（`AvenirLT-*` → `Avenir-*`），`fontFamilyRaw` 是 document 原声明；**权威字号/字体以官方 HTML/CSS 为准，渲染 DOM 实测为辅（备用链路）** |
 | `borders[].borders[].width` | 描边粗细，回答「描边画在 frame 上还是独立装饰层」 |
 | `summary.depthDistribution` | 层级深度分布，快速判断画布叠层复杂度 |
 
-**与渲染事实的分工**：`design-facts` 给**声明值**（父视图、字号、字体族、文本、颜色、描边），
-`page-facts` 给**渲染值**（`rectInReference`、实际命中字体 `fontsResolved`、`advanceWidth`、计算后样式）。
-「声明 vs 命中」在**字体**上是已知的、正确的差异（`AvenirLT-*` 声明了却不存在的族名），不要做交叉核对产生噪音；
-但在**父视图归属、字号、颜色、描边**上，两边应该一致，不一致才是需要归因的信号。
+**几何权威是 `rowDims`（`dds-schema.json`，主链路），渲染 DOM（`page-facts.json`）是备用链路；样式权威是官方 HTML/CSS。** `design-facts` 只是可选佐证，给**声明值**（图层几何、描边、纯色填充）；
+`rowDims` 给**语义几何**（绝对坐标 + `children` 父子树），`page-facts` 给**渲染实测值**（父视图归属 `parentIndex`、`rectInReference`、字号、实际命中字体 `fontsResolved`、`advanceWidth`、计算后样式、颜色）。
+几何不一致时以 `rowDims` 为准、`rowDims` 缺失时以渲染 DOM 为准；样式不一致时以官方 HTML/CSS 为准，并把差异记为归因信号；
+「字体上声明 vs 命中」（`AvenirLT-*` 声明了却不存在的族名）是已知的正确差异，不做交叉核对产生噪音。
 
 ## 运行级（每次 run 必需）
 
@@ -298,30 +309,17 @@ v3 起每个元素都带 `parentIndex` / `parentHops` / `positioningContextIndex
 [adaptive-layout.md §7](adaptive-layout.md#7-验证adaptiveaudit-与为什么不做像素-diff)。
 它与 `diff/adaptive-audit.json` 交叉核对：审计判 `fail` 时闸门不得记 `pass`。
 
-`visualDiff` 的取值受 `diff/` 的证据约束，不能只看整页比例：
+`visualDiff` 的取值受 `diff/` 的证据约束（机器可核，`scripts/validate_run.py` 逐条校验）：
 
-- `diff/alignment.json` 判 `needs-review` 时，`visualDiff` **不得**为 `pass`。尺寸相同、整页
-  比例达标都推翻不了元素级位移超容差。
+- `diff/alignment.json` 判 `needs-review` ⇒ `visualDiff` **不得**为 `pass`（尺寸相同、整页比例达标都推翻不了元素级位移超容差）。
+- 比较器判 `fail` ⇒ `visualDiff` **不得**为 `pass`。
+- 比较器判 `pass-with-review` ⇒ 默认**必须原样记 `pass-with-review`**；**唯一例外**是
+  `reason == "structural-within-declared-floor"`（升格口径见 [SKILL.md 的「交付闸门」](../SKILL.md#7-交付闸门)，本文件不另立口径）。
 - `diff/` 里任何放行类结论（`pass` / `pass-with-review`）必须自带 `structuralRatio` 与非空
-  `regions`；只有 `changedRatio` 的结论不足以放行。
-- 比较器判 `fail` 时，`visualDiff` **不得**为 `pass`。
-- 比较器判 `pass-with-review` 时，`visualDiff` 默认**必须原样记为 `pass-with-review`**；
-  **唯一的例外是 `reason == "structural-within-declared-floor"`**（文字密集页的结构差异存在
-  物理下界，已在计划里声明并做了量化归因），此时记 `pass` 才是诚实的。其余 `pass-with-review`
-  （如 `structural-diff-above-warn`）记成 `pass` 会被校验脚本拦下。
+  `regions`；只有 `changedRatio` 的结论不足以放行（占位件不参与判定，非放行依据）。
 
-> 这条例外的成因与「为什么不可省」见 [SKILL.md 的「交付闸门」](../SKILL.md#7-交付闸门)：
-> 没有它，比较器按声明下界放行了，交付闸门却会永远推导出 `deliveryReady = false`，
-> 文字密集页无法交付。
-
-不带 `structuralRatio` 的 diff 文件（例如只记录 `changedRatio` 的占位件）不参与这条判定：
-它不是放行依据，对它判定只会制造噪声。
-
-`reference` 的取值还要受基准字体链约束：
-
-- `diff/font-chain.json` 的 `substituted` 为 `true` 时，`reference` **不得**为 `pass`。基准图
-  的排版结果本身就是用错字体排出来的，它「自洽地错」—— DOM 事实表与基准图互相印证，
-  对齐审计只能把不一致归给 App 侧。先修基准的字体栈并重渲染，再谈 App 侧。
+`reference` 的取值另有基准字体链约束：`diff/font-chain.json` 的 `substituted` 为 `true` ⇒
+`reference` **不得**为 `pass`（基准图用错字体排版，先修基准字体栈并重渲染）。
 
 `deliveryReady` 为 `true` 的**充要条件**（校验脚本按此判定，不接受手写覆盖）：
 
@@ -467,6 +465,73 @@ Lanhu 坐标的分析代码都得自己反解，而手写反解正是「多乘�
 
 393×852 → 402×874 时 `padding.max = 1.2443pt`，仍在容差内 —— 但这是**算出来的**结论，
 不是可以假设的前提。`scripts/canvas_map.py` 的 `axis_deviation()` 给出这个值。
+
+#### `ui-implementation-plan.json` 的 `typeFacts`（样式恒量的事实溯源）
+
+上一节管的是「位置与容器的闭合关系」，字号/字体/颜色/描边/圆角这些**样式恒量**不在它的
+范围里 —— 它们既不随容器缩放，也不贴父闭合，而是「拿设计稿的封闭值写死」。这些值以前的
+来源是 Agent 自觉，没有任何一道门核对「它是抄来的，还是拍脑袋编的」。这正是
+「只读 design_document / 跳过权威来源也能过闸门」的漏洞所在。
+
+**几何（位置/尺寸/父归属）的权威是 `rowDims`，样式恒量的权威是官方 HTML/CSS（主）或渲染 DOM
+的 `page-facts`（备用）。** `typeFacts` 是每项**样式恒量**的强制溯源：写计划时，每个区域的字号、
+字体族、颜色、描边、圆角必须带一个指向权威来源的引用，证明这个值不是臆测。
+
+```json
+{
+  "typeFacts": [
+    {
+      "region": "主标题",
+      "elementIndex": 3,
+      "fontSize": 24,
+      "fontFamily": "Avenir Black",
+      "color": "#1A1A1A",
+      "borderWidth": 0,
+      "borderColor": null,
+      "borderRadius": 0,
+      "kindSource": "page-facts"
+    },
+    {
+      "region": "CTA 按钮",
+      "elementIndex": 9,
+      "fontSize": 14,
+      "fontFamily": "Avenir-Medium",
+      "color": "#FFFFFF",
+      "borderWidth": 0.5,
+      "borderColor": "rgba(0,0,0,1)",
+      "borderRadius": 22,
+      "kindSource": "page-facts"
+    }
+  ]
+}
+```
+
+字段约定：
+
+| 字段 | 含义 |
+|---|---|
+| `region` | 该样式恒量归属的具名区域（与 `layoutProportions.regions[].region` 对齐） |
+| `elementIndex` | **整数**，指向溯源目标：`kindSource: "page-facts"` 时是 `page-facts.json` 的 `elements[]` 下标；`kindSource: "html-css"` 时是官方 CSS 里对应的选择器序号（`styleSourceIndex`） |
+| `fontSize` / `fontFamily` / `color` | 从权威来源回填的字号/字体族/颜色（`page-facts` 的 `style` + `primaryFont.familyName`，或官方 CSS 的声明值） |
+| `borderWidth` / `borderColor` / `borderRadius` | 从权威来源回填的描边与圆角（`page-facts` 的 `border` / `style.borderRadius`，或官方 CSS） |
+| `kindSource` | **`"page-facts"`（样式来自渲染 DOM 实测）或 `"html-css"`（样式来自官方 HTML/CSS 声明值）**。这是「这个值有据可查」的显式断言，不是层级归属的 `kindSource: proposed` |
+
+**规则：**
+
+1. **每个「文字/带描边的区域」都必须有一条 `typeFacts` 记录。** 缺少记录（比如做了一个标题
+   却没写它的字号来源）会被门 0 判 `fact-source-missing`。
+2. **引用必须指向真实存在的来源**：`page-facts` 时该元素的可识别特征（有 `ownText`、
+   或 `border.widthPx > 0`）与这条记录声明的样式类型一致；`html-css` 时选择器在官方 CSS 里真实存在。
+3. **`kindSource` 只能是 `"page-facts"` 或 `"html-css"`。** 写成 `"agent-decided"` 或 `"proposed"`
+   都等于承认「这个值不是从权威来源抄来的」，门 0 直接判违规。
+4. 值是**引用**不是**新建权威**：`fontSize` 与来源值不一致时，说明抄错了，应由人核对 ——
+   校验器只做「有没有引用、引用合不合法」，不做纯值相等比对
+   （`primaryFont.familyName` 与 `style.fontFamily` 因别名/字重可能本就不逐字相等，见字体链一节）。
+
+这条规则的判据是**可执行的**：`scripts/check_layout_proportions.py --plan-only` 会交叉核对
+引用是否落在可溯源的范围内、`typeFacts` 覆盖的区域是否都有记录。
+没有这份溯源，Agent 依旧可以编一个 `fontSize=14` 让四个门全绿 —— 有了它，「不读权威来源」在
+门 0 就被拦死，而不是等到像素 diff 才露馅。
 
 #### `ui-implementation-plan.json` 的 `runtimeRisks`
 
@@ -711,7 +776,7 @@ Lanhu 坐标的分析代码都得自己反解，而手写反解正是「多乘�
        "basis": "目的 + 目的-iPad 双稿（iPad 稿 image_id=…）",
        "values": {"phone-compact": {"width": 68, "height": 22},
                   "tablet-regular-portrait": {"width": 141, "height": 28}},
-       "why": "iPad 稿给出该档更大的按钮框；字号仍为设计值、未缩放"}
+       "why": "目的-iPad 稿中该按钮宽高为 141×28，照 iPad 稿取值，与目的稿无派生关系（字号跨稿差异走 typeFacts 溯源，不进本条目）"}
     ]
   }
 }
@@ -724,13 +789,14 @@ Lanhu 坐标的分析代码都得自己反解，而手写反解正是「多乘�
 | `model` | string | 固定 `continuous-window-width`。它不是装饰：值不同说明用的是旧的两断点口径 |
 | `windowSamples` | array | **非空**。每项必须有 `id` / `widthClass`（`compact` / `medium` / `expanded`）/ `width`；`required` 缺省为 `true` |
 | `windowSamples[].id` | string | 采样标识，只用于证据索引。**不得**出现在生产代码里 |
+| `windowSamples[].deviceClass` | string | **可选**。设备平台：`phone` / `tablet`。与 `widthClass`（窗口宽度档）**正交**——前者回答「照哪套稿的尺寸/字号」，后者回答「宽度怎么收敛」。缺省由 `id` 前缀（`phone-*` / `tablet-*`）或 `device` 机型名推断。声明 `sizeVariants` 时必须 phone 与 tablet 两档都有采样覆盖 |
 | `regions[].widthPolicy` | string | `full-bleed` / `max-content-width` / `centered-column` / `grid` / `pane` / `stacked` 之一。**`stretch-full-width` 不在枚举内** —— 单列拉满是本契约要拦的头号问题 |
 | `regions[].maxContentWidth` | object | `widthPolicy` 为 `max-content-width` / `centered-column` 时**必需**，含 `value`（>0 的设计常量）、`of`、`reason` |
 | `regions[].columnCount` | object | `widthPolicy` 为 `grid` 时必需，含 `compact` / `medium` / `expanded` 三个正整数且**单调不减** |
 | `axisSwitch` | array | 需要切主轴的区域。每项含 `region` 与至少一对档位映射 |
 | `forbiddenAdaptations` | array | **非空**，至少含 `uniform-scale` / `stretch-full-width` / `font-scale` |
 | `firstLevelWidthClass` | string | 缺省 `compact`。限定 [sizing-and-positioning.md §3.1.1](sizing-and-positioning.md#311-第一层子视图位置按页面比例重排设备尺寸--设计稿尺寸时的适配核心) 的「第一层位置按页面比例」**只在哪一档生效** —— 见下 |
-| `sizeVariants` | array | **可选**。多设备稿照稿还原的尺寸分档白名单，见下 |
+| `sizeVariants` | array | **可选**。多设备稿照稿还原的**几何尺寸**分档白名单，见下 |
 
 **`firstLevelWidthClass` 是必需的收口，不是可选开关。** 第一层位置比例规则在
 `393×852 → 402×874` 上成立（差 2.3%），推到 1024pt 就出事：位置按比例 ×2.6、
@@ -738,10 +804,14 @@ Lanhu 坐标的分析代码都得自己反解，而手写反解正是「多乘�
 卡片间距从 13pt 被拉成 285pt。所以该规则必须被显式限定在 `compact` 档；
 regular / medium / expanded 档下第一层位置改由 `widthPolicy` 重排。
 
-**`sizeVariants` 是尺寸分档的唯一合法出口（可选，不用就不声明）。** 「尺寸不缩放」
-是默认：`audit_adaptive.py` 的 `sizeInvariance` 要求同一 `fixed` 元素在全部采样上点值
-逐字相等。但当同一设计在 Lanhu 里同时有 `xx` 与 `xx-iPad` 两份稿、且 iPad 稿给出了
-**不同的几何尺寸**（字号等排版量仍相等）时，照 iPad 稿还原是合规分档。每项约束：
+**`sizeVariants` 是几何尺寸分档的唯一合法出口（可选，不用就不声明）。** 「尺寸不缩放」
+是默认，且它的作用域是**设备平台**：`audit_adaptive.py` 的 `sizeInvariance` 要求未声明分档的
+同一 `fixed` 元素在**同一设备**（phone / tablet）的全部采样上点值逐字相等，**这条连
+`sizeVariants` 也不能豁免**——同设备的两个宽度档之间尺寸变了，判 `size-not-invariant-within-device`。
+只有当同一设计在 Lanhu 里同时有 `xx` 与 `xx-iPad` 两份稿、跨设备（phone vs tablet）的宽高照
+各自稿取值时，才走 `sizeVariants` 分档：这两份稿是**两套并列的独立参考**，iPad 组件的宽、高
+照 `xx-iPad` 稿自身取值，与 `xx` 稿**没有派生关系**，因此不存在「把手机稿等比放大到 iPad」
+这回事。每项约束：
 
 | 字段 | 约束 |
 |---|---|
@@ -751,7 +821,15 @@ regular / medium / expanded 档下第一层位置改由 `widthPolicy` 重排。
 | `why` | **必填**。说明为什么这一档尺寸不同（照稿还原，非缩放） |
 
 三项缺一（尤其 `basis`/`why`）的项，`sizeInvariance` 不当它进白名单 —— 尺寸跨采样变化
-仍判 `size-not-invariant`。**只对几何尺寸（宽/高）分档，字号/圆角/描边/点击区永不参与。**
+仍判 `size-not-invariant`。**`sizeVariants` 只对几何尺寸（宽/高）分档**——`sizeInvariance` 只审计
+几何尺寸。**字号、圆角、描边不经 `sizeVariants` / `sizeInvariance`**：它们是样式恒量（`typeFacts`），
+各自照稿溯源；**iPhone 与 iPad 的字号可以相同，也可以不同**，二者没有强关联。唯一不随稿动的
+是**平台硬下限**（最小点击区 ≥44pt / 48dp），那是可访问性规范，不是设计值。
+
+**设备维度与宽度档正交。** 声明 `sizeVariants` 时，`windowSamples` 必须覆盖 `phone` 与 `tablet`
+两个设备平台（由 `deviceClass` / id 前缀 / 机型名推断），否则「跨平台分档」无可指认的两个平台，
+也无法判定「同设备内是否仍然不变」—— `check_adaptive_layout.py` 判
+`size-variants-without-device-coverage`。
 
 判定分两档，与 `layoutProportions` 同形：**计划怎么声明，源码就得怎么实现**。
 声明 `max-content-width` 的区域源码里没有封顶原语、声明 `grid` 的区域写了固定列数、

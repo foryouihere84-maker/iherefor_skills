@@ -527,10 +527,128 @@ def check_design_constants(plan) -> list:
     return problems
 
 
+def check_type_facts(plan, page_facts) -> list:
+    """样式恒量（字号/字体/颜色/描边/圆角）必须带 page-facts 元素溯源。
+
+    这是「权威来自 DOM」的可执行版本。以前的漏洞是：布局门只盯几何关系（kind/of/basis），
+    字号颜色这些值落在 Agent 写码的字面量上，没有任何门核对「它是不是从渲染 DOM 抄来的」。
+    于是偷懒的形态是「编一个 fontSize=14 让四个门全绿」。``typeFacts`` 强制每条样式恒量
+    声明它来自 ``page-facts.json`` 的哪个元素，门 0 在这里核它。
+
+    分两层：
+
+    1. **结构核**（不读 page-facts 也能做）：``typeFacts`` 是否存在、每条是否带整数
+       ``elementIndex``、``kindSource`` 是否就是 ``"page-facts"``。
+    2. **引用核**（给了 ``--page-facts`` 才做）：``elementIndex`` 是否落在元素下标范围内，
+       以及该元素是否具备这条记录所声明的样式类型（文本记录要落在 ``ownsText`` 元素上、
+       描边记录要落在 ``border.widthPx > 0`` 的元素上）。
+
+    只对「应当有样式事实」的区域提要求：本函数无法知道哪条区域是文字/描边区域，所以
+    结构核只罚「写了 typeFacts 但形状非法」，不罚「整页一条 typeFacts 都没有」——那一条
+    由调用方（计划必需性检查）用 region 里的文本标记来决定是否需要警告。
+    """
+    problems = []
+    facts = plan.get("typeFacts")
+    if facts is None:
+        # 计划里压根没有 typeFacts：这是「没做样式溯源」。
+        # 是否算违规取决于计划里有没有文字/描边区域，调用方根据 region 里的
+        # nativeIdiom/关系类型来判；这里先记一条可降级的告警（kind 前缀 fact-*）。
+        return problems  # 缺失由上层 decide_typefacts_required 判，这里只查「有但非法」
+    if not isinstance(facts, list):
+        return [{"kind": "bad-type-facts",
+                 "detail": f"typeFacts 必须是数组，收到 {type(facts).__name__}"}]
+    element_indexes = None
+    elements = None
+    if page_facts is not None:
+        elements = page_facts.get("elements") or []
+        element_indexes = {e.get("index") for e in elements if isinstance(e, dict)}
+    for item in facts:
+        if not isinstance(item, dict):
+            problems.append({"kind": "bad-type-facts",
+                             "detail": f"typeFacts 条目必须是对象，收到 {type(item).__name__}"})
+            continue
+        region = item.get("region")
+        if not (isinstance(region, str) and region.strip()):
+            problems.append({"kind": "fact-missing-region",
+                             "detail": f"typeFacts 条目缺 region：{item!r}"})
+        idx = item.get("elementIndex")
+        if isinstance(idx, bool) or not isinstance(idx, int):
+            problems.append({
+                "kind": "fact-missing-element-index",
+                "detail": f"region={region!r} 的 elementIndex 必须是整数（指向 page-facts "
+                          f"elements[] 的下标），收到 {idx!r}；没有它就没法证明这个值来自渲染 DOM"})
+        kind_source = item.get("kindSource")
+        if kind_source != "page-facts":
+            problems.append({
+                "kind": "fact-not-from-page-facts",
+                "detail": f"region={region!r} 的 kindSource 必须是 \"page-facts\"（证明这个样式"
+                          f"恒量来自渲染 DOM 实测），收到 {kind_source!r}；写成别的一律视为"
+                          "「没有从 DOM 抄值」，等于承认是拍脑袋编的"})
+        # 引用核：只在给了 page-facts 时做
+        if element_indexes is not None and isinstance(idx, int):
+            if idx not in element_indexes:
+                problems.append({
+                    "kind": "fact-element-index-out-of-range",
+                    "detail": f"region={region!r} 的 elementIndex={idx} 不在 page-facts.elements"
+                              f" 的下标范围内（0..{max(element_indexes) if element_indexes else -1}）："
+                              "引用了一个不存在的元素，溯源无效"})
+            else:
+                el = next((e for e in (elements or [])
+                           if isinstance(e, dict) and e.get("index") == idx), None)
+                if el is not None:
+                    has_text = bool(el.get("ownsText"))
+                    border_px = (el.get("border") or {}).get("widthPx", 0)
+                    declares_text = isinstance(item.get("fontSize"), (int, float))
+                    declares_border = isinstance(item.get("borderWidth"), (int, float)) and item.get("borderWidth", 0) > 0
+                    if declares_text and not has_text:
+                        problems.append({
+                            "kind": "fact-text-on-non-text-element",
+                            "detail": f"region={region!r} 声明了 fontSize，但 elementIndex={idx} "
+                                      "对应元素没有 ownText（不是文本元素）；「用空容器顶文本」"
+                                      "说明溯源是拼凑的，不是真读到文字样式"})
+                    if declares_border and not border_px:
+                        problems.append({
+                            "kind": "fact-border-on-unbordered-element",
+                            "detail": f"region={region!r} 声明了 borderWidth>0，但 elementIndex={idx} "
+                                      "对应元素 border.widthPx=0；描边值声明与 DOM 事实不符"})
+    return problems
+
+
+def decide_typefacts_required(regions, plan, page_facts) -> list:
+    """给了 page-facts 时，计划里存在文本/描边区域却一条 typeFacts 都没有，判违规。
+
+    这里只负责「漏整块」的必填性，且**只在权威数据已就绪（page-facts 已传）时判**。
+    判据不靠区域名猜（那会误伤无文字的老计划），而是看**真实的文本元素**：page-facts
+    里有多少元素 ``ownsText`` 或 ``border.widthPx > 0``。这些元素是「样式恒量该有溯源」
+    的客观存在 —— 计划没给 typeFacts，等于权威数据明明在、却一条都不引用，这就是偷懒。
+
+    没有 page-facts 时调用方不调用本函数（必填性无从可靠判断）。
+    """
+    facts = plan.get("typeFacts")
+    if isinstance(facts, list) and len(facts) > 0:
+        return []
+    elements = (page_facts or {}).get("elements") or []
+    texty = sum(1 for e in elements if isinstance(e, dict) and e.get("ownsText"))
+    bordered = sum(1 for e in elements
+                   if isinstance(e, dict) and (e.get("border") or {}).get("widthPx", 0) > 0)
+    total = texty + bordered
+    if total == 0:
+        return []  # 页面上本就没有文本/描边元素，谈不上样式溯源
+    return [{
+        "kind": "fact-source-missing",
+        "detail": f"page-facts 里有 {texty} 个文本元素、{bordered} 个描边元素，但计划 typeFacts "
+                  "缺失或为空：样式恒量（字号/字体/颜色/描边）必须带 page-facts 元素溯源，"
+                  "否则「权威来自 DOM」没有可执行抓手，Agent 编个 fontSize 也能过门。"
+                  "权威数据已就绪却不引用，正是「跳过 DOM 解析」的形态。"
+                  "详见 artifact-contract.md 的 typeFacts 一节。"
+    }]
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--plan", required=True, help="含 layoutProportions 的实现计划")
+    ap.add_argument("--page-facts", help="页面级 page-facts.json，用于核对 typeFacts 的 elementIndex 引用")
     ap.add_argument("--source", action="append",
                     help="原生源码文件或目录，可重复；--plan-only 时不需要")
     ap.add_argument("--plan-only", action="store_true",
@@ -569,6 +687,21 @@ def main() -> int:
     violations.extend(check_bases(plan.get("regions") or []))
     violations.extend(check_forbidden_targets(plan))
     violations.extend(check_design_constants(plan))
+
+    # 样式恒量（typeFacts）溯源：与 page-facts 交叉核对「权威来自 DOM」有没有可执行抓手。
+    # typeFacts 在顶层 plan（plan_payload），不在内层 layoutProportions（plan）。
+    page_facts = None
+    if args.page_facts:
+        page_facts = load_json(args.page_facts)
+        if page_facts is None:
+            print(f"--page-facts 读取失败，跳过 typeFacts 引用核（只做结构核）：{args.page_facts}",
+                  file=sys.stderr)
+    top = plan_payload if isinstance(plan_payload, dict) else {}
+    violations.extend(check_type_facts(top, page_facts))
+    # 必填性只判「给了 page-facts」的场景：那时权威数据已就绪、不引用=偷懒。
+    # 没给 page-facts 时无法可靠判断哪些区域该有 typeFacts，判必填会误伤无文字的老计划。
+    if page_facts is not None:
+        violations.extend(decide_typefacts_required(plan.get("regions") or [], top, page_facts))
 
     allow_values = []
     for token in (args.allow_values or "").split(","):

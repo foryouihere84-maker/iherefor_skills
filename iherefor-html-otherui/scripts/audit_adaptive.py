@@ -74,16 +74,52 @@ def overlaps(a, b):
                 or a['y'] + a['height'] <= b['y'] or b['y'] + b['height'] <= a['y'])
 
 
+# 「设备平台」维度（phone/tablet）与「窗口宽度档」（compact/medium/expanded）是**正交**的：
+# 前者回答「照哪套稿的尺寸/字号」，后者回答「父视图变宽时内容怎么收敛」。
+# sizeInvariance 的「尺寸不缩放」铁律作用域是**同一设备内**——同一台 phone 的多个宽度采样、
+# 或同一台 tablet 的多个宽度采样之间，fixed 尺寸必须逐字相等；跨设备（phone vs tablet）
+# 的差异才允许走 sizeVariants 分档（此时有 xx 与 xx-iPad 两份稿，照各自稿还原）。
+DEVICE_CLASSES = ('phone', 'tablet')
+
+
+def infer_device_class(sample_id, device, device_class):
+    """推断采样的「设备平台」（phone / tablet），优先级从高到低：
+
+    1. 显式 ``deviceClass``（phone / tablet）—— 最权威；
+    2. ``sample_id`` 前缀（``phone-*`` / ``tablet-*`` / ``pad-*`` / 含 ``ipad``）；
+    3. 具体设备型号名（``device`` 字段，如 ``iPhone 17`` / ``iPad Pro ...``）。
+
+    三者都没有时返回 ``None`` —— 此时 sizeInvariance 退化为「全采样一致」的旧口径，
+    向后兼容没有声明设备维度、也没有用 phone-/tablet- 前缀命名的老素材。
+    """
+    if device_class in DEVICE_CLASSES:
+        return device_class
+    sid = (sample_id or '').lower()
+    if 'phone' in sid:
+        return 'phone'
+    if 'tablet' in sid or sid.startswith('pad') or 'ipad' in sid:
+        return 'tablet'
+    if isinstance(device, str):
+        dev = device.lower()
+        if 'iphone' in dev or 'pixel' in dev or 'galaxy' in dev or 'android phone' in dev:
+            return 'phone'
+        if 'ipad' in dev or 'tablet' in dev or 'fold' in dev or 'android tablet' in dev:
+            return 'tablet'
+    return None
+
+
 class Sample:
     """一个宽度采样的几何转储。"""
 
-    def __init__(self, sample_id, width_class, window, document, path, platform=None):
+    def __init__(self, sample_id, width_class, window, document, path,
+                 platform=None, device=None):
         self.id = sample_id
         self.width_class = width_class
         self.window = window
         self.document = document
         self.path = path
         self.platform = platform
+        self.device = device
         self.elements = [item for item in (document.get('elements') or [])
                          if isinstance(item, dict)]
         self.by_id = {element_id(item): item for item in self.elements}
@@ -171,8 +207,10 @@ def resolve_samples(targets, geometry_overrides, base_dir):
         width_class = (entry.get('widthClass')
                        or document.get('widthClass')
                        or 'compact')
+        device = infer_device_class(sample_id, entry.get('device'),
+                                    entry.get('deviceClass'))
         samples.append(Sample(sample_id, width_class, window, document, str(path),
-                              entry.get('platform') or platform))
+                              entry.get('platform') or platform, device))
     return samples, failures, warnings
 
 
@@ -279,15 +317,23 @@ def check_sample_coverage(samples, required_ids, missing):
 
 
 def check_size_invariance(samples, kinds, size_variants, tolerance):
-    """同一 ``fixed`` 元素在全部采样上点值必须逐字相等 —— 本审计最有价值的一项。
+    """同一 ``fixed`` 元素在**同一设备**的全部采样上点值必须逐字相等。
 
-    唯一合法例外：``adaptiveLayout.sizeVariants`` 里**逐档声明、附稿依据**的尺寸分档。
-    同一设计存在多设备稿（``xx`` 与 ``xx-iPad``）时，iPad 档照 iPad 稿还原尺寸是合规的；
-    但没有 declaration 支撑的「尺寸随窗口变」就是整页等比放大那类缺陷，仍判违规。
+    「尺寸不缩放」的作用域是**设备平台**，不是「跨所有采样全局一致」：
+
+    - **同设备内**（phone 的多个宽度采样 / tablet 的多个宽度采样之间）：尺寸必须逐字
+      相等，**``sizeVariants`` 也不能豁免** —— 这是铁律。一份 iPhone 稿在手机不同宽度档
+      之间尺寸不变、一份 iPad 稿在 iPad 不同宽度档之间尺寸不变。
+    - **跨设备**（phone vs tablet）：差异允许，但必须走 ``adaptiveLayout.sizeVariants``
+      逐档声明（此时有 ``xx`` 与 ``xx-iPad`` 两份稿，照各自稿还原，不是「把手机稿放大」）。
+
+    没有声明设备维度（``device``/``deviceClass``，也无法从 id / 机型推断）的老素材，
+    退化回「全采样一致」的旧口径，行为不变。
     """
     compared = 0
     problems = []
     by_id = {}
+    device_of_sample = {sample.id: sample.device for sample in samples}
     for sample in samples:
         for element in sample.elements:
             if resolve_kind(element, kinds) != 'fixed':
@@ -298,12 +344,38 @@ def check_size_invariance(samples, kinds, size_variants, tolerance):
             by_id.setdefault(element_id(element), {})[sample.id] = rect
     for name, per_sample in sorted(by_id.items()):
         compared += 1
+        # ① 同设备内：尺寸必须逐字相等，sizeVariants 也不豁免（「平台内不变」是铁律）。
+        device_groups = {}
+        for sample_id, rect in per_sample.items():
+            device_groups.setdefault(device_of_sample.get(sample_id), {})[sample_id] = rect
+        within_violation = None
+        for device, group in sorted(device_groups.items(), key=lambda kv: (kv[0] is None, str(kv[0]))):
+            if device is None:
+                continue
+            widths = {sample_id: rect['width'] for sample_id, rect in group.items()}
+            heights = {sample_id: rect['height'] for sample_id, rect in group.items()}
+            spread_w = max(widths.values()) - min(widths.values())
+            spread_h = max(heights.values()) - min(heights.values())
+            if spread_w <= EXACT_EPSILON and spread_h <= EXACT_EPSILON:
+                continue
+            within_violation = failure(
+                'size-not-invariant-within-device',
+                f'{name} 是 fixed 元素，但在同一设备 {device!r} 的多个宽度采样之间尺寸不一致：'
+                f'宽 {widths}、高 {heights}。「尺寸不缩放」的作用域是设备平台 —— '
+                '同一台手机 / 同一台平板的各个宽度档之间尺寸必须逐字相等，'
+                'sizeVariants 不能豁免这条（它只许跨平台分档）',
+                element=name, device=device, widths=widths, heights=heights,
+                maxSpreadPt=round(max(spread_w, spread_h), 4))
+            break
+        if within_violation:
+            problems.append(within_violation)
+            continue
+
+        # ② 跨设备（或未声明设备维度）：整体检查，允许 sizeVariants 分档。
         widths = {sample_id: rect['width'] for sample_id, rect in per_sample.items()}
         heights = {sample_id: rect['height'] for sample_id, rect in per_sample.items()}
-        base_width = max(widths.values())
-        base_height = max(heights.values())
-        spread_w = base_width - min(widths.values())
-        spread_h = base_height - min(heights.values())
+        spread_w = max(widths.values()) - min(widths.values())
+        spread_h = max(heights.values()) - min(heights.values())
         if spread_w <= EXACT_EPSILON and spread_h <= EXACT_EPSILON:
             continue  # 各采样逐字相等，合规
 
@@ -316,9 +388,8 @@ def check_size_invariance(samples, kinds, size_variants, tolerance):
             'size-not-invariant',
             f'{name} 是 fixed 元素，但尺寸在各采样间不一致：'
             f'宽 {widths}（差 {spread_w:.2f}pt）、高 {heights}（差 {spread_h:.2f}pt）。'
-            '尺寸是常量，不得随窗口缩放 —— 平板适配里最典型的缺陷就是整页等比放大。'
-            '若这是「多设备稿照稿还原」的合法分档，必须在 adaptiveLayout.sizeVariants '
-            '里逐档声明尺寸并附 basis 与 why',
+            '尺寸是常量，不得随窗口缩放。若这是「多设备稿照稿还原」的合法跨平台分档，'
+            '必须在 adaptiveLayout.sizeVariants 里逐档声明尺寸并附 basis 与 why',
             element=name, widths=widths, heights=heights,
             maxSpreadPt=round(max(spread_w, spread_h), 4)))
     return {'status': 'fail' if problems else 'pass', 'compared': compared,

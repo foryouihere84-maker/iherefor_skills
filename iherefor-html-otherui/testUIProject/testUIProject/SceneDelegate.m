@@ -2,16 +2,13 @@
 //  SceneDelegate.m
 //  testUIProject
 //
-//  The root screen is the brush selection page: it is the step the subscription flow
-//  reaches after the style/age questions, so it is what the window shows on launch.
+//  The root screen is a navigation controller whose root is ViewController: a list of
+//  every page in the project. Tapping a cell pushes the matching view controller.
 //  Only the owner of the window moved from AppDelegate to the scene delegate.
-//
-//  There is no coordinator/router layer in this sample project, so the entry screen is
-//  picked here. Switching screens means re-assigning this one property.
 //
 
 #import "SceneDelegate.h"
-#import "PurposeSelectionViewController.h"
+#import "ViewController.h"
 
 @implementation SceneDelegate
 
@@ -24,7 +21,11 @@
     UIWindowScene *windowScene = (UIWindowScene *)scene;
     self.window = [[UIWindow alloc] initWithWindowScene:windowScene];
     self.window.frame = windowScene.coordinateSpace.bounds;
-    self.window.rootViewController = [PurposeSelectionViewController new];
+    // 根控制器改为「工程页清单」：ViewController 是一个列表，
+    // 列出所有页面，点击任意一行 push 到对应视图。
+    ViewController *root = [[ViewController alloc] init];
+    UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:root];
+    self.window.rootViewController = nav;
     [self.window makeKeyAndVisible];
 }
 
