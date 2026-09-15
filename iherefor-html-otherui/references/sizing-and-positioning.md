@@ -219,19 +219,17 @@
       `gateReachability` 并记 `pass-with-review`，**不是**去改字号 / 行高 / 整体缩放
       来把这个数字压下去。
 
-## 8. 实现现状（`schemaVersion 3`，已与本文规范对齐）
+## 8. 规范条款与实现落点对照
 
-本文原本是「目标规范」而实现落后。**`schemaVersion 3` 起缺口已补齐**，两侧一一对应：
-
-| 规范条款 | 落点 | 现状 |
-|---|---|---|
-| §3.1 基准 = 直接父视图 | `page-facts.json` 的 `parentIndex` / `parentHops` / `positioningContextIndex` | 已提供（`parentIndex == null` 表示直接父即整屏画布，这是 `of: "root"` 唯一的适用场景） |
-| §2 尺寸轴三类 | `layout_proportions.py` 产出的 `relations[].kind` | 已扩为 `fixed` / `pinned` / `proportional` / `intrinsic` / `centered` 五档；`model` 为 `fixed-size-parent-relative-position` |
-| §3.1 每个区域声明基准 | region 的 `basis` / `parentIndex` / `parent` | 已产出；`basis` 与 `of` 都指向直接父视图 |
-| §6 反例清单 | `forbiddenLiterals` | 只收 **`proportional`** 关系的值 —— `fixed` 的 44/68/48、`pinned` 的 23/25、设计常量 12/1/44 都**应当**写成字面量 |
-| §2 逐类判据 | `check_layout_proportions.py` | 按 `kind` 逐类核对；并有 `forbidden-targets-non-proportional` 拦反向错误（把本该字面量的值报成违规） |
-| §7 交付前清单 | `validate_run.py --source` | 连同布局约束一起判 |
-| §2.2 字号不缩放 ⇒ 文字类结构差异存在物理下界 | `ui-implementation-plan.json` 的 `gateReachability` + `compare_reference.py --expected-structural-floor` + `validate_run.py` 的 `check_gate_reachability` | 已提供：下界由**计划**声明（比较器不自己给），比较器按它判 `pass-with-review` / `structural-within-declared-floor`，校验器做计划↔结论三条交叉核对 |
+| 规范条款 | 落点 |
+|---|---|
+| §3.1 基准 = 直接父视图 | `page-facts.json` 的 `parentIndex` / `parentHops` / `positioningContextIndex`（`parentIndex == null` 表示直接父即整屏画布，这是 `of: "root"` 唯一的适用场景） |
+| §2 尺寸轴三类 | `layout_proportions.py` 产出的 `relations[].kind`，五档 `fixed` / `pinned` / `proportional` / `intrinsic` / `centered`；`model` 为 `fixed-size-parent-relative-position` |
+| §3.1 每个区域声明基准 | region 的 `basis` / `parentIndex` / `parent` —— `basis` 与 relation 的 `of` 都指向直接父视图，只是分处 region 级与 relation 级，不是两个基准 |
+| §6 反例清单 | `forbiddenLiterals` —— 只收 **`proportional`** 关系的值；`fixed` 的 44/68/48、`pinned` 的 23/25、设计常量 12/1/44 都**应当**写成字面量 |
+| §2 逐类判据 | `check_layout_proportions.py` 按 `kind` 逐类核对，并有 `forbidden-targets-non-proportional` 拦反向错误 |
+| §7 交付前清单 | `validate_run.py --source` |
+| §2.2 字号不缩放 ⇒ 文字类结构差异存在物理下界 | `ui-implementation-plan.json` 的 `gateReachability` + `compare_reference.py --expected-structural-floor` + `validate_run.py` 的 `check_gate_reachability`。下界由**计划**声明（比较器不自己给），校验器做计划↔结论的交叉核对 |
 
 **反向错误与正向错误一样要拦。** 两轴口径下最容易犯的错不是「漏报」而是「误报」：
 把 `offers.height = 68`、`cta.x = 25` 这类**本来就该照原值写**的设计值当成「没做成比例」而报违规。
@@ -239,12 +237,5 @@
 `≤ 48pt` 与常见设计常量无法区分，只列进 `ambiguousLiterals` 待确认 ——
 但这只是**量级**判据，与 `kind` 判据正交：计划说 `pinned`，25pt 就是应当写的内边距。
 
-改动曾同时触及生成端、检查端、`evals/fixtures/**` 的样本、
-`scripts/tests/test_layout_proportions.py` 的回归用例与 `scripts/tests/mutation_probe.py` 的探针，
-属**契约级变更**，已在一次改动里同步完成。这条经验值得保留：契约级变更若分次做，
-中间态就会出现「文档说固定、脚本仍要求比例」的自相矛盾 —— 这类矛盾比缺功能更有害，
-因为它让每一条告警都变得不可信。
-
-**读者如何自辨代际**：`schemaVersion < 3` 的 `layout-proportions.json` / `layout-verdict.json`
-是旧的一轴口径（非文字元素一律 `proportional`、位置一律 `of: "root"`、`kind` 只有两档），
-不能当作本契约的样例。
+> **产物代际**：`schemaVersion < 3` 的 `layout-proportions.json` / `layout-verdict.json` 是旧的一轴
+> 口径（非文字元素一律 `proportional`、位置一律 `of: "root"`、`kind` 只有两档），不能当作本契约的样例。

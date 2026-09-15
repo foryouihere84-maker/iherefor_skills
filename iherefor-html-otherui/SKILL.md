@@ -7,6 +7,12 @@ description: 将 Lanhu 导出的可运行 HTML/CSS/JS 页面作为视觉基准�
 
 本 skill 面向“视觉还原优先”的 Lanhu 页面落地。输入是 Lanhu 缓存中完整的 HTML、CSS、JS 和资源，而不是仅依赖 Lanhu 结构化图层 JSON。目标是由 Agent 针对所选原生技术栈编写生产代码，并通过浏览器基准截图、目标 App 截图和编译测试形成闭环。
 
+## 文档约定
+
+- 标 **「强制」** 的小节，以及含「不得 / 禁止」的条目，是**硬约束**：违反即由闸门或校验脚本判 `fail`。例外只在原文显式写出。
+- 用「应当 / 优先」表述的是**默认做法**：偏离时必须在实现计划或 `review.json` 里写明理由。
+- 本文件只保留规则与判据。推演过程、反例清单与实测数据在 `references/` 中，需要时按文末索引去读，不要凭印象实现。
+
 ## 支持的输出模式
 
 每次任务必须显式选择一个或多个目标模式，不得把不同平台的代码机械地复制成同一套组件：
@@ -26,42 +32,35 @@ description: 将 Lanhu 导出的可运行 HTML/CSS/JS 页面作为视觉基准�
 4. 不得因为某个 CSS/JS 特性无法等价映射而静默删除；必须写入 `unsupported` 并进入交付报告。
 5. 目标平台可以使用不同的组件树和布局策略；相同的是视觉目标，不是源代码形状。
 6. 生成代码必须经过目标平台编译和截图验证，不能以“代码生成完成”代替视觉完成。
-7. **约束策略不是「整页等比缩放」，而是两条独立的轴：尺寸固定、位置相对父视图。**
-   - **尺寸轴**：控件尺寸（按钮、文字、图标等）必须与设计稿保持**固定的绝对大小**，
-     不随屏幕或容器比例缩放。判据是「这个值由谁闭合」：设计稿给出封闭值的用 `fixed`（字面设计值）；
-     由与父视图的约束闭合的用 `pinned`（等值锚点 + 固定边距，**不带比例系数**）；
-     由文字/图片决定的用 `intrinsic`。字号、圆角、描边、最小点击区一律取设计值。
-   - **位置轴**：位置由**父子视图层级关系**确定，基准是**直接父视图**而非页面根；
-     父容器为整块屏幕画布时，位置参照该父容器（屏幕内容区，扣除安全区）。嵌套情形逐层递推。
-   - `proportional` 只用于**确实**随父容器成比例变化的关系，且必须给出理由；它不是默认项。
-   - 组件之间的布局关系仍须遵循设计稿，不得写成「探针设备上换算出来的绝对值」——
-     但这条约束管的是**位置与间距**，不适用于**控件尺寸**。
-   - 完整规范见 [references/sizing-and-positioning.md](references/sizing-and-positioning.md)，
-     布局比例的字段契约见 [references/artifact-contract.md](references/artifact-contract.md#布局关系与控件尺寸的约束口径强制)。
+7. **约束策略不是「整页等比缩放」，而是两条独立的轴：尺寸固定、位置相对父视图。** 完整口径见下一节「尺寸与定位契约（强制）」。
 
 ## 尺寸与定位契约（强制）
 
 **尺寸是常量，位置是约束。** 把整页当成一张图去缩放，等于把「设计稿恰好 393pt 宽」这个偶然事实
 提升成布局规则：每个尺寸都被乘上屏幕相关系数，44pt 的点击区在窄屏缩成 40pt，字号缩放破坏排版。
-而设备之间本来就不等比（`393×852 → 402×874` 两轴比例分别是 `1.0229` 与 `1.0258`），
-「等比」不是可选策略，而是一个不存在的东西。
-
-Lanhu 画布只有一个尺寸：`lanhuY = 132` 换算成 `132 * 1.0229 = 135.02pt` 之后写成字面量，
-就把这个关系钉死在探针设备上了 —— 换台设备它就是错的，而它「有算过」，比一眼可疑的魔数更难发现。
+设备之间本来就不等比（`393×852 → 402×874` 两轴比例分别是 `1.0229` 与 `1.0258`），
+「等比」不是可选策略，而是一个不存在的东西。因此 `lanhuY = 132` 换算成 `135.02pt` 再写成字面量，
+就是把布局钉死在探针设备上 —— 换台设备它就是错的，而它「有算过」，比一眼可疑的魔数更难发现。
 
 实现计划必须给出 `layoutProportions`（每个区域的 `ratios` 与逐条 `relations`），
-每条关系声明 `kind` 与位置基准 `of`：
+每条关系声明 `kind` 与位置基准 `of`。判据是**「这个值由谁闭合」**：
 
 - `fixed` —— 设计稿给出封闭值的控件尺寸，写成字面设计值。**不参与任何比例缩放。**
 - `pinned` —— 值由与父视图的约束闭合（贴边、占满、等分）。写成约束，不写比例系数：
   「左右各 16pt」是 `leading = parent.leading + 16`，不是 `width = parent.width * 0.9186`
   （后者在 430pt 宽的设备上给出 13.7pt 边距，而设计稿说的是 16pt）。
 - `intrinsic` —— 必须给出 `why`，说明为什么这个量由内容决定（文本撑开、自适应图片）。
-- `proportional` —— 必须用比例表达，且基准是**父视图**不是整页。iOS 用 `multiplier` /
+- `proportional` —— 只用于**确实**随父容器成比例变化的关系，必须给出理由；它不是默认项。
+  必须用比例表达，且基准是**父视图**不是整页。iOS 用 `multiplier` /
   `UILayoutGuide`，SwiftUI 用 `GeometryReader`，Compose 用 `BoxWithConstraints` 派生比例或 `weight`，
   Views/XML 用 `layout_constraintGuide_percent` / `bias` / `layout_weight`。
-- 位置基准 `of` 默认是**直接父视图**；仅当直接父视图就是整屏画布时才写 `"root"`。
-  基准确认不了的要留痕待确认，不许默认填 `root`。
+- `centered` —— 居中或与兄弟元素对齐的锚点关系（`centerX` / `centerY` / `baseline` 相等）。
+
+位置基准 `of` 默认是**直接父视图**；仅当直接父视图就是整屏画布时才写 `"root"`。
+基准确认不了的要留痕待确认，不许默认填 `root`。
+
+组件之间的布局关系仍须遵循设计稿，不得写成「探针设备上换算出来的绝对值」——
+但这条约束管的是**位置与间距**，不适用于**控件尺寸**（尺寸一律取设计值）。
 
 **第一层子视图（直接父视图 = 页面/page）的位置按页面比例重排，这是设备尺寸 ≠ 设计稿尺寸时**
 **的自适应核心：**
@@ -73,9 +72,7 @@ Lanhu 画布只有一个尺寸：`lanhuY = 132` 换算成 `132 * 1.0229 = 135.02
 - 第一层 → 第二层（及更深）的**相对关系固定**：第二层的位置基准是它的直接父视图（某个第一层元素），
   不是页面。只有第一层这一档按页面比例，往下不再套。
 - 背景（`.page` 外框）按 `pinned + fullBleed` 四边铺满，与第一层子视图按比例重排是两回事：
-  前者是背景容器的铺满，后者是前景组件的重排，两者共同构成「大屏上既不露背景边、也不左右错位」
-  的适配结果。完整分层口径见
-  [references/sizing-and-positioning.md](references/sizing-and-positioning.md#311-第一层子视图位置按页面比例重排设备尺寸--设计稿尺寸时的适配核心)。
+  前者是背景容器的铺满，后者是前景组件的重排。
 
 `scripts/layout_proportions.py` 由事实表与设备尺寸生成这份声明与「探针设备上算出来的绝对值」
 清单；`scripts/check_layout_proportions.py` 按声明逐条核对源码，**计划驱动而非正则扫描** ——
@@ -83,18 +80,17 @@ Lanhu 画布只有一个尺寸：`lanhuY = 132` 换算成 `132 * 1.0229 = 135.02
 `proportional` 才要求比例表达），这样才不会把圆角 12、边距 16、按钮高 44
 这些**本来就该写成字面量**的设计常量误报成违规。
 
-> **口径状态（`schemaVersion 3` 起已落地，不再有「规范领先于实现」的缺口）**
-> 生成端、检查端、回归用例、变异探针与 evals 样本已同批改完：
-> `page-facts.json` 带 `parentIndex` / `parentHops` / `positioningContextIndex`；
-> `layout_proportions.py` 产出 `model: "fixed-size-parent-relative-position"`，每个区域带
-> `basis` / `parentIndex` / `parent`，`kind` 五档齐全；
-> `check_layout_proportions.py` 按 `kind` 逐类判据核对，并把「声明 `fixed` / `pinned` 的值
-> 却被当成违规」列为反向错误。
-> **拿到 `schemaVersion < 3` 的产物说明它还是旧的一轴口径**（非文字元素一律 `proportional`、
-> 位置一律 `of: "root"`、`kind` 只有两档），不能当作本契约的样例。
-> 这类改动属**契约级变更**，必须一次改完 —— 不允许留下「文档说固定、脚本仍要求比例」的
-> 自相矛盾，那会让每一条告警都失去可信度。落地推演与归入表见
-> [references/sizing-and-positioning.md](references/sizing-and-positioning.md)。
+判定分两档：数值 > 48pt 的字面量不可能是手选的设计常量，判违规；≤ 48pt 与常见设计常量无法区分，
+只列进 `ambiguousLiterals` 待人工确认，不计入违规。比这两档更硬的一层是**计划怎么声明，源码就得
+怎么实现**：声明 `proportional` 的位置写成探针设备上的绝对值、声明 `pinned` 的贴边却带上比例系数、
+声明 `intrinsic` 却不给理由，都会被拦下；反过来，声明 `fixed` 的尺寸和声明 `pinned` 的内边距本来
+就该写成字面量，报成违规才是错。
+
+完整推演与反例清单见 [references/sizing-and-positioning.md](references/sizing-and-positioning.md)，
+字段契约见 [references/artifact-contract.md](references/artifact-contract.md#布局关系与控件尺寸的约束口径强制)。
+
+> **产物代际**：`schemaVersion < 3` 的 `layout-proportions.json` / `layout-verdict.json` 是旧的一轴
+> 口径（非文字元素一律 `proportional`、位置一律 `of: "root"`、`kind` 只有两档），不能当作本契约的样例。
 
 ```bash
 # 第 2 步：生成布局约束规格（rect 的坐标空间由 rectInReference == rect*dpr 自动判定，判不出就拒绝继续）
@@ -108,13 +104,6 @@ python3 scripts/check_layout_proportions.py --plan <run>/ui-implementation-plan.
 # 交付前：连同布局约束一起判（不给 --source 就只告警，不假装验证过）
 python3 scripts/validate_run.py --run <run-dir> --source <原生源码根>
 ```
-
-判定分两档，理由是要**准**而不是要响：数值 > 48pt 的字面量不可能是手选的设计常量，判违规；
-≤ 48pt 时与常见设计常量无法区分，只列进 `ambiguousLiterals` 待人工确认，不计入违规。
-但两档之外还有更硬的一层判据 —— **计划怎么声明，源码就得怎么实现**：声明 `proportional`
-的位置写成探针设备上的绝对值、声明 `pinned` 的贴边却带上比例系数、声明 `intrinsic` 却不给
-理由，都会被拦下；反过来，声明 `fixed` 的尺寸和声明 `pinned` 的内边距本来就该写成字面量，
-报成违规才是错。
 
 ### 比例模型与 `fit` 策略必须一致
 
@@ -154,7 +143,7 @@ python3 scripts/validate_run.py --run <run-dir> --source <原生源码根>
 
 1. 资源位置与层级：记录每个图片/SVG/背景资源的 URL、原始尺寸、目标坐标、z-index/stacking context、裁剪和 transform，并建立原生资源映射。每张图片还要记录它在基准图里的**非透明内容 bounds**（`images[].alphaBounds`），因为「frame 对了」不等于「内容对了」。
 2. 元素 bounding box：从运行中的 HTML 读取每个可见区域和关键元素的 `getBoundingClientRect()`，保存为事实表。同时保存 `rectInReference` —— 元素在 `reference.png` 里的像素 rect（`= (rect + scroll) * devicePixelRatio`）。这是「DOM 说元素该在哪」的唯一事实来源；只有 CSS px 的 `rect` 时，任何像素级比对都得各写一遍换算。
-3. 视觉样式：记录最终字体/fallback、字号、行高、颜色、透明度、渐变、阴影、圆角、overflow 和 transform；无法等价表达的属性写入 `unsupported`。字体的「最终」指**运行时实际用上的**字体，不是 CSS 声明的 `fontFamily`：必须记录 `fontsResolved` / `primaryFont`（来自 CDP `CSS.getPlatformFontsForNode`，附 `glyphCount`）与 `textMetrics`（每个文本元素的 `advanceWidth`、`lineHeight`、`rects`）。`document.fonts.check()` 对未安装的字体族也返回 `true`，**不能**用来判断 fallback。
+3. 视觉样式：记录最终字体/fallback、字号、行高、颜色、透明度、渐变、阴影、圆角、overflow 和 transform；无法等价表达的属性写入 `unsupported`。字体的「最终」指**运行时实际用上的**字体，不是 CSS 声明的 `fontFamily`：必须记录 `fontsResolved` / `primaryFont`（来自 CDP `CSS.getPlatformFontsForNode`，附 `glyphCount`）与 `textMetrics`（每个文本元素的 `advanceWidth`、`lineHeight`、`rects`）。判定字体有没有生效见「基准的字体链也要核」一节。
 4. 画布缩放关系：保存 HTML viewport、devicePixelRatio、目标设备 bounds、截图像素尺寸和坐标变换（`policy`、scale、letterbox、inset，以及正向与逆向 mapper）。禁止直接复制另一设备的绝对像素坐标。
 5. 差异证据：每次修改都保存 actual screenshot、diff summary（整页及关键区域）和修改原因；没有 diff 或明确的 `not-run` 原因，不得声称视觉完成。差异必须分类为**结构差异**（几何错位：边缘在两张图里对不上）、**填充差异**（平坦区颜色写错）与**纹理差异**（抗锯齿/字体栅格化：几何一致、只是像素值不同），放行判定只看前两类。
 
@@ -173,7 +162,7 @@ Lanhu 画布坐标不是目标设备坐标。先计算 `scaleX = trueDeviceWidth
 逆向 device → lanhu:  lanhuX  = (targetX - origin.x) / scaleX + letterbox.x
 ```
 
-分析代码（区域 diff、对齐审计、确定性证据生成）必须 import 它。历史上「多乘一层 scaleY」的系统性偏移就来自手写换算，而这类错误在整页 diff 数值上完全看不出来：
+分析代码（区域 diff、对齐审计、确定性证据生成）必须 import 它。手写换算会引入「多乘一层 scaleY」这类系统性偏移，而这类错误在整页 diff 数值上完全看不出来：
 
 ```bash
 python3 scripts/canvas_map.py --runtime-device <run>/runtime-device.json --canvas 393x852
@@ -251,27 +240,20 @@ iOS 必须显式处理 `edgesForExtendedLayout`、`extendedLayoutIncludesOpaqueB
 
 | 门 | 位置 | 成本 | 判什么 |
 |---|---|---|---|
-| 门 0 | 第 2 步写计划时 | **0.12 s**，纯静态 | 计划自身完整：`layoutProportions` 的 `basis` / `parentIndex` / `kind` / `of` 是否齐全 |
-| 门 1 | **第 4 步写码完成后、第 5 步编译之前** | **0.14 s**，纯静态 | 层级与布局关系是否照计划实现（`check_layout_proportions.py --source`） |
-| 门 2 | 第 5 步 | **9.9 s / 轮**（构建 2.3 + 装机 5.5 + 启动 1.6 + 截图 0.5） | 只能靠运行才知道的事：能否编译、能否启动、运行期几何与交互 |
+| 门 0 | 第 2 步写计划时 | 纯静态，秒级 | 计划自身完整：`layoutProportions` 的 `basis` / `parentIndex` / `kind` / `of` 是否齐全 |
+| 门 1 | **第 4 步写码完成后、第 5 步编译之前** | 纯静态，秒级 | 层级与布局关系是否照计划实现（`check_layout_proportions.py --source`） |
+| 门 2 | 第 5 步 | 需编译装机，约 10 s / 轮 | 只能靠运行才知道的事：能否编译、能否启动、运行期几何与交互 |
 | 门 3 | 第 6～7 步 | 秒级 | 三类差异的具名区域归因、扣除已声明差异后的剩余值、交付闸门 |
 
-门 1 是这里唯一被前移的门，也是收益最大的一处：层级与布局关系全部静态可判，
-把它的迭代留在编译之前，编译与截图就只需要发生一次。
+**门 1 是唯一被前移的门，也是收益最大的一处**：层级与布局关系全部静态可判，把它的迭代留在编译之前，
+编译与截图就只需要发生一次。门 1 比门 2 快约 70 倍（实测 0.14 s 对 9.9 s / 轮），
+但真正的收益不是省下这几秒 —— 而是**避免让 Agent 经历一次完整的截图诊断循环**：
+读一张整页截图、形成假设、改码、重跑，那是分钟级，而且可能建立在错误假设上。
+门 1 直接给出 `文件:行号` 与规则名，把「看图猜」换成「读一条定位精确的告警」。
 
-**为什么这个顺序值得坚持（实测，不是估计）**：在 140 条关系 / 47 个源码文件上，
-门 0 = 0.12 s、门 1 = 0.14 s、门 2 一轮 = 9.9 s —— 门 1 比门 2 快约 **70 倍**。
-
-但真正的差距不在这里。把一次真实 run 的产物时间戳切开：验证阶段（计划落盘 → review 完成）
-**29 分 26 秒**，其中可测的机器操作（3 轮构建 + 装机 + 启动 + 截图）合计只有约 **30 秒**。
-也就是说 **98% 的墙钟花在「看截图 → 形成假设 → 改码 → 重跑」的 Agent 循环上，机器只占 2%**。
-
-所以前移门 1 的收益**不是省下那 10 秒构建**，而是**避免让 Agent 经历一次完整的截图诊断循环** ——
-读一张 1206×2622 的图、形成假设、改码、重跑，那是分钟级，而且可能建立在错误假设上。
-门 1 用 0.14 s 直接给出 `文件:行号` 与规则名，把「看图猜」换成「读一条定位精确的告警」。
-
-> **后续优化的方向由此确定：盯「Agent 需要经历几轮推断」，不要盯「构建快几秒」。**
+> **优化方向由此确定：盯「Agent 需要经历几轮推断」，不要盯「构建快几秒」。**
 > 任何新增的检查，先问它能否把某一类问题从「需要截图诊断」降级为「静态告警并给出位置」。
+> 成本结构的实测明细见 [references/feedback-loop.md](references/feedback-loop.md)。
 
 ### 1. 发现、设备探测与参考基准
 
@@ -282,7 +264,7 @@ iOS 必须显式处理 `edgesForExtendedLayout`、`extendedLayoutIncludesOpaqueB
 
 四步都完成后才进入第 2 步。基准图与目标 App 截图像素尺寸不一致时，diff 结果不具证据效力，禁止用缩放/裁剪后的派生图凑尺寸。
 
-**但「尺寸一致」只是同源的必要条件，不是内容对齐的证据。** 一次事故里基准图与实机截图都是 1206×2622、检查全绿，内容却整体差 6–21pt 且偏差随 y 递增。像素尺寸相等证明不了任何东西，必须另外跑一次元素级对齐审计：
+**但「尺寸一致」只是同源的必要条件，不是内容对齐的证据。** 两张图像素尺寸完全相同、整页检查全绿，内容仍可能整体偏移且偏差随 y 递增。像素尺寸相等证明不了任何东西，必须另外跑一次元素级对齐审计：
 
 ```bash
 python3 scripts/audit_alignment.py \
@@ -302,7 +284,7 @@ python3 scripts/audit_alignment.py \
 
 ### 基准的字体链也要核
 
-字体被静默替换时，基准图会「**自洽地错**」：CSS 声明 `AvenirLT-Black`、页面里 `@font-face` 规则数为 0、也没有 generic fallback，Chromium 于是回落到默认衬线字体 Times。DOM 事实表与基准图因为用了同一套回落字体而互相印证 —— 对齐审计的 `domVsReference` 判 `aligned`，于是它把不一致归给 App 侧，而那句结论在它自己的视野内是**对的**。照着它去改 App 的字体，只会离设计稿越来越远。
+字体被静默替换时，基准图会「**自洽地错**」：CSS 声明了某字族、页面里 `@font-face` 规则数为 0、也没有 generic fallback，Chromium 回落到默认衬线字体。DOM 事实表与基准图因为用了同一套回落字体而互相印证 —— 对齐审计的 `domVsReference` 判 `aligned`，于是它把不一致归给 App 侧，而那句结论在它自己的视野内是**对的**。照着它去改 App 的字体，只会离设计稿越来越远。
 
 所以对齐审计之后必须再核一次字体链，**声明 ≠ 结果**：
 
@@ -317,7 +299,7 @@ python3 scripts/audit_fonts.py \
 
 三条判定纪律，都指向同一件事——**闸门要准，不是要响**：
 
-- **族名格式差异不算替换。** `Avenir-Medium`（CSS 写法）与 `Avenir Medium`（CDP 报回的 `familyName`）是同一个族。实测那页 18 个文本元素里 14 个是这种差异，逐字符比会把它们全报成替换，等于把闸门焊死。
+- **族名格式差异不算替换。** `Avenir-Medium`（CSS 写法）与 `Avenir Medium`（CDP 报回的 `familyName`）是同一个族；逐字符比会把这类差异全报成替换，等于把闸门焊死。
 - **系统关键字不算替换。** `-apple-system` / `system-ui` 由平台解析成系统 UI 字体，本来就没有可比对的族名字符串；命中它们却比不相等不构成证据。
 - **没做字体测量的事实表判「证据不足」，不判干净。** 旧 schema 的 `page-facts.json` 没有 `primaryFont`；`fontMeasurement.ok` / `fontJoin.ok` 为 `false` 时元素上残留的字体字段也不能当成本次证据 —— 拿它下结论比没有数据更危险。
 
@@ -325,7 +307,7 @@ python3 scripts/audit_fonts.py \
 
 Agent 必须查看运行中的页面和基准截图，建立页面事实表：可见区域、真实叠层、组件候选、文本、图片/SVG、渐变、阴影、滚动容器、交互状态和不支持特性。不得直接把每个 DOM 节点当成原生组件。页面必须按视觉区域逐一复现（hero、标题/说明、每张卡片、CTA、页脚等），每个区域列出 bounding box、资源/层级、样式事实、原生组件映射和验证截图。
 
-**「文本元素」的判定只有一个：元素自身有直接子文本节点**（事实表里的 `ownsText` / `ownText`）。不要用 `innerText`——它把所有后代文字聚合上来，于是每个容器都变成「幻影文本元素」；一次事故里 34 个元素有 `innerText`、只有 18 个真有直接文本，用它当清单会让字体测量和位置预测都挂在错误的框上。同理 `textMetrics.rects` 只取直接子文本节点（`ownOnlyText: true`），否则一个既有自身文字又有子元素文字的表头会得到一个横跨两者的并集框。**一旦事实表里的文本元素含容器，或 `browser-meta.json` 的 `fontJoin.ok` 为 `false`，这份事实表就不能用于元素级审计，必须重新渲染取一份新的。**
+**「文本元素」的判定只有一个：元素自身有直接子文本节点**（事实表里的 `ownsText` / `ownText`）。不要用 `innerText`——它把所有后代文字聚合上来，于是每个容器都变成「幻影文本元素」，字体测量和位置预测都会挂在错误的框上。同理 `textMetrics.rects` 只取直接子文本节点（`ownOnlyText: true`），否则一个既有自身文字又有子元素文字的表头会得到一个横跨两者的并集框。**一旦事实表里的文本元素含容器，或 `browser-meta.json` 的 `fontJoin.ok` 为 `false`，这份事实表就不能用于元素级审计，必须重新渲染取一份新的。**
 
 ### 3. 目标实现计划
 
@@ -392,10 +374,9 @@ python3 scripts/check_layout_proportions.py --plan <run>/ui-implementation-plan.
 和运行期交互（覆盖式装饰子视图会不会吞掉点击）。层级与布局关系已由门 1 保证，
 所以本门失败时的归因不会发散到「是不是基准错了」。
 
-**编译与截图在整个验证阶段只应发生一次**：门 1 已经用秒级静态核对吸收了布局类迭代，
-这里留在「一次取证」的位置上。若在这里发现的是布局类违规，说明门 1 没跑或没跑全 ——
-补跑门 1，而不是继续在这里试错。这也是「前四步严格」的真实收益所在：它不能让本门消失
-（能编译、能启动、点击可用都无法静态证明），但能让本门只剩不可预测的运行时事实。
+**编译与截图在整个验证阶段只应发生一次**：布局类迭代已由门 1 用秒级静态核对吸收，
+这里留在「一次取证」的位置上。若在这里发现布局类违规，说明门 1 没跑或没跑全 ——
+补跑门 1，而不是继续在这里试错。本门只剩下无法静态证明的事：能不能编译、能不能启动、点击可用。
 
 本门的验收清单（**每一项都必须真跑，不能靠读代码推断**）：
 
@@ -430,9 +411,8 @@ python3 scripts/check_layout_proportions.py --plan <run>/ui-implementation-plan.
 | `textureRatio` | 几何一致、只是像素值不同 —— 字体栅格化、抗锯齿、次像素相位差 | **不参与判定**（这是噪点） |
 
 两类在放行形态上**不对称**：`fillRatio` 超限一律 `fail`（颜色写错永远是缺陷）；`structuralRatio`
-超限时先问它是不是文字类的**物理下界**（基准画布 `scale(1.0229)` 使基准字形 = 设计字号 × 1.0229，
-而字号不得缩放 ⇒ 不可能降到 0），是则按声明的下界放行并做量化归因。把两类同等对待，
-就是「文字密集页永远交付不了」的成因。详见 `references/artifact-contract.md` 的三分法一节。
+超限时先判它是不是文字类的**物理下界**（见「目标实现计划」的 `gateReachability`），是则按声明的
+下界放行并做量化归因。详见 [references/artifact-contract.md](references/artifact-contract.md) 的三分法一节。
 
 不要用 `changedRatio` 判断能不能放行：它把三类混在一起，于是抗锯齿多的页面（HTML 用 Web 字体、App 用系统字体）永远撞上限，而真正错位的图只要背景色接近也可能因为纹理差异低而侥幸通过。结论必须带**区域级**明细（`regions`），整页一个数字看不出偏差随 y 的变化。
 
@@ -446,10 +426,10 @@ python3 scripts/compare_reference.py --reference <page>/reference/reference.png 
 ```
 
 `attribution` 把差异像素按**最小包含元素优先**互斥归属到具名区域，保证
-`Σ(区域 changedPixels) + unattributed == 整页 changedPixels`（互斥且穷尽，不允许一个像素
-被算进两个区域，也不允许悄悄丢掉）。它另外给出 `declaredUnsupported` 与 `residual` ——
-**扣除已声明差异后的剩余值**才是 `review.json` 该引用的数字：整页比值里混着已声明为
-`unsupported` 的差异（系统状态栏、无法等价映射的 CSS 特性），不扣除就说不清「还剩多少是真缺陷」。
+`Σ(区域 changedPixels) + unattributed == 整页 changedPixels`（互斥且穷尽）。它另外给出
+`declaredUnsupported` 与 `residual` —— **`residual`（扣除已声明差异后的剩余值）才是
+`review.json` 该引用的数字**：整页比值里混着已声明为 `unsupported` 的差异（系统状态栏、
+无法等价映射的 CSS 特性），不扣除就说不清「还剩多少是真缺陷」。
 `--page-facts` 缺失或事实表没有 `rectInReference` 时，`attribution.status` 记
 `insufficient-evidence` 并说明原因，**不冒充**「归因完成」。
 
@@ -469,8 +449,8 @@ Agent 修改 canonical 源码后重新编译和截图，直到达到任务指定
   —— 此时记 `pass` 才是诚实的。
 
 这条例外是必需的：没有它，比较器按下界放行了，`deliveryReady` 却永远推导为 `false`，
-文字密集页就**永远交付不了**。反过来，把 `structural-diff-above-warn` 之类写成 `pass`，
-校验脚本会拦下 —— 否则「下界内放行」会变成把所有待复核项一并吞掉的借口。
+文字密集页就永远交付不了。反过来，把 `structural-diff-above-warn` 之类写成 `pass`，校验脚本会拦下。
+**这是 `visualDiff` 升格的唯一例外**，修复闭环与其他文档都不得另立口径。
 
 ## 输出证据
 
@@ -494,11 +474,39 @@ Agent 修改 canonical 源码后重新编译和截图，直到达到任务指定
 
 skill 根目录的 `index.html` 是一个纯静态差异查看器（无需服务器、无外部依赖）：用浏览器打开后选择包含 `.ihereforUI` 的项目目录，它会递归扫描各页面各 run 的 `diff/*.json`，并排展示 reference 与 actual 截图、差异数值与闸门状态。这是用户判定「合格 / 不合格」的入口；判定不合格后的修复流程见 [references/feedback-loop.md](references/feedback-loop.md)。
 
+## 字段速查
+
+改产物前先查这张表，不要在正文里逐段找字段名。完整 schema 见 [references/artifact-contract.md](references/artifact-contract.md)。
+
+| 产物 | 关键字段 |
+|---|---|
+| `page-facts.json` | `elements[]`：`rect`（CSS px）/ `rectInReference`（基准图像素，比对只用它）/ `parentIndex`·`parentHops`·`positioningContextIndex`（层级）/ `ownText`·`ownsText`（文本元素判定）/ `primaryFont`·`fontsResolved`·`textMetrics`；`images[].alphaBounds` |
+| `browser-meta.json` | `fontMeasurement`（`method` / `glyphCountScope`）/ `fontMeasurementCoverage` / `fontJoin.ok`（`false` ⇒ 整份字体数据作废）/ `fontProbe` |
+| `ui-implementation-plan.json` | `canvasTransform.policy` + `coordinateMapper.forward`·`inverse`（**测量用**）；`layoutProportions.regions[].basis`·`parentIndex` + `relations[].kind`·`of`·`why` + `forbiddenLiterals`（**实现用**）；`runtimeRisks`（`interactionCoverage` / `scrollInset` / `systemBars` / `fontAvailability`）；`gateReachability.expectedStructuralFloor` + `unavoidable[].cause`·`measuredShare`；`unsupported` |
+| `runtime-device.json` | 运行时尺寸 API 返回值、根 view bounds、截图像素尺寸、device scale |
+| `diff/comparison.json` | `structuralRatio` / `fillRatio` / `textureRatio` / `changedRatio`；`regions[]`（`row`·`col`·`box`）；`attribution.status`·`declaredUnsupported`·`residual`·`unattributed` |
+| `diff/alignment.json` | `domVsReference`（基准是否可信）/ `referenceVsActual`（App 是否对齐）；`coverage.excludedLowCoverage`；`offsetFit`；`crossCheckRequired`·`crossCheck` |
+| `diff/font-chain.json` | 逐元素「声明族 vs 运行时族」比对结果与替换判定 |
+| `review.json` | `runId`·`parentRunId`·`decision`·`feedback`·`observations`·`hypotheses`·`changes`·`verification`·`nextAction` |
+| `delivery-gate.json` | 7 项闸门状态、`unsupported.count`、`deliveryReady`（只由脚本推导） |
+
+两个容易混的点：
+
+- **`kind` 五档**：`fixed` / `pinned` / `proportional` / `intrinsic` / `centered`，见「尺寸与定位契约」。
+- **`basis` 与 `of` 不是两个概念**：region 级的位置基准字段叫 `basis`，relation 级叫 `of`，两者都指向**直接父视图**（`"root"` 仅在直接父即整屏画布时用）。不要因为名字不同就写成两个基准。
+
 ## 参考资料
 
+- 尺寸与位置两条轴的完整规范、推演与反例清单：`references/sizing-and-positioning.md`
 - 浏览器启动、隔离 session、字体/资源稳定化和截图契约：`references/browser-runtime.md`
 - 六种输出模式的技术边界和选择规则：`references/target-modes.md`
 - 页面事实表、实现计划和交付证据 schema：`references/artifact-contract.md`
+- 用户判定不合格后的修复闭环、停止条件：`references/feedback-loop.md`
+- 产物生命周期、索引与恢复规则：`references/project-management.md`
+- Lanhu MCP 调用顺序、缓存、版本与失败处理：`references/lanhu-input.md`
+- iOS 工程与设备环境探测：`references/ios-environment.md`
+- 既有项目接入的工程审计与接入计划：`references/existing-project-integration.md`
+- 资源复用、语义命名与代码分层：`references/resource-and-code-quality.md`
 - 分阶段落地计划：`references/execution-plan.md`
 
 ## 验证脚本一览

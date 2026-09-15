@@ -57,14 +57,10 @@ pages/<page-id>/
 
 ### `page-facts.json`（schemaVersion 3）
 
-v1 只存了 CSS px 的 `rect` 与 CSS **声明**的 `fontFamily`，于是任何像素级比对都得自己
-把 CSS px 换算到基准图像素 —— 每写一次就多一次错的机会。v2 把「元素在基准图里应该出现
-在哪」直接算好。**v3 补上父子层级**：布局约束要「相对直接父视图」表达，而这件事在 v2 的事实表里
-根本无从判断 —— 元素只有绝对 `rect`，谁是它的父视图没有记。
-
 v3 起每个元素都带 `parentIndex` / `parentHops` / `positioningContextIndex`
 （绝对定位元素才带最后一项）。**读不到这些字段时不得假设层级已知** ——
-那意味着这是一份 v2 时代的事实表，任何「相对父视图」的推算都会退化成「相对整屏画布」。
+那意味着这是一份 v2 时代的事实表（v2 只有绝对 `rect`，没有父子关系），
+任何「相对父视图」的推算都会退化成「相对整屏画布」。
 
 ```json
 {
@@ -254,15 +250,13 @@ v3 起每个元素都带 `parentIndex` / `parentHops` / `positioningContextIndex
   `regions`；只有 `changedRatio` 的结论不足以放行。
 - 比较器判 `fail` 时，`visualDiff` **不得**为 `pass`。
 - 比较器判 `pass-with-review` 时，`visualDiff` 默认**必须原样记为 `pass-with-review`**；
-  **唯一的例外是 `reason == "structural-within-declared-floor"`** —— 文字密集页的结构差异
-  有物理下界（基准画布 `scale(1.0229)` 使基准字形 = 设计字号 × 1.0229，而字号不得缩放），
-  该下界已在计划里声明并做了量化归因，此时记 `pass` 才是诚实的。其余 `pass-with-review`
-  （如 `structural-diff-above-warn`）记成 `pass` 会被校验脚本拦下 ——
-  否则「下界内放行」会变成把所有待复核项一并吞掉的借口，`deliveryReady` 随之失去意义。
+  **唯一的例外是 `reason == "structural-within-declared-floor"`**（文字密集页的结构差异存在
+  物理下界，已在计划里声明并做了量化归因），此时记 `pass` 才是诚实的。其余 `pass-with-review`
+  （如 `structural-diff-above-warn`）记成 `pass` 会被校验脚本拦下。
 
-> **为什么这条闭环是必需的。** 没有它，批 B 的下界机制会悬在半空：比较器按声明下界放行了，
-> 交付闸门却因为 `visualDiff` 不是 `pass` 而永远推导出 `deliveryReady = false` ——
-> 文字密集页将**永远无法交付**。下界要真的能放行到交付，就必须有这条明确且可核的升格路径。
+> 这条例外的成因与「为什么不可省」见 [SKILL.md 的「交付闸门」](../SKILL.md#7-交付闸门)：
+> 没有它，比较器按声明下界放行了，交付闸门却会永远推导出 `deliveryReady = false`，
+> 文字密集页无法交付。
 
 不带 `structuralRatio` 的 diff 文件（例如只记录 `changedRatio` 的占位件）不参与这条判定：
 它不是放行依据，对它判定只会制造噪声。
@@ -681,8 +675,7 @@ Lanhu 坐标的分析代码都得自己反解，而手写反解正是「多乘�
 - `structuralRatio` —— 强边在两张图里对不上（`--edge-tolerance` 内找不到对应）。几何错位、
   尺寸变化、圆角/间距改错。超过 `maxStructuralRatio` 判 `fail` —— **但若该值仍在计划声明的
   `gateReachability.expectedStructuralFloor` 之内、且 `fillRatio` 未超限，判 `pass-with-review`
-  （`structural-within-declared-floor`）**。文字密集页的结构差异有物理下界（基准画布
-  `scale(1.0229)` 使基准字形 = 设计字号 × 1.0229，而字号不得缩放），**不可能降到 0**；
+  （`structural-within-declared-floor`）**。文字密集页的结构差异存在物理下界，**不可能降到 0**；
   成因见 [sizing-and-positioning.md](sizing-and-positioning.md#22-哪些量永远不缩放)，
   字段与可核性见下文「`ui-implementation-plan.json` 的 `gateReachability`」。
 - `fillRatio` —— 平坦区颜色不同。填充色/背景色/文字颜色写错、整块缺遮罩。超过

@@ -43,15 +43,9 @@ npx playwright install chromium   # 下载固定版本的 Chromium（正式回�
 python3 scripts/compare_reference.py --reference reference/reference.png --actual actual/app.png --output diff/comparison.json
 ```
 
-比较器只在尺寸一致时计算像素差；它不把尺寸缩放或裁剪当作通过。输出的差异分三类，**只有结构差异与填充差异参与放行判定**：
-
-| 字段 | 含义 | 判定 |
-|---|---|---|
-| `structuralRatio` | 强边在两张图里对不上（在 `--edge-tolerance` 内找不到对应） | 超过 `--max-structural-ratio` 判 `fail`；**但仍在计划声明的 `gateReachability.expectedStructuralFloor` 内且 fill 未超限时，判 `pass-with-review`** |
-| `fillRatio` | 平坦区颜色不同（填充色/文字颜色写错） | 超过 `--max-fill-ratio` 判 `fail`（下界不为它开口子） |
-| `textureRatio` | 几何一致、只是像素值不同（栅格化、抗锯齿、次像素相位差） | 不参与判定 |
-
-文字密集页的 `structuralRatio` 有**物理下界**（基准画布 `scale(1.0229)` 使基准字形 = 设计字号 × 1.0229，而字号不得缩放 ⇒ 差 2.29%，越过 2px 强边配对容差），**不可能降到 0**。要放行这个形态，须由计划声明 `gateReachability`，不要让实现去缩放字号凑闸门 —— 字段与可核性见 `artifact-contract.md`。
+比较器只在尺寸一致时计算像素差；它不把尺寸缩放或裁剪当作通过。输出的差异分三类
+（`structuralRatio` / `fillRatio` / `textureRatio`），**只有结构差异与填充差异参与放行判定**；
+阈值、下界与放行口径见 [SKILL.md 的「视觉修复循环」](../SKILL.md#6-视觉修复循环)。
 
 **不要用 `changedRatio` 放行**：它把三类混在一起。更要紧的是它**区分不出**下面这两种情况，而它们的处理方式正好相反 —— 「HTML 侧用 Web 字体、App 侧用系统字体」产生的抗锯齿差异是噪点，而「整块背景色写错」是真缺陷，两者在 `changedRatio` 上是同一个数。分类的判据是「强边在两张图里对不对得上」：边对得上、只有像素值不同 ⇒ 纹理；边对不上 ⇒ 结构。
 

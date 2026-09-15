@@ -4,14 +4,8 @@
 
 ## 验证阶段的三段门（与修复闭环的关系）
 
-「改源码 → 重新验证」不是一条直线，而是两段**成本差两个数量级**的门：
-
-| 门 | 位置 | 成本 | 判什么 |
-|---|---|---|---|
-| 门 0 | 写计划时 | **0.12 s**，纯静态 | 计划自身完整（`layoutProportions` 的 `basis` / `parentIndex` / `kind` / `of`） |
-| 门 1 | **写码完成后、编译之前** | **0.14 s**，纯静态 | 层级与布局关系是否照计划实现 |
-| 门 2 | 编译 / 运行 / 截图 | **9.9 s / 轮** | 只能靠运行才知道的事：能否编译、能否启动、运行期几何与交互 |
-| 门 3 | 差异归因与交付判定 | 秒级 | 具名区域归因、扣除已声明差异后的剩余值、闸门 |
+门的定义、位置与各自判什么，见 [SKILL.md 的「强制 Agent loop」](../SKILL.md#强制-agent-loop)。
+本节只讲它与**修复闭环轮次**的关系。
 
 **门 1 的迭代不计入本文件的「轮次」。** `scripts/check_layout_proportions.py` 只读计划与
 源码文本，不编译、不起浏览器，所以「改源码 → 重跑门 1」是秒级动作，和「改源码 → 编译 →
@@ -36,10 +30,10 @@
 | **验证阶段墙钟**（计划落盘 → review 完成） | **29 分 26 秒** |
 | 该窗口内可测的机器操作（3 轮构建 + 装机 + 启动 + 截图） | **约 30 秒** |
 
-⇒ **机器只占 1.7%，其余约 98% 是「看截图 → 形成假设 → 改码 → 重跑」的 Agent 循环。**
+⇒ **机器只占约 2%，其余约 98% 是「看截图 → 形成假设 → 改码 → 重跑」的 Agent 循环。**
 
 所以前移门 1 的收益**不是省下那 10 秒构建**，而是**避免让 Agent 经历一次完整的截图诊断
-循环**：读一张 1206×2622 的图、形成假设、改码、重跑，那是分钟级，而且可能建立在错误假设上。
+循环**：读一张整页截图、形成假设、改码、重跑，那是分钟级，而且可能建立在错误假设上。
 门 1 用 0.14 s 直接给出 `文件:行号` 与规则名，把「看图猜」换成「读一条定位精确的告警」。
 
 **优化方向由此确定：盯「Agent 需要经历几轮推断」，不要盯「构建快几秒」。** 任何新增的检查，
@@ -101,7 +95,7 @@
    或 `not-run`，不能伪造通过。
 8. **记录证据**：新 run 必须保存 before/after、diff summary（含 `structuralRatio` 与 `regions`）、alignment、runtime-device、修改原因、实际修改文件和下一步动作。`review.json` 要有 `parentRunId`，形成迭代链。
 9. **回归检查**：修复局部区域后，仍需检查整页、顶部/底部系统区域、图片映射和至少一个文本/容器区域，防止局部修复破坏其他区域。
-10. **重新交付判断**：写入本轮 `delivery-gate.json` 后运行 `scripts/validate_run.py --run <run-dir>`；只有 7 项闸门全部为 `pass` 且 `unsupported.count == reviewedCount` 才可将页面状态设为 `ready`，否则保持 `needs-review`。`deliveryReady` 由契约推导，不得手写覆盖。注意 `visualDiff` 不能在 `diff/alignment.json` 判 `needs-review` 时为 `pass` —— 校验脚本会拦住这种自相矛盾。同理，比较器判 `fail` 时它不得为 `pass`；判 `pass-with-review` 时**默认必须原样记录**，唯一可升格为 `pass` 的情形是 `reason == "structural-within-declared-floor"`（下界内放行，已在计划里声明并量化归因）—— 这条例外不可省，否则文字密集页会卡在 `deliveryReady` 永远为 `false`。用户再次判定不合格时，从第 1 步创建下一 run，永远不覆盖历史证据。
+10. **重新交付判断**：写入本轮 `delivery-gate.json` 后运行 `scripts/validate_run.py --run <run-dir>`；只有 7 项闸门全部为 `pass` 且 `unsupported.count == reviewedCount` 才可将页面状态设为 `ready`，否则保持 `needs-review`。`deliveryReady` 由契约推导，不得手写覆盖。`visualDiff` 的取值约束（含 `pass-with-review` 升格为 `pass` 的唯一例外）见 [SKILL.md 的「交付闸门」](../SKILL.md#7-交付闸门)，本文件不另立口径。用户再次判定不合格时，从第 1 步创建下一 run，永远不覆盖历史证据。
 
 ## `review.json` 最小结构
 
@@ -128,7 +122,7 @@
 - `domVsReference` 判 `needs-review`：**先修基准**，禁止在此状态下按 `referenceVsActual` 的差调 App 代码。基准错了，越改越偏。**但修之前必须做一次交叉复核** —— `alignment.json` 会带 `crossCheckRequired: true` 与 `crossCheck`，照它的 `how` 换硬边高对比特征做亮度扫描 + 线性拟合，看偏差是**常量偏置**（= 探测器偏置）还是**随坐标增长**（才是真实比例误差）。本审计用墨迹质心，对框内近乎空白的图片/容器元素会伪造比例信号（见 `coverage.excludedLowCoverage`）；直接照 `nextAction` 重渲染基准可能白干一轮，还会改坏本来正确的基准。契约禁止手写覆盖工具结论：保留 `alignment.json` 原样，另写独立证据文件并在 `review.json` 里说明异议。
 - `alignment.json` 的 `coverage.excludedLowCoverage.count` 很大：说明相当一部分图片/容器探针框内近乎空白、已被排除在位移与比例拟合之外。此时 `offsetFit` 的杠杆比看上去小，比例结论要更保守 —— 不要仅凭它改 `canvasTransform`。
 - 只有 `textureRatio` 高（`structuralRatio` 与 `fillRatio` 都在容差内）：这是栅格化噪点，不是缺陷，不要为它改代码。
-- `structuralRatio` 高于上限但**在计划声明的 `gateReachability.expectedStructuralFloor` 之内**、且 `fillRatio` 在容差内：这是文字密集页的**物理下界**（基准画布 `scale(1.0229)` 使基准字形 = 设计字号 × 1.0229，而字号不得缩放），**不可能降到 0**。此时停止修改、记 `pass-with-review` + 量化归因，不要再为它开一轮编译截图 —— 反复逼近 0 只会白烧轮次，而且会诱使你去缩放字号凑闸门（契约明令禁止）。要放行这个形态，计划里必须真的声明了 `gateReachability`（含 `unavoidable[].cause` 与 `measuredShare`），否则校验器会判「以声明下界放行，但计划没有 gateReachability」。反之，计划声明了下界、却把下界内的值判 `fail`，同样是错。
+- `structuralRatio` 高于上限但**在计划声明的 `gateReachability.expectedStructuralFloor` 之内**、且 `fillRatio` 在容差内：这是文字密集页的**物理下界**，**不可能降到 0**。此时停止修改、记 `pass-with-review` + 量化归因，不要再为它开一轮编译截图 —— 反复逼近 0 只会白烧轮次，而且会诱使你去缩放字号凑闸门（契约明令禁止）。放行条件与 `visualDiff` 的升格口径**以 [SKILL.md 的「交付闸门」](../SKILL.md#7-交付闸门) 为唯一出处**：计划必须真的声明 `gateReachability`（含 `unavoidable[].cause` 与 `measuredShare`），否则校验器会判「以声明下界放行，但计划没有 gateReachability」；反之，声明了下界却把下界内的值判 `fail`，同样是错。
 - 偏差随 y 单调递增：这是坐标系/比例不一致，必须回到 `canvasTransform.policy` 与 `coordinateMapper` 层面核对（`scripts/canvas_map.py`），不要逐控件微调位置。
 - 任一图片只验证了容器 frame、没有验证内容绘制 frame，或使用 intrinsic/natural size：视为 `asset/geometry` 失败，必须先修复统一图片 mapper。
 - 图片出现一侧留白但 `alphaBounds` 显示资源本身有透明边界：先按 `alphaBounds` 与 HTML 裁剪规则核对，不要直接改 frame 去凑视觉。
