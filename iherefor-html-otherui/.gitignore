@@ -15,5 +15,8 @@ build/
 .lanhu-cache/
 .lanhu-mcp-status.json
 
+# skill 根 reference/：人工验收 Diff Viewer 的历史开发基准，运行时从不读取
+reference/
+
 # macOS
 .DS_Store
