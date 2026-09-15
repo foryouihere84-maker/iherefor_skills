@@ -11,7 +11,7 @@
 //
 
 #import "SceneDelegate.h"
-#import "BrushSelectionViewController.h"
+#import "PurposeSelectionViewController.h"
 
 @implementation SceneDelegate
 
@@ -24,7 +24,7 @@
     UIWindowScene *windowScene = (UIWindowScene *)scene;
     self.window = [[UIWindow alloc] initWithWindowScene:windowScene];
     self.window.frame = windowScene.coordinateSpace.bounds;
-    self.window.rootViewController = [BrushSelectionViewController new];
+    self.window.rootViewController = [PurposeSelectionViewController new];
     [self.window makeKeyAndVisible];
 }
 
