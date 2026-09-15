@@ -225,6 +225,45 @@ def plan_max_content_widths(plan):
     return caps
 
 
+def plan_size_variants(plan):
+    """从计划的 ``adaptiveLayout.sizeVariants[]`` 取「区域 → 分档尺寸表」。
+
+    这是「尺寸不缩放」铁律的**唯一合法出口**：当同一设计存在多设备稿
+    （如 ``xx`` 与 ``xx-iPad``），iPad 档的尺寸参数写在 iPad 稿里、照稿还原，是
+    合规的分档 —— 不是把手机稿等比放大。但「分档」必须逐档声明并附稿依据，
+    否则「尺寸随窗口变」这个形态无法和「整页等比放大」区分开。
+
+    返回 ``{region: {sample_id: {width, height}, ...}, ...}``；没有 basis/why 的项
+      直接忽略（交给 check_size_invariance 按「未声明」判违规）。
+    """
+    variants = {}
+    if not isinstance(plan, dict):
+        return variants
+    layout = plan.get('adaptiveLayout')
+    if not isinstance(layout, dict):
+        return variants
+    for entry in layout.get('sizeVariants') or []:
+        if not isinstance(entry, dict):
+            continue
+        region = entry.get('region')
+        values = entry.get('values')
+        why = entry.get('why')
+        basis = entry.get('basis')
+        # 缺依据或缺理由的分档是「乱改尺寸」，不配进白名单 —— 由 sizeInvariance 判违规。
+        if not region or not isinstance(values, dict) or not why or not basis:
+            continue
+        per_sample = {}
+        for sample_id, dims in values.items():
+            if isinstance(dims, dict) and (is_number(dims.get('width')) or is_number(dims.get('height'))):
+                per_sample[str(sample_id)] = {
+                    'width': float(dims['width']) if is_number(dims.get('width')) else None,
+                    'height': float(dims['height']) if is_number(dims.get('height')) else None,
+                }
+        if per_sample:
+            variants[region] = per_sample
+    return variants
+
+
 # --------------------------------------------------------------------------- 八项检查
 
 
@@ -239,8 +278,13 @@ def check_sample_coverage(samples, required_ids, missing):
     ] if absent else []
 
 
-def check_size_invariance(samples, kinds, tolerance):
-    """同一 ``fixed`` 元素在全部采样上点值必须逐字相等 —— 本审计最有价值的一项。"""
+def check_size_invariance(samples, kinds, size_variants, tolerance):
+    """同一 ``fixed`` 元素在全部采样上点值必须逐字相等 —— 本审计最有价值的一项。
+
+    唯一合法例外：``adaptiveLayout.sizeVariants`` 里**逐档声明、附稿依据**的尺寸分档。
+    同一设计存在多设备稿（``xx`` 与 ``xx-iPad``）时，iPad 档照 iPad 稿还原尺寸是合规的；
+    但没有 declaration 支撑的「尺寸随窗口变」就是整页等比放大那类缺陷，仍判违规。
+    """
     compared = 0
     problems = []
     by_id = {}
@@ -260,16 +304,54 @@ def check_size_invariance(samples, kinds, tolerance):
         base_height = max(heights.values())
         spread_w = base_width - min(widths.values())
         spread_h = base_height - min(heights.values())
-        if spread_w > EXACT_EPSILON or spread_h > EXACT_EPSILON:
-            problems.append(failure(
-                'size-not-invariant',
-                f'{name} 是 fixed 元素，但尺寸在各采样间不一致：'
-                f'宽 {widths}（差 {spread_w:.2f}pt）、高 {heights}（差 {spread_h:.2f}pt）。'
-                '尺寸是常量，不得随窗口缩放 —— 平板适配里最典型的缺陷就是整页等比放大',
-                element=name, widths=widths, heights=heights,
-                maxSpreadPt=round(max(spread_w, spread_h), 4)))
+        if spread_w <= EXACT_EPSILON and spread_h <= EXACT_EPSILON:
+            continue  # 各采样逐字相等，合规
+
+        # 尺寸跨采样不一致：只有「已在 sizeVariants 逐档声明且各档值吻合」才合法。
+        declared = size_variants.get(name)
+        if declared is not None and _matches_variant(widths, heights, declared):
+            continue  # 声明过的分档，合规
+
+        problems.append(failure(
+            'size-not-invariant',
+            f'{name} 是 fixed 元素，但尺寸在各采样间不一致：'
+            f'宽 {widths}（差 {spread_w:.2f}pt）、高 {heights}（差 {spread_h:.2f}pt）。'
+            '尺寸是常量，不得随窗口缩放 —— 平板适配里最典型的缺陷就是整页等比放大。'
+            '若这是「多设备稿照稿还原」的合法分档，必须在 adaptiveLayout.sizeVariants '
+            '里逐档声明尺寸并附 basis 与 why',
+            element=name, widths=widths, heights=heights,
+            maxSpreadPt=round(max(spread_w, spread_h), 4)))
     return {'status': 'fail' if problems else 'pass', 'compared': compared,
             'violations': problems}, problems
+
+
+def _matches_variant(widths, heights, declared):
+    """实测的各采样宽/高是否与 sizeVariants 声明吻合。
+
+    语义：分档只能发生在**声明过的档**之间。声明表里没列出的采样，其尺寸必须等于
+    「基准档」（表里第一个条目，通常是 phone-compact）—— 没声明的档不得擅自改尺寸，
+    否则就是「漏声明」，和没声明分档一样是违规。
+    """
+    if not declared:
+        return False
+    base_id = next(iter(declared))  # 基准档 = 声明表第一个条目
+    base = declared[base_id]
+
+    def expected(sample_id, axis):
+        dv = declared.get(sample_id)
+        if dv is not None:
+            return dv.get(axis)
+        return base.get(axis)   # 未列档 = 沿用基准档
+
+    for sample_id, w in widths.items():
+        exp = expected(sample_id, 'width')
+        if exp is not None and abs(w - exp) > EXACT_EPSILON:
+            return False
+    for sample_id, h in heights.items():
+        exp = expected(sample_id, 'height')
+        if exp is not None and abs(h - exp) > EXACT_EPSILON:
+            return False
+    return True
 
 
 def check_inset_preservation(samples, kinds):
@@ -507,6 +589,7 @@ def run(targets_path, geometry_overrides, plan_path, tolerance):
                     and entry.get('required', True) is not False}
     kinds = plan_region_kinds(plan)
     caps = plan_max_content_widths(plan)
+    size_variants = plan_size_variants(plan)
 
     checks = {}
     violations = list(load_failures)
@@ -516,7 +599,7 @@ def run(targets_path, geometry_overrides, plan_path, tolerance):
     checks['sampleCoverage'] = coverage
     violations.extend(problems)
 
-    size_check, problems = check_size_invariance(samples, kinds, tolerance)
+    size_check, problems = check_size_invariance(samples, kinds, size_variants, tolerance)
     checks['sizeInvariance'] = size_check
     violations.extend(problems)
 

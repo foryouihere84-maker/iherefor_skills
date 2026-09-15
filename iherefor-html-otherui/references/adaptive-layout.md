@@ -90,6 +90,38 @@ Android `sw600dp` 惯用 600dp。声明时必须同时给 `of`（基准父视图
 **「平板字大一点更好看」是错的。** 那会让同一页面在 iPhone 与 iPad 上出现两套排版，
 而设计稿只有一套。
 
+**唯一的合法例外：多设备稿的「照稿分档」。** 当同一设计在 Lanhu 里同时存在
+`xx` 与 `xx-iPad` 两份稿、且 iPad 稿确实给出了**不同的尺寸参数**（例如按钮框 22 → 28 高、
+而字号不变）时，iPad 档照 iPad 稿还原尺寸是**合规的分档**，不是「把手机稿等比放大」。
+但这一档必须显式声明，才能和「整页等比放大」区分开 —— 位置在
+`adaptiveLayout.sizeVariants[]`：
+
+```json
+"adaptiveLayout": {
+  "sizeVariants": [
+    {
+      "region": "continueCta",
+      "basis": "目的 + 目的-iPad 双稿（iPad 稿 image_id=…）",
+      "values": {
+        "phone-compact":           { "width": 68,  "height": 22 },
+        "tablet-regular-portrait": { "width": 141, "height": 28 }
+      },
+      "why": "iPad 稿给出该档更大的按钮框；字号仍为设计值、未缩放"
+    }
+  ]
+}
+```
+
+三条纪律：
+
+1. **`basis` 与 `why` 都是必填**。没有这两项，`audit_adaptive.py` 的 `sizeInvariance`
+   不把该元素算进分档白名单 —— 仍按「尺寸随窗口变」判 `size-not-invariant`。
+2. **只有「尺寸真的分档」才需声明**；字号、圆角、描边、最小点击区**永远不参与分档**，
+   它们在任何设备的稿里都该相等。分档的是「容器/控件的宽高」这类几何尺寸。
+3. **`sizeInvariance` 不是被放宽，是被收窄到「未声明即违规」。** 声明过的分档放行，
+   没声明的尺寸变化依旧拦下 —— 这条改动是为「双稿照稿还原」开合法的门，不是为
+   「平板上把东西放大点」开的口子。
+
 ### 4.2 `adaptiveLayout` 存在时，第一层位置比例规则只在 `compact` 档生效
 
 [sizing-and-positioning.md §3.1.1](sizing-and-positioning.md#311-第一层子视图位置按页面比例重排设备尺寸--设计稿尺寸时的适配核心)

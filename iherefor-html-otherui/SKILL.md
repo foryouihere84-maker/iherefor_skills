@@ -145,6 +145,10 @@ Stage Manager 与 iPadOS 26 自由窗口下宽度在 320~1366pt 之间连续可�
 1. **宽度轴只改「容器宽度」与「第一层位置」，不改任何尺寸。** 字号、行高、圆角、描边宽度、
    最小点击区（≥44pt / 48dp）在全部宽度档上逐字相同。「平板上字大一点更好看」是错的 ——
    设计稿只有一套排版，那不是适配，是重新设计。
+   **唯一例外：同一设计存在多设备稿（`xx` 与 `xx-iPad`）时，几何尺寸可照各自稿分档**，
+   但必须逐档声明在 `adaptiveLayout.sizeVariants[]`（带 `basis`/`why`），否则
+   `audit_adaptive.py` 仍按「尺寸随窗口变」判 `size-not-invariant`。字号/圆角/描边/点击区
+   **永不参与分档**。详见 [references/adaptive-layout.md §4.1](references/adaptive-layout.md)。
 2. **第一层位置比例规则只在 `compact` 档成立**，见上。
 3. **窗口 ≠ 屏幕。** 分屏与自由窗口下 `UIScreen.main.bounds` / `DisplayMetrics.widthPixels`
    返回的是**整块屏**，不是你的窗口，用它做布局基准会得到错的原点与错的可用宽度。

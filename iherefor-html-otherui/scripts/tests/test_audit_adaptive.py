@@ -13,6 +13,11 @@
    而它本该是这一层唯一的自动化防线；
 3. **不许假绿**：缺必需采样时 ``sampleCoverage`` 必须 fail。少了采样，其余七项检查
    反而会「全绿」—— 那是本次审计最容易骗过自己的形态。
+
+另有 sizeVariants 分档的两条边界（用例 2b/2c）：同一设计有多设备稿（xx + xx-iPad）时，
+照 iPad 稿还原的**尺寸分档**是合规的，但必须逐档声明 ``adaptiveLayout.sizeVariants``
+（带 basis/why）；声明过 → 放行，没声明 → 仍判 ``size-not-invariant``。这是
+「尺寸不缩放」铁律**唯一的合法出口**，不是放开整页等比放大。
 """
 import json
 import subprocess
@@ -170,6 +175,55 @@ def main():
               f"用例2：等比放大未被 sizeInvariance 拦下，实得 {sorted(kinds(report))}")
         check((report.get("checks") or {}).get("sizeInvariance", {}).get("status") == "fail",
               "用例2：sizeInvariance 未记 fail")
+
+        # ---- 用例 2b：多设备稿照稿分档 + 声明 sizeVariants → 合法通过 ----
+        # 同一设计有 xx + xx-iPad 两份稿，iPad 稿给出更大的按钮框（字号不变）。这是
+        # 合规的「照稿分档」，不是等比放大 —— 前提是 plan 里逐档声明了 sizeVariants。
+        # 用 off 的 offers（非交互、68 高，不触发 touchTarget）做分档，避免噪声。
+        variant_fixed = [
+            {"id": "cta", "region": "form", "kind": "fixed",
+             "rect": {"x": 16, "y": 300, "width": 347, "height": 48}, "interactive": True},
+            {"id": "offers", "region": "form", "kind": "fixed",
+             "rect": {"x": 16, "y": 400, "width": 347, "height": 68}},
+        ]
+        geometry(tmp, "phone-compact", (402, 874), elements=variant_fixed)
+        variant_ipad = [
+            {"id": "cta", "region": "form", "kind": "fixed",
+             "rect": {"x": 16, "y": 300, "width": 347, "height": 48}, "interactive": True},
+            {"id": "offers", "region": "form", "kind": "fixed",
+             "rect": {"x": 16, "y": 400, "width": 500, "height": 90}},
+        ]
+        geometry(tmp, "tablet-regular-portrait", (1024, 1366), elements=variant_ipad)
+        variant_plan = tmp / "plan-variant.json"
+        write_json(variant_plan, {"adaptiveLayout": {
+            "model": "continuous-window-width",
+            "regions": [{"region": "form", "widthPolicy": "max-content-width",
+                         "maxContentWidth": {"value": 600, "of": "root", "reason": "单列"}}],
+            "sizeVariants": [{
+                "region": "offers",
+                "basis": "目的 + 目的-iPad 双稿",
+                "values": {
+                    "phone-compact": {"width": 347, "height": 68},
+                    "tablet-regular-portrait": {"width": 500, "height": 90},
+                },
+                "why": "iPad 稿给出更大的卡片框，字号未缩放",
+            }],
+        }})
+        proc, report = run(path, variant_plan)
+        check("size-not-invariant" not in kinds(report),
+              f"用例2b：声明了 sizeVariants 的照稿分档仍被判违规，实得 {sorted(kinds(report))}")
+
+        # ---- 用例 2c：尺寸分档但**没声明** sizeVariants → 仍判违规（守住防线）----
+        undeclared_ipad = [
+            {"id": "cta", "region": "form", "kind": "fixed",
+             "rect": {"x": 16, "y": 300, "width": 347, "height": 48}, "interactive": True},
+            {"id": "offers", "region": "form", "kind": "fixed",
+             "rect": {"x": 16, "y": 400, "width": 500, "height": 90}},
+        ]
+        geometry(tmp, "tablet-regular-portrait", (1024, 1366), elements=undeclared_ipad)
+        proc, report = run(path, plan)   # plan 无 sizeVariants
+        check("size-not-invariant" in kinds(report),
+              f"用例2c：未声明 sizeVariants 的尺寸分档未被拦下，实得 {sorted(kinds(report))}")
 
         # ---- 用例 3：内边距被撑大 → insetPreservation ----
         stretched = [

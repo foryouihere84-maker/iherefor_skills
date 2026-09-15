@@ -705,7 +705,14 @@ Lanhu 坐标的分析代码都得自己反解，而手写反解正是「多乘�
     ],
     "axisSwitch": [{"region": "cardRow", "compact": "horizontal", "regular": "vertical"}],
     "navigation": {"compact": "tabbar", "regular": "sidebar"},
-    "forbiddenAdaptations": ["uniform-scale", "stretch-full-width", "font-scale"]
+    "forbiddenAdaptations": ["uniform-scale", "stretch-full-width", "font-scale"],
+    "sizeVariants": [
+      {"region": "continueCta",
+       "basis": "目的 + 目的-iPad 双稿（iPad 稿 image_id=…）",
+       "values": {"phone-compact": {"width": 68, "height": 22},
+                  "tablet-regular-portrait": {"width": 141, "height": 28}},
+       "why": "iPad 稿给出该档更大的按钮框；字号仍为设计值、未缩放"}
+    ]
   }
 }
 ```
@@ -723,12 +730,28 @@ Lanhu 坐标的分析代码都得自己反解，而手写反解正是「多乘�
 | `axisSwitch` | array | 需要切主轴的区域。每项含 `region` 与至少一对档位映射 |
 | `forbiddenAdaptations` | array | **非空**，至少含 `uniform-scale` / `stretch-full-width` / `font-scale` |
 | `firstLevelWidthClass` | string | 缺省 `compact`。限定 [sizing-and-positioning.md §3.1.1](sizing-and-positioning.md#311-第一层子视图位置按页面比例重排设备尺寸--设计稿尺寸时的适配核心) 的「第一层位置按页面比例」**只在哪一档生效** —— 见下 |
+| `sizeVariants` | array | **可选**。多设备稿照稿还原的尺寸分档白名单，见下 |
 
 **`firstLevelWidthClass` 是必需的收口，不是可选开关。** 第一层位置比例规则在
 `393×852 → 402×874` 上成立（差 2.3%），推到 1024pt 就出事：位置按比例 ×2.6、
 而尺寸按契约 ×1，于是卡片左起 33pt 变 86pt、宽度仍是 327pt、右侧空出 611pt、
 卡片间距从 13pt 被拉成 285pt。所以该规则必须被显式限定在 `compact` 档；
 regular / medium / expanded 档下第一层位置改由 `widthPolicy` 重排。
+
+**`sizeVariants` 是尺寸分档的唯一合法出口（可选，不用就不声明）。** 「尺寸不缩放」
+是默认：`audit_adaptive.py` 的 `sizeInvariance` 要求同一 `fixed` 元素在全部采样上点值
+逐字相等。但当同一设计在 Lanhu 里同时有 `xx` 与 `xx-iPad` 两份稿、且 iPad 稿给出了
+**不同的几何尺寸**（字号等排版量仍相等）时，照 iPad 稿还原是合规分档。每项约束：
+
+| 字段 | 约束 |
+|---|---|
+| `region` | 元素 id / region 名，与 `layoutProportions.regions[].region` 或几何转储的 `id` 对齐 |
+| `basis` | **必填**。指向哪份稿（报 design 名 + image_id） |
+| `values` | **必填**。`{<windowSample.id>: {width?, height?}}`，至少两个采样档，值与稿一致 |
+| `why` | **必填**。说明为什么这一档尺寸不同（照稿还原，非缩放） |
+
+三项缺一（尤其 `basis`/`why`）的项，`sizeInvariance` 不当它进白名单 —— 尺寸跨采样变化
+仍判 `size-not-invariant`。**只对几何尺寸（宽/高）分档，字号/圆角/描边/点击区永不参与。**
 
 判定分两档，与 `layoutProportions` 同形：**计划怎么声明，源码就得怎么实现**。
 声明 `max-content-width` 的区域源码里没有封顶原语、声明 `grid` 的区域写了固定列数、

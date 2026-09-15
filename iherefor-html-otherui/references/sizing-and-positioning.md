@@ -71,6 +71,13 @@
   它的成因与**实测占比**写下来，交付状态记 `pass-with-review`。字段、约束与三条可核性见
   [artifact-contract.md](artifact-contract.md#ui-implementation-planjson-的-gatereachability)。
 
+**多设备稿的分档例外（用不用都由你，但要用就得声明）：** 当同一设计在 Lanhu 里同时有
+`xx` 与 `xx-iPad` 两份稿、且 iPad 稿给出了**不同的几何尺寸参数**（字号等排版量仍相等），
+照 iPad 稿还原是合规的分档，不是「擅自缩放」。这类分档必须逐档进
+`adaptiveLayout.sizeVariants[]`，规则见 [adaptive-layout.md §4.1](adaptive-layout.md#41-宽度轴只改容器宽度与第一层位置不改任何尺寸)。
+**分清界线**：字号、行高、圆角、描边、最小点击区仍**永不缩放**，只有「容器/控件的宽高」
+这类几何尺寸允许按稿分档。
+
 > 一句话：**§2.2 保证的是「实现不引入缩放」，不是「diff 恒等于 0」。**
 > 前者是义务，后者是对基准画布的误解。把后者当前者，就会开始改字号去凑闸门。
 
