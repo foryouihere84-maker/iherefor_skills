@@ -7,21 +7,8 @@ cd "$(dirname "${BASH_SOURCE[0]}")/../.." || exit 2
 
 PY=".runtime/venv/bin/python3"
 if [ ! -x "$PY" ]; then
-  echo "警告：未找到 .runtime/venv，回退到系统 python3（可能缺少 Pillow）" >&2
+  echo "警告：未找到 .runtime/venv，回退到系统 python3" >&2
   PY="$(command -v python3)"
-fi
-
-# 未下载 Playwright 自带的 Chromium 时，复用本机 Chrome（文档支持的兜底路径）。
-if [ -z "${PLAYWRIGHT_EXECUTABLE_PATH:-}" ]; then
-  downloaded=0
-  for dir in "$HOME"/Library/Caches/ms-playwright/chromium-*; do
-    [ -d "$dir" ] && downloaded=1
-  done
-  chrome="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-  if [ "$downloaded" -eq 0 ] && [ -x "$chrome" ]; then
-    export PLAYWRIGHT_EXECUTABLE_PATH="$chrome"
-    echo "提示：未检测到 Playwright Chromium，回退到本机 Chrome" >&2
-  fi
 fi
 
 failed=0

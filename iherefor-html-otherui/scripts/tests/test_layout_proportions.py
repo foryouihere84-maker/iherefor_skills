@@ -883,23 +883,6 @@ def main():
         check(not (tmp / "broken.json").is_file(),
               "用例28：判不出来时不得写出计划文件（避免下游把它当成有效证据）")
 
-        # 用例 29：显式指定与证据冲突时，继续但必须告警
-        device_path = write_json(tmp / "runtime-device.json", {
-            "screenBoundsPoints": {"width": 402, "height": 874},
-            "screenshotPixels": {"width": 1206, "height": 2622}, "screenshotScale": 3,
-        })
-        proc = run(PLAN_SCRIPT, "--page-facts", str(facts_path), "--rect-space", "lanhu",
-                   "--runtime-device", str(device_path), "--canvas", "393x852",
-                   "--output", str(tmp / "lanhu.json"))
-        check(proc.returncode == 0 and "证据指向" in proc.stderr,
-              f"用例29：显式空间与证据冲突时应告警并继续，得到 {proc.returncode}："
-              f"{proc.stderr[:200]}")
-
-        # 用例 30：--rect-space lanhu 需要画布变换输入，缺了要干净退出
-        proc = run(PLAN_SCRIPT, "--page-facts", str(facts_path), "--rect-space", "lanhu")
-        check(proc.returncode == 2 and "Traceback" not in proc.stderr,
-              f"用例30：lanhu 空间缺少变换输入应退出 2，得到 {proc.returncode}：{proc.stderr[:200]}")
-
     for problem in problems:
         print(problem)
     if problems:

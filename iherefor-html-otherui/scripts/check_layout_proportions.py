@@ -571,21 +571,22 @@ def check_type_facts(plan, page_facts) -> list:
         if not (isinstance(region, str) and region.strip()):
             problems.append({"kind": "fact-missing-region",
                              "detail": f"typeFacts 条目缺 region：{item!r}"})
+        kind_source = item.get("kindSource")
+        if kind_source not in ("page-facts", "html-css"):
+            problems.append({
+                "kind": "fact-not-from-authority",
+                "detail": f"region={region!r} 的 kindSource 必须是 \"html-css\"（样式来自官方 "
+                          f"HTML/CSS）或 \"page-facts\"（样式来自渲染 DOM 实测），收到 {kind_source!r}；"
+                          "写成别的一律视为「没有从权威来源抄值」，等于承认是拍脑袋编的"})
         idx = item.get("elementIndex")
-        if isinstance(idx, bool) or not isinstance(idx, int):
+        # elementIndex 只在 page-facts 溯源时强制（html-css 溯源用 styleSourceIndex）。
+        if kind_source == "page-facts" and (isinstance(idx, bool) or not isinstance(idx, int)):
             problems.append({
                 "kind": "fact-missing-element-index",
                 "detail": f"region={region!r} 的 elementIndex 必须是整数（指向 page-facts "
                           f"elements[] 的下标），收到 {idx!r}；没有它就没法证明这个值来自渲染 DOM"})
-        kind_source = item.get("kindSource")
-        if kind_source != "page-facts":
-            problems.append({
-                "kind": "fact-not-from-page-facts",
-                "detail": f"region={region!r} 的 kindSource 必须是 \"page-facts\"（证明这个样式"
-                          f"恒量来自渲染 DOM 实测），收到 {kind_source!r}；写成别的一律视为"
-                          "「没有从 DOM 抄值」，等于承认是拍脑袋编的"})
-        # 引用核：只在给了 page-facts 时做
-        if element_indexes is not None and isinstance(idx, int):
+        # 引用核：只在给了 page-facts 且 kindSource 是 page-facts 时做
+        if element_indexes is not None and kind_source == "page-facts" and isinstance(idx, int):
             if idx not in element_indexes:
                 problems.append({
                     "kind": "fact-element-index-out-of-range",

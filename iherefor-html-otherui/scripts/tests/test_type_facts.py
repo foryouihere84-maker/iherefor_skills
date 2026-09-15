@@ -114,13 +114,13 @@ def main():
         check("缺 typeFacts 判 fact-source-missing",
               "fact-source-missing" in _kinds(data))
 
-        # 3. 违规：kindSource 写成 agent-decided → fact-not-from-page-facts。
+        # 3. 违规：kindSource 写成 agent-decided → fact-not-from-authority。
         bad = _ok_type_facts()
         bad[0]["kindSource"] = "agent-decided"
         plan = _write(tmp, "plan_kindsrc.json", _plan_payload(bad))
         _, data = _run(tmp, plan, facts)
-        check("kindSource!=page-facts 判 fact-not-from-page-facts",
-              "fact-not-from-page-facts" in _kinds(data))
+        check("kindSource 非法判 fact-not-from-authority",
+              "fact-not-from-authority" in _kinds(data))
 
         # 4. 违规：elementIndex 越界 → fact-element-index-out-of-range。
         bad = _ok_type_facts()

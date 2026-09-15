@@ -4,17 +4,18 @@
 背景：`lanhu_get_design_document` 是全量图层树 JSON（一个典型稿 105KB、94 节点），
 **全量喂给 Agent 不划算**，里面只有**图层几何（``rect``）与描边/纯色填充**这一小半是可靠的——
 字号、渐变、文本语义存在系统性失真（``canvas.scale`` 会把字号折半、``metadata.parentId`` 实测
-全 null）。**布局与字号的权威来源是渲染后浏览器 DOM 实测值（``page-facts.json``），不是本摘要。**
+全 null）。**布局几何的权威来源是 `dds-schema.json` 的 `rowDims`、样式恒量以官方 HTML/CSS 为准，
+不是本摘要。**
 
 本脚本只做**解析与降噪**，产出紧凑 ``design-facts.json``，供第 3 步「目标实现计划」交叉佐证：
 
 - ``hierarchy``：每个图层的父视图归属。**由 ``children`` 嵌套推导（``metadata.parentId``
   实测全为 null，不可靠）**。仅佐证，``layoutProportions.regions[].parentIndex`` 的权威来源是
-  ``page-facts.json`` 的 ``parentIndex``/``parentHops``。
+  ``dds-schema.json`` 的 ``children`` 树（主链路）或 ``page-facts.json`` 的 ``parentIndex``/``parentHops``。
 - ``typography``：字号 / 字体族 / 字重 / 文本 / 颜色。**字号已按 ``canvas.scale`` 还原**，
   因为 document 把字号除了 scale（实测 scale=2 稿里所有 fontSize=7，但下载 HTML 里真实
   字号是 14）。字体族名做过 normalize（``AvenirLT-*`` → ``Avenir-*``，带 LT 后缀的族名
-  系统里不存在）。**权威字号/字体以渲染 DOM 实测（computed style / CDP 字体）为准。**
+  系统里不存在）。**权威字号/字体以官方 HTML/CSS 为准。**
 - ``borders`` / ``fills`` / ``shadows``：描边/填充/阴影的粗细与颜色，回答「描边是画在
   frame 上还是独立装饰层」——可佐证覆盖式装饰子视图吞点击、CSS border 内缩两个坑的判据。
 
@@ -28,9 +29,8 @@
 本脚本只还原 fontSize（坐标为真、字号待还原），并在输出里保留 ``canvas.scale`` 与
 ``fontSizeRaw``，让下游能追溯。
 
-只读脚本：不改 MCP、不下载、不打印凭据。位置与坐标、布局与字号**一律以浏览器 DOM 实测值
-（``page-facts.json``）为准**——这份摘要回答「设计稿说应该什么样」，渲染事实回答「实际成了
-什么样」。两者不一致时以渲染事实为准，本摘要仅作交叉佐证，不作为权威来源。
+只读脚本：不改 MCP、不下载、不打印凭据。几何**一律以 `dds-schema.json` 的 `rowDims` 为准、
+样式以官方 HTML/CSS 为准**——这份摘要回答「设计稿说应该什么样」，仅作交叉佐证，不作为权威来源。
 """
 import argparse
 import json

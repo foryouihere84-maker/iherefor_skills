@@ -18,27 +18,28 @@
 写成 ``width = parent.width * 0.9186`` 在探针设备上同样对得上，却在 430pt 宽的设备上
 给出 13.7pt 边距 —— 设计稿说的是 16。**贴父不等于比例。**
 
-**先说清 ``rect`` 在哪个坐标空间里，这是本脚本最容易出错的地方。** 渲染器是在
-**设备视口**上渲染基准图的（HTML 会跟着 reflow），所以 ``rect`` 已经是设备点，
-``rectInReference == rect * devicePixelRatio``。这意味着：
+**先说清 ``rect`` 在哪个坐标空间里。** 主链路输入是 ``dds-schema.json``，它的 ``rowDims``
+就是**设计稿绝对坐标**（画布空间），恒 ``lanhu``、无需变换；备用链路输入是渲染器产出的
+``page-facts.json``，其 ``rect`` 已是设备点（``rectInReference == rect * devicePixelRatio``）。
 
-* 比例 = ``rect / 父视图尺寸``，**不需要**再过一次 ``canvasTransform``；
+* 比例 = ``rect / 父视图尺寸``，**不需要**再过一次 `canvasTransform`；
 * 再过一次就会把 scale 乘两遍 —— 这正是「多乘一层 scale」那类系统性偏移。
-
-本脚本用上面那条恒等式**自动判定** ``rect`` 的坐标空间，判定不出来就拒绝继续，
-而不是默默按某个空间算下去。需要按 Lanhu 画布空间算时用 ``--rect-space lanhu`` 显式指定。
-
-**与 `canvas_map.py` 的分工**：坐标换算一律走 `canvas_map`，本脚本不自己写任何
-``* scale``；它只负责把位置重新组织成实现侧要的形式。
 
 用法：
 
-    python3 scripts/layout_proportions.py \\
-        --page-facts <page>/reference/page-facts.json \\
-        --target-mode ios-uikit-objective-c \\
+    # 主链路：dds-schema 的 rowDims
+    python3 scripts/layout_proportions.py \
+        --dds-schema <page>/reference/dds-schema.json \
+        --target-mode ios-uikit-objective-c \
         --output <run>/plans/layout-proportions.json
 
-退出码：0 = 正常；2 = 证据不足（缺事实表，或无法判定坐标空间）。
+    # 备用链路：page-facts（rowDims 缺失时）
+    python3 scripts/layout_proportions.py \
+        --page-facts <page>/reference/page-facts.json \
+        --target-mode ios-uikit-objective-c \
+        --output <run>/plans/layout-proportions.json
+
+退出码：0 = 正常；2 = 证据不足（缺输入，或无法判定坐标空间）。
 """
 from __future__ import annotations
 
@@ -47,12 +48,93 @@ import json
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from canvas_map import (  # noqa: E402
-    CanvasMapError, box_from, transform_from_canvas_transform,
-    transform_from_runtime_device,
-)
+class CanvasMapError(Exception):
+    """坐标/画布构造失败。保留原名仅为兼容旧调用点。"""
+
+
+class Box:
+    """一个带 x/y/width/height 的矩形；rowDims 主链路下它就是设计稿坐标本身。"""
+
+    __slots__ = ("x", "y", "width", "height")
+
+    def __init__(self, x, y, width, height):
+        self.x = float(x)
+        self.y = float(y)
+        self.width = float(width)
+        self.height = float(height)
+
+    def to_device(self):
+        """rowDims 即设计坐标，无需换算；恒等返回。"""
+        return self
+
+
+def box_from(rect: dict) -> Box:
+    return Box(rect.get("x", 0), rect.get("y", 0),
+               rect.get("width", 0), rect.get("height", 0))
+
+
+class IdentityTransform:
+    """rowDims 主链路下的恒等画布变换：设计稿坐标 == 目标坐标。"""
+
+    def __init__(self, width, height):
+        self.canvas_width = float(width)
+        self.canvas_height = float(height)
+
+    def to_device(self, box: Box) -> Box:
+        return box
+
+
+def parse_dds_schema(dds: dict) -> dict:
+    """把 `lanhu_get_dds_schema` 的语义组件树转成 `analyse()` 消费的中性几何事实表。
+
+    rowDims 提供绝对坐标（left/top/width/height）；children 嵌套树提供父子层级；
+    ``type`` 区分文本（``lanhutext``）/图片（``lanhuimage``）/容器（``lanhublock``）。
+
+    返回结构与 page-facts 兼容：``viewport``（画布尺寸）+ ``elements[]``（rect /
+    index / parentIndex / ownsText / ownText / text / 媒体标记）。
+    """
+    rows = []
+
+    def walk(node, parent_index):
+        dims = node.get("rowDims") or {}
+        index = len(rows)
+        rect = {
+            "x": float(dims.get("left", 0)),
+            "y": float(dims.get("top", 0)),
+            "width": float(dims.get("width", 0)),
+            "height": float(dims.get("height", 0)),
+        }
+        ntype = node.get("type") or node.get("componentName") or ""
+        element = {
+            "index": index,
+            "parentIndex": parent_index,
+            "rect": rect,
+            "eleName": node.get("eleName") or node.get("id"),
+            "id": node.get("id"),
+            "type": ntype,
+        }
+        if ntype == "lanhutext":
+            # 文本组件：标记为文本；内容从 data.value / style 里尽力取（仅用于命名）。
+            value = (node.get("data") or {}).get("value") or ""
+            element["ownsText"] = True
+            element["ownText"] = value or ""
+            element["text"] = value or ""
+        elif ntype == "lanhuimage":
+            element["src"] = (node.get("style") or {}).get("background") or True
+        rows.append(element)
+        for child in node.get("children") or []:
+            walk(child, index)
+
+    walk(dds, None)
+
+    # 画布尺寸 = 根节点的 rowDims
+    root_dims = dds.get("rowDims") or {}
+    viewport = {
+        "width": float(root_dims.get("width", 0)),
+        "height": float(root_dims.get("height", 0)),
+    }
+    return {"viewport": viewport, "elements": rows}
 
 # 参与比例化的最小边长（视口 CSS px）。太小的元素（分隔线、圆点）没有布局关系可言。
 MIN_SIDE_PX = 8.0
@@ -135,11 +217,6 @@ def load_json(path):
         return json.loads(Path(path).read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return None
-
-
-def parse_canvas(text: str):
-    width, _, height = text.partition("x")
-    return float(width), float(height)
 
 
 def detect_rect_space(page_facts: dict) -> dict:
@@ -497,7 +574,7 @@ def classify_position(lo: float, hi: float, parent_lo: float, parent_hi: float,
 def is_media_element(element: dict) -> bool:
     """这个元素**本身**是一张图吗（而不是「它身上有背景装饰」）？
 
-    事实表把资源分成两种 ``role``（见 ``render_reference.mjs``）：
+    事实表/语义树把资源分成两种角色：
 
     * ``img`` —— 元素的 ``src``，或直接内容图；
     * ``background`` —— CSS ``background-image``，是**装饰**。
@@ -953,12 +1030,10 @@ def analyse(page_facts: dict, transform, rect_space: str, target_mode: str,
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--page-facts", required=True, help="页面级 reference/page-facts.json")
-    ap.add_argument("--runtime-device", help="runtime-device.json（--rect-space lanhu 时需要）")
-    ap.add_argument("--transform", help="含 canvasTransform 的 JSON")
-    ap.add_argument("--canvas", help="Lanhu 画布尺寸 WxH（--rect-space lanhu 时需要）")
+    ap.add_argument("--dds-schema", help="页面级 reference/dds-schema.json（rowDims 主链路）")
+    ap.add_argument("--page-facts", help="页面级 reference/page-facts.json（备用链路）")
     ap.add_argument("--rect-space", choices=("auto", "device", "lanhu"), default="auto",
-                    help="rect 所在的坐标空间；默认 auto，按 rectInReference == rect*dpr 判定")
+                    help="rect 所在的坐标空间；dds-schema 恒为 lanhu（设计稿坐标）")
     ap.add_argument("--target-mode", default="ios-uikit-objective-c",
                     help="目标输出模式，决定 nativeIdiom 的写法")
     ap.add_argument("--max-regions", type=int, default=DEFAULT_MAX_REGIONS)
@@ -966,51 +1041,55 @@ def main() -> int:
     ap.add_argument("--quiet", action="store_true")
     args = ap.parse_args()
 
-    page_facts = load_json(args.page_facts)
-    if not page_facts:
-        print(f"无法读取事实表（文件不存在或不是 JSON）：{args.page_facts}", file=sys.stderr)
-        return 2
-    if not page_facts.get("elements"):
-        print("事实表没有 elements：无法推导布局比例", file=sys.stderr)
-        return 2
-
-    detection = detect_rect_space(page_facts)
-    if args.rect_space == "auto":
-        if not detection.get("space"):
-            print(f"无法判定 rect 的坐标空间：{detection.get('reason')}\n"
-                  "用 --rect-space device 或 --rect-space lanhu 显式指定。"
-                  "猜错会让 scale 被乘两遍，所以这里不猜。", file=sys.stderr)
+    if args.dds_schema:
+        # rowDims 主链路：dds-schema 的 rowDims 就是设计稿绝对坐标，恒 lanhu 空间、恒等变换。
+        dds = load_json(args.dds_schema)
+        if not dds:
+            print(f"无法读取 dds-schema（文件不存在或不是 JSON）：{args.dds_schema}", file=sys.stderr)
             return 2
-        rect_space = detection["space"]
+        page_facts = parse_dds_schema(dds)
+        if not page_facts.get("elements"):
+            print("dds-schema 没有可用的 rowDims 节点：无法推导布局比例", file=sys.stderr)
+            return 2
+        rect_space = "lanhu"
+        detection = {"space": "lanhu", "reason": "dds-schema rowDims 是设计稿绝对坐标"}
+    elif args.page_facts:
+        page_facts = load_json(args.page_facts)
+        if not page_facts:
+            print(f"无法读取事实表（文件不存在或不是 JSON）：{args.page_facts}", file=sys.stderr)
+            return 2
+        if not page_facts.get("elements"):
+            print("事实表没有 elements：无法推导布局比例", file=sys.stderr)
+            return 2
+        detection = detect_rect_space(page_facts)
+        if args.rect_space == "auto":
+            if not detection.get("space"):
+                print(f"无法判定 rect 的坐标空间：{detection.get('reason')}\n"
+                      "用 --rect-space device 或 --rect-space lanhu 显式指定。", file=sys.stderr)
+                return 2
+            rect_space = detection["space"]
+        else:
+            rect_space = args.rect_space
     else:
-        rect_space = args.rect_space
-        if detection.get("space") and detection["space"] != rect_space:
-            print(f"[warn] 事实表的证据指向 {detection['space']} 空间，但你指定了 {rect_space}；"
-                  "按你的指定继续，请确认这不是「多乘一层 scale」", file=sys.stderr)
+        print("需要 --dds-schema（主链路）或 --page-facts（备用链路）之一", file=sys.stderr)
+        return 2
 
     transform = None
     if rect_space == "lanhu":
-        try:
-            if args.transform:
-                payload = load_json(args.transform) or {}
-                transform = transform_from_canvas_transform(
-                    payload.get("canvasTransform", payload))
-            elif args.runtime_device and args.canvas:
-                width, height = parse_canvas(args.canvas)
-                transform = transform_from_runtime_device(
-                    load_json(args.runtime_device), width, height)
-            else:
-                print("--rect-space lanhu 需要 --transform，或 --runtime-device 配合 --canvas",
-                      file=sys.stderr)
-                return 2
-        except CanvasMapError as error:
-            print(f"画布变换构造失败：{error}", file=sys.stderr)
+        # rowDims / lanhu 坐标下，画布变换是恒等：设计稿坐标即目标坐标。
+        viewport = page_facts.get("viewport") or {}
+        width = viewport.get("width") or 0
+        height = viewport.get("height") or 0
+        if not width or not height:
+            # 从 elements 的 rect 边界兜底画布尺寸
+            if page_facts.get("elements"):
+                maxw = max(e["rect"]["x"] + e["rect"]["width"] for e in page_facts["elements"])
+                maxh = max(e["rect"]["y"] + e["rect"]["height"] for e in page_facts["elements"])
+                width, height = maxw, maxh
+        if not width or not height:
+            print("无法确定画布尺寸（--dds-schema 缺 rowDims 或 --page-facts 缺 viewport）", file=sys.stderr)
             return 2
-        except (OSError, json.JSONDecodeError) as error:
-            # 文件缺失/不是 JSON 属于用法问题，要和「坐标系判不出来」一样干净退出，
-            # 不能抛 traceback —— 那会让调用方分不清是输入错了还是脚本坏了。
-            print(f"读取画布变换输入失败：{error}", file=sys.stderr)
-            return 2
+        transform = IdentityTransform(width, height)
 
     try:
         result = analyse(page_facts, transform, rect_space, args.target_mode,

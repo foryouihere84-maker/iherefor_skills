@@ -21,7 +21,7 @@ parentRunId 链里上一轮的同区域差）。那些「Agent 该不该再开�
 4. comparison 只有 ``textureRatio`` 高（structural 与 fill 都在容差内）⇒ ``stop``：
    栅格化噪点不是缺陷，别改代码。
 5. comparison ``regions[]`` 的 structuralRatio **随 row 单调递增** ⇒ ``stop``：
-   坐标系/比例不一致，回 ``canvasTransform`` / ``canvas_map.py``，别逐控件微调。
+   坐标系/比例不一致，回到布局契约的坐标基准，别逐控件微调。
 6. 关键产物缺失（无 comparison / 无 alignment / 无 reference）⇒ ``stop``：先补证据。
 7. 上一轮（parentRunId 链）同区域 structural/fill 无改善 ⇒ ``stop``：连续两轮无改善，
    请求用户确认根因，别继续自动改。**（可选，需 ``--with-parent`` 才连 parent 一起判）**
@@ -137,7 +137,7 @@ def decide(run_dir, with_parent):
     if comparison is None:
         checks.append({'check': 'comparison-present', 'stop': True})
         return 'stop', '缺少 diff/comparison.json（像素比较没跑或没落盘）', \
-               '先跑 scripts/audit_run.py 补齐 compare，再决定下一步', checks
+               '先补齐比较证据，再决定下一步', checks
     if comparison.get('status') == 'fail' and comparison.get('reason') == 'size-mismatch':
         checks.append({'check': 'size-consistent', 'stop': True})
         return 'stop', '比较器判尺寸不一致（size-mismatch），基准/截图不是同源同尺寸', \
@@ -193,7 +193,7 @@ def decide(run_dir, with_parent):
     if regions_monotonic_in_y(regions):
         checks.append({'check': 'y-monotonic-drift', 'stop': True})
         return 'stop', 'structualRatio 随 row（y 方向）单调递增，是整体映射/比例不一致', \
-               '回 canvasTransform.policy 与 coordinateMapper 核对（scripts/canvas_map.py），不要逐控件微调位置', checks
+               '回到布局契约的坐标基准核对，不要逐控件微调位置', checks
 
     # 7. 连续两轮无改善（可选，需 --with-parent）
     if with_parent:
