@@ -2,43 +2,29 @@
 //  PurposeSelectionViewController.m
 //  testUIProject
 //
-//  Purpose-selection onboarding screen (Lanhu image_id cc79645f + 目的-iPad 28d3d7b5).
+//  Purpose-selection onboarding screen (Lanhu "目的" cc79645f + "目的-iPad" 28d3d7b5).
 //
-//  Layout contract: the Lanhu canvas is a fixed board mapped onto the window with
-//  the `fit` policy (one uniform scale, centred). Every region anchors to its direct
-//  parent through PurposeSelectionStyle's proportional closure — positions are
-//  design-frame ratios, control sizes (font sizes, corners, borders, emoji width)
-//  stay at their literal design values.
+//  Two-device adaptation (option X — two full specs, not a scale-up): the phone and
+//  iPad boards are two COMPLETE independent designs, not one board scaled. They
+//  differ in canvas (393x852 vs 810x1080), font sizes (headline 24→30, Skip 14→18,
+//  Continue 16→20), card width (353→480), card order, CTA size (347x56→480x75) and
+//  hero height (365→394). This view switches between the two full specs on
+//  `horizontalSizeClass`: compact → phone spec, regular → iPad spec.
 //
-//  Two-device adaptation: the design exists as TWO Lanhu boards — "目的" (phone,
-//  393x852, image_id cc79645f) and "目的-iPad" (tablet, 810x1080, image_id
-//  28d3d7b5). They are the same content laid out at two widths, but the iPad board
-//  is NOT a uniform scale-up: card width goes 353→481 (height stays 66), the CTA
-//  grows 347x56→480x75, the hero grows 365→396 tall, and the card VERTICAL ORDER
-//  differs. So this view switches between two full layout specs on
-//  `horizontalSizeClass`: compact → phone spec, regular → iPad spec. Each spec is
-//  expressed against its own canvas (see ../../.ihereforUI/pages/purpose/runs/*/
-//  ui-implementation-plan.json -> adaptiveLayout.sizeVariants), so both stay
-//  "照稿还原" (faithful to their own board) — not a scale-up.
+//  All coordinates below are the board's own canvas space (phone 393x852, iPad
+//  810x1080), taken from the RENDERED page-facts (not the design_document layer
+//  tree — the iPad design_document has a negative-offset root `(-64,79.5)` and
+//  missing text nodes, so its layer rects are NOT usable as absolute coords; the
+//  rendered HTML/*.css is the truth).
 //
-//  Data gap (recorded, not silently papered over): the "目的-iPad" design_document
-//  is MISSING the text layers for two cards — "🖊️ Develop my coloring skills"
-//  (card frame at y=200) and "🎨 Express my creativity" (card frame at y=276).
-//  Their card frames exist (6 card frames total at y=124/162/200/238/276/314) but
-//  the typography node is absent, almost certainly an export omission. The phone
-//  board has all 6 labels, so the iPad spec reuses the phone labels while taking
-//  its geometry from the iPad board (card frames + positions). This is the
-//  documented recovery, not a guess at new content.
-//
-//  System-bars policy (underlap): the HTML paints its hero artwork from y=0 with no
-//  safe-area inset. The design's own mock status bar is a placeholder and is not
-//  implemented — see ui-implementation-plan.json -> unsupported.
+//  System-bars policy (underlap): hero artwork paints from y=0, mock status bar is
+//  a placeholder, not implemented.
 //
 
 #import "PurposeSelectionViewController.h"
 #import "PurposeSelectionStyle.h"
 
-static NSString *const kAssetHeroBackground = @"age_hero_background"; // same art as age/brush (md5 identical)
+static NSString *const kAssetHeroBackground = @"age_hero_background"; // same art as age/brush
 static NSString *const kAssetNavBack = @"age_nav_back";
 
 static const CGFloat kCardCornerRadius = 12.0;
@@ -46,37 +32,37 @@ static const CGFloat kCardBorderWidth = 1.5;
 static const CGFloat kProgressCornerRadius = 3.0;
 static const CGFloat kCtaCornerRadius = 28.0;
 
-/// One option row: emoji + label + design frame (canvas space of the chosen board).
+/// One option row: emoji + label + board-space design frame.
 typedef struct {
     __unsafe_unretained NSString *emoji;
     __unsafe_unretained NSString *label;
     CGFloat y;
     CGFloat height;
     CGFloat width;
+    CGFloat x;
 } PurposeOptionRow;
 
-/// Phone board (393x852). Order follows the phone HTML render: Express (overhangs
-/// box_6 top via top:-7), Relax, Have fun, Disconnect, Develop, Other.
+/// Phone board (393x852). Rendered order: Express (overhangs box_6 top), Relax,
+/// Have fun, Disconnect, Develop, Other.
 static const PurposeOptionRow kPhoneOptionRows[] = {
-    {@"🎨", @"Express\u00A0my\u00A0creativity",           358.0, 66.0, 353.0},
-    {@"🌸", @"Relax\u00A0myself",                          206.0, 65.0, 353.0},
-    {@"😜", @"Have\u00A0fun",                              281.0, 65.0, 353.0},
-    {@"🧠", @"Disconnect\u00A0my\u00A0brain",              434.0, 65.0, 353.0},
-    {@"🖊️", @"Develop\u00A0my\u00A0coloring\u00A0skills",   509.0, 65.0, 353.0},
-    {@"👀", @"Other",                                      584.0, 65.0, 353.0},
+    {@"🎨", @"Express\u00A0my\u00A0creativity",           358.0, 66.0, 353.0, 20.0},
+    {@"🌸", @"Relax\u00A0myself",                          206.0, 65.0, 353.0, 20.0},
+    {@"😜", @"Have\u00A0fun",                              281.0, 65.0, 353.0, 20.0},
+    {@"🧠", @"Disconnect\u00A0my\u00A0brain",              434.0, 65.0, 353.0, 20.0},
+    {@"🖊️", @"Develop\u00A0my\u00A0coloring\u00A0skills",   509.0, 65.0, 353.0, 20.0},
+    {@"👀", @"Other",                                      584.0, 65.0, 353.0, 20.0},
 };
 static const NSUInteger kPhoneOptionRowCount = sizeof(kPhoneOptionRows) / sizeof(kPhoneOptionRows[0]);
 
-/// iPad board (810x1080). Order follows the iPad board's card frames (y=124..314).
-/// Card width 481 (not 353) and the vertical order differs from the phone spec — a
-/// faithful reproduction of the iPad board, not a scale-up.
+/// iPad board (810x1080). Rendered order (from index.html DOM): Relax, Have fun,
+/// Express, Disconnect, Develop, Other. Cards 480 wide at x=165.
 static const PurposeOptionRow kIpadOptionRows[] = {
-    {@"🌸", @"Relax\u00A0myself",                          124.0, 66.0, 481.0},
-    {@"😜", @"Have\u00A0fun",                              162.0, 66.0, 481.0},
-    {@"🖊️", @"Develop\u00A0my\u00A0coloring\u00A0skills",   200.0, 66.0, 481.0},
-    {@"🧠", @"Disconnect\u00A0my\u00A0brain",              238.0, 66.0, 481.0},
-    {@"🎨", @"Express\u00A0my\u00A0creativity",            276.0, 66.0, 481.0},
-    {@"👀", @"Other",                                      314.0, 66.0, 481.0},
+    {@"🌸", @"Relax\u00A0myself",                          248.0, 65.0, 480.0, 165.0},
+    {@"😜", @"Have\u00A0fun",                              323.0, 65.0, 480.0, 165.0},
+    {@"🎨", @"Express\u00A0my\u00A0creativity",            398.0, 65.0, 480.0, 165.0},
+    {@"🧠", @"Disconnect\u00A0my\u00A0brain",              473.0, 65.0, 480.0, 165.0},
+    {@"🖊️", @"Develop\u00A0my\u00A0coloring\u00A0skills",   548.0, 65.0, 480.0, 165.0},
+    {@"👀", @"Other",                                      623.0, 65.0, 480.0, 165.0},
 };
 static const NSUInteger kIpadOptionRowCount = sizeof(kIpadOptionRows) / sizeof(kIpadOptionRows[0]);
 
@@ -122,32 +108,65 @@ static const CGFloat kIpadCanvasHeight = 1080.0;
 }
 
 - (CGFloat)heroDesignHeight {
-    // phone hero = 365 (index.css section_1); iPad hero = 396 (board's bg frame).
-    return self.isRegularWidth ? 396.0 : 365.0;
+    return self.isRegularWidth ? 394.0 : 365.0;
 }
 
-/// Design frame of the Continue pill, in the current board's canvas space.
-- (CGRect)ctaDesignFrame {
-    // phone: index.css .text-wrapper_7 = 347x56 at (26,725) → but the flat resolved
-    // colour pill is (26,725,347,56). iPad board: 480x75 at (82.5,452).
+#pragma mark - Trait-aware typography (option X: iPad board has larger type)
+
+- (UIFont *)headlineFont {
     return self.isRegularWidth
-        ? CGRectMake(82.5, 452.0, 480.0, 75.0)
+        ? PurposeSelectionStyle.headlineFontIpad      // 30
+        : PurposeSelectionStyle.headlineFont;         // 24
+}
+
+- (UIFont *)skipFont {
+    return self.isRegularWidth
+        ? PurposeSelectionStyle.skipFontIpad          // 18
+        : PurposeSelectionStyle.skipFont;             // 14
+}
+
+- (UIFont *)ctaFont {
+    return self.isRegularWidth
+        ? PurposeSelectionStyle.ctaFontIpad           // 20
+        : PurposeSelectionStyle.ctaFont;              // 16
+}
+
+- (UIFont *)optionFont {
+    return PurposeSelectionStyle.optionFont;  // 18 in both boards
+}
+
+- (CGRect)ctaDesignFrame {
+    return self.isRegularWidth
+        ? CGRectMake(165.0, 898.0, 480.0, 75.0)
         : CGRectMake(26.0, 725.0, 347.0, 56.0);
 }
 
 - (CGRect)titleDesignFrame {
-    // phone: (68,108,258,29). iPad: headline sits at the same visual rhythm; board
-    // places "How can we help you?" centred-left under the hero. Use board geometry
-    // — iPad headline label frame measured from the board text node.
     return self.isRegularWidth
-        ? CGRectMake(147.0, 108.0, 415.0, 29.0)
+        ? CGRectMake(244.0, 125.0, 322.0, 36.0)
         : CGRectMake(68.0, 108.0, 258.0, 29.0);
 }
 
 - (CGRect)skipDesignFrame {
     return self.isRegularWidth
-        ? CGRectMake(367.5, 31.0, 35.0, 22.0)
+        ? CGRectMake(735.0, 62.0, 35.0, 34.0)
         : CGRectMake(346.0, 60.0, 27.0, 24.0);
+}
+
+- (CGRect)backDesignFrame {
+    return self.isRegularWidth
+        ? CGRectMake(48.0, 46.0, 44.0, 44.0)
+        : CGRectMake(12.0, 52.0, 32.0, 32.0);
+}
+
+- (CGRect)progressDesignFrame {
+    return self.isRegularWidth
+        ? CGRectMake(96.0, 66.0, 482.0, 8.0)
+        : CGRectMake(81.0, 65.0, 232.0, 6.0);
+}
+
+- (CGFloat)progressFillWidth {
+    return self.isRegularWidth ? 32.0 : 24.0;
 }
 
 #pragma mark - Lifecycle
@@ -174,8 +193,6 @@ static const CGFloat kIpadCanvasHeight = 1080.0;
 - (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
     [super traitCollectionDidChange:previousTraitCollection];
     if (self.traitCollection.horizontalSizeClass != previousTraitCollection.horizontalSizeClass) {
-        // Size class flipping (iPhone↔iPad full screen, split view) changes which
-        // board to reproduce. Rebuild the regions against the new canvas.
         [self teardownRegions];
         [self buildRegions];
     }
@@ -236,7 +253,6 @@ static const CGFloat kIpadCanvasHeight = 1080.0;
                                                                  insideView:self.view
                                                                 aspectRatio:aspect]];
 
-    // hero (0,0,W,heroHeight)
     self.heroBackgroundView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:kAssetHeroBackground]];
     self.heroBackgroundView.contentMode = UIViewContentModeScaleToFill;
     self.heroBackgroundView.accessibilityIdentifier = @"purposeSelection.hero";
@@ -257,7 +273,8 @@ static const CGFloat kIpadCanvasHeight = 1080.0;
 - (void)buildNavRow {
     CGSize canvasDesign = [self canvasDesignSize];
     CGRect skipFrame = [self skipDesignFrame];
-    BOOL regular = self.isRegularWidth;
+    CGRect backFrame = [self backDesignFrame];
+    CGRect progressFrame = [self progressDesignFrame];
 
     self.navBackView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:kAssetNavBack]];
     self.navBackView.contentMode = UIViewContentModeScaleToFill;
@@ -266,7 +283,7 @@ static const CGFloat kIpadCanvasHeight = 1080.0;
     [self.canvasView addSubview:self.navBackView];
     [NSLayoutConstraint activateConstraints:[PurposeSelectionStyle closeChild:self.navBackView
                                                                       parent:self.canvasView
-                                                                 designFrame:CGRectMake(regular ? 40.0 : 12.0, regular ? 43.0 : 52.0, 32, 32)
+                                                                 designFrame:backFrame
                                                             parentDesignSize:canvasDesign
                                                                     sizeMode:PurposeClosureSizeIntrinsic
                                                                       anchor:PurposeClosureAnchorLeading]];
@@ -279,7 +296,7 @@ static const CGFloat kIpadCanvasHeight = 1080.0;
     [self.canvasView addSubview:self.progressTrackView];
     [NSLayoutConstraint activateConstraints:[PurposeSelectionStyle closeChild:self.progressTrackView
                                                                       parent:self.canvasView
-                                                                 designFrame:CGRectMake(regular ? 92.0 : 81.0, regular ? 57.0 : 65.0, regular ? 504.0 : 232.0, 6)
+                                                                 designFrame:progressFrame
                                                             parentDesignSize:canvasDesign]];
 
     self.progressFillView = [[UIView alloc] initWithFrame:CGRectZero];
@@ -293,12 +310,12 @@ static const CGFloat kIpadCanvasHeight = 1080.0;
         [self.progressFillView.leadingAnchor constraintEqualToAnchor:self.progressTrackView.leadingAnchor],
         [self.progressFillView.topAnchor constraintEqualToAnchor:self.progressTrackView.topAnchor],
         [self.progressFillView.bottomAnchor constraintEqualToAnchor:self.progressTrackView.bottomAnchor],
-        [self.progressFillView.widthAnchor constraintEqualToConstant:regular ? 32.0 : 24.0],
+        [self.progressFillView.widthAnchor constraintEqualToConstant:[self progressFillWidth]],
     ]];
 
     self.skipLabel = [[UILabel alloc] init];
     self.skipLabel.text = @"Skip";
-    self.skipLabel.font = PurposeSelectionStyle.skipFont;
+    self.skipLabel.font = [self skipFont];
     self.skipLabel.textColor = PurposeSelectionStyle.skipTextColor;
     self.skipLabel.textAlignment = NSTextAlignmentLeft;
     self.skipLabel.userInteractionEnabled = YES;
@@ -318,7 +335,7 @@ static const CGFloat kIpadCanvasHeight = 1080.0;
 
     self.titleLabel = [[UILabel alloc] init];
     self.titleLabel.text = @"How\u00A0can\u00A0we\u00A0help\u00A0you?";
-    self.titleLabel.font = PurposeSelectionStyle.headlineFont;
+    self.titleLabel.font = [self headlineFont];
     self.titleLabel.textColor = PurposeSelectionStyle.primaryTextColor;
     self.titleLabel.textAlignment = NSTextAlignmentLeft;
     self.titleLabel.accessibilityIdentifier = @"purposeSelection.title";
@@ -331,9 +348,6 @@ static const CGFloat kIpadCanvasHeight = 1080.0;
                                                                       anchor:PurposeClosureAnchorLeading]];
 }
 
-/// Build one option card: a white rounded card holding "emoji + text". Size and
-/// position come from the current board's spec (phone 353-wide vs iPad 481-wide),
-/// so a card's literal geometry follows its own board, not a scale-up.
 - (UIView *)buildOptionCardAtIndex:(NSUInteger)index {
     CGSize canvasDesign = [self canvasDesignSize];
     const PurposeOptionRow *rows = [self optionRows];
@@ -349,12 +363,13 @@ static const CGFloat kIpadCanvasHeight = 1080.0;
     [self.canvasView addSubview:card];
     [NSLayoutConstraint activateConstraints:[PurposeSelectionStyle closeChild:card
                                                                       parent:self.canvasView
-                                                                 designFrame:CGRectMake(self.isRegularWidth ? 82.5 : 20.0, row.y, row.width, row.height)
+                                                                 designFrame:CGRectMake(row.x, row.y, row.width, row.height)
                                                             parentDesignSize:canvasDesign]];
 
     UILabel *label = [[UILabel alloc] init];
     label.numberOfLines = 1;
     label.userInteractionEnabled = NO;
+    UIFont *optionFont = [self optionFont];
     NSMutableAttributedString *text = [[NSMutableAttributedString alloc] init];
     [text appendAttributedString:[[NSAttributedString alloc] initWithString:row.emoji
                                                                  attributes:@{
@@ -363,12 +378,12 @@ static const CGFloat kIpadCanvasHeight = 1080.0;
     }]];
     [text appendAttributedString:[[NSAttributedString alloc] initWithString:@"\u00A0"
                                                                  attributes:@{
-        NSFontAttributeName: PurposeSelectionStyle.optionFont,
+        NSFontAttributeName: optionFont,
         NSForegroundColorAttributeName: PurposeSelectionStyle.primaryTextColor,
     }]];
     [text appendAttributedString:[[NSAttributedString alloc] initWithString:row.label
                                                                  attributes:@{
-        NSFontAttributeName: PurposeSelectionStyle.optionFont,
+        NSFontAttributeName: optionFont,
         NSForegroundColorAttributeName: PurposeSelectionStyle.primaryTextColor,
     }]];
     label.attributedText = text;
@@ -393,9 +408,6 @@ static const CGFloat kIpadCanvasHeight = 1080.0;
     CGSize canvasDesign = [self canvasDesignSize];
     CGRect frame = [self ctaDesignFrame];
 
-    // index.css paints the pill via a 16%-alpha black plate over the page colour,
-    // which the browser resolves to flat rgb(205,204,206). Paint that flat colour
-    // directly — no image, no alpha compositing.
     self.ctaBackgroundView = [[UIView alloc] initWithFrame:CGRectZero];
     self.ctaBackgroundView.userInteractionEnabled = YES;
     self.ctaBackgroundView.backgroundColor = [UIColor colorWithRed:205/255.0 green:204/255.0 blue:206/255.0 alpha:1];
@@ -410,7 +422,7 @@ static const CGFloat kIpadCanvasHeight = 1080.0;
 
     self.ctaLabel = [[UILabel alloc] init];
     self.ctaLabel.text = @"Continue";
-    self.ctaLabel.font = PurposeSelectionStyle.ctaFont;
+    self.ctaLabel.font = [self ctaFont];
     self.ctaLabel.textColor = PurposeSelectionStyle.onCtaTextColor;
     self.ctaLabel.textAlignment = NSTextAlignmentCenter;
     self.ctaLabel.userInteractionEnabled = NO;
@@ -448,22 +460,18 @@ static const CGFloat kIpadCanvasHeight = 1080.0;
     if (idx == NSNotFound) return;
     const PurposeOptionRow *rows = [self optionRows];
     NSLog(@"IHEREFOR_EVENT didTapPurposeOption index=%lu label=%@", (unsigned long)idx, rows[idx].label);
-    // TODO: connect business action - record the chosen purpose.
 }
 
 - (void)didTapBack:(UITapGestureRecognizer *)recognizer {
     NSLog(@"IHEREFOR_EVENT didTapBack");
-    // TODO: connect business action - pop or dismiss the onboarding flow.
 }
 
 - (void)didTapSkip:(UITapGestureRecognizer *)recognizer {
     NSLog(@"IHEREFOR_EVENT didTapSkip");
-    // TODO: connect business action - skip the purpose step.
 }
 
 - (void)didTapContinue:(UITapGestureRecognizer *)recognizer {
     NSLog(@"IHEREFOR_EVENT didTapContinue");
-    // TODO: connect business action - advance with the chosen purpose.
 }
 
 #pragma mark - Evidence

@@ -73,6 +73,11 @@ typedef NS_ENUM(NSInteger, PurposeClosureAnchor) {
 + (UIFont *)ctaFont;         ///< Avenir-Heavy 16
 + (UIFont *)skipFont;        ///< Avenir-Medium 14
 
+/// iPad-board type (目的-iPad uses larger sizes; option X two-spec adaptation).
++ (UIFont *)headlineFontIpad;  ///< Avenir-Black 30
++ (UIFont *)skipFontIpad;      ///< Avenir-Medium 18
++ (UIFont *)ctaFontIpad;       ///< PingFangSC-Medium 20 (iPad CSS uses PingFangSC-Medium)
+
 + (NSParagraphStyle *)paragraphStyleWithLineHeight:(CGFloat)lineHeight;
 
 @end

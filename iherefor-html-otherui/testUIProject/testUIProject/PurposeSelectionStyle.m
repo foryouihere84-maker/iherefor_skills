@@ -380,6 +380,19 @@ static UIFont *PurposeFont(NSString *postScriptName, CGFloat size, UIFontWeight 
     return PurposeFont(@"Avenir-Medium", 14.0, UIFontWeightMedium);
 }
 
++ (UIFont *)headlineFontIpad {
+    return PurposeFont(@"Avenir-Black", 30.0, UIFontWeightHeavy);
+}
+
++ (UIFont *)skipFontIpad {
+    return PurposeFont(@"Avenir-Medium", 18.0, UIFontWeightMedium);
+}
+
++ (UIFont *)ctaFontIpad {
+    // iPad CSS `.text_17 { font-family: PingFangSC-Medium; font-size: 20px }`.
+    return PurposeFont(@"PingFangSC-Medium", 20.0, UIFontWeightMedium);
+}
+
 + (NSParagraphStyle *)paragraphStyleWithLineHeight:(CGFloat)lineHeight {
     NSMutableParagraphStyle *style = [[NSMutableParagraphStyle alloc] init];
     style.minimumLineHeight = lineHeight;
