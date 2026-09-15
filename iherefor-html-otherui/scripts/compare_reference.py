@@ -293,7 +293,17 @@ def declared_unsupported_mask(plan, size):
     located, unlocated = [], []
     if not isinstance(plan, dict):
         return None, located, unlocated
-    items = (plan.get('unsupported') or {}).get('items') or []
+    # unsupported 有两种契约形态：既有 plan 用**数组**（纯文字描述，无坐标，全部
+    # 落在 unlocated——扣不掉但必须如实说明）；带坐标的可扣除项用
+    # ``{"items": [{...rect/box/rectInReference...}]}``。两种都要能读，不能因为
+    # 数组形态就 AttributeError 崩掉 —— 曾有 plan 用数组、脚本却当成 dict 取值。
+    unsupported = plan.get('unsupported')
+    if isinstance(unsupported, dict):
+        items = unsupported.get('items') or []
+    elif isinstance(unsupported, list):
+        items = unsupported
+    else:
+        items = []
     for position, item in enumerate(items):
         if not isinstance(item, dict):
             continue
