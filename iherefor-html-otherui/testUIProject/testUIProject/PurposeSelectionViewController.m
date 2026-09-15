@@ -24,8 +24,10 @@
 #import "PurposeSelectionViewController.h"
 #import "PurposeSelectionStyle.h"
 
-static NSString *const kAssetHeroBackground = @"age_hero_background"; // same art as age/brush
-static NSString *const kAssetNavBack = @"age_nav_back";
+static NSString *const kAssetHeroBackground = @"age_hero_background"; // phone-board hero (shared across phone boards)
+static NSString *const kAssetHeroBackgroundIpad = @"purpose_ipad_hero_background"; // iPad-board hero (810x396, own asset)
+static NSString *const kAssetNavBack = @"age_nav_back"; // phone back (32x32)
+static NSString *const kAssetNavBackIpad = @"purpose_ipad_nav_back"; // iPad back (44x44)
 
 static const CGFloat kCardCornerRadius = 12.0;
 static const CGFloat kCardBorderWidth = 1.5;
@@ -154,19 +156,24 @@ static const CGFloat kIpadCanvasHeight = 1080.0;
 }
 
 - (CGRect)backDesignFrame {
+    // phone (12,52,32,32); iPad back label is 44x44 at (48,52) per iPad rendered
+    // page-facts (label_1).
     return self.isRegularWidth
-        ? CGRectMake(48.0, 46.0, 44.0, 44.0)
+        ? CGRectMake(48.0, 52.0, 44.0, 44.0)
         : CGRectMake(12.0, 52.0, 32.0, 32.0);
 }
 
 - (CGRect)progressDesignFrame {
+    // phone (81,65,232,6); iPad group_1 track is 482x8 at (168,70) per iPad
+    // rendered page-facts.
     return self.isRegularWidth
-        ? CGRectMake(96.0, 66.0, 482.0, 8.0)
+        ? CGRectMake(168.0, 70.0, 482.0, 8.0)
         : CGRectMake(81.0, 65.0, 232.0, 6.0);
 }
 
 - (CGFloat)progressFillWidth {
-    return self.isRegularWidth ? 32.0 : 24.0;
+    // iPad fill (box_2) is 33 wide; phone fill is 24.
+    return self.isRegularWidth ? 33.0 : 24.0;
 }
 
 #pragma mark - Lifecycle
@@ -253,7 +260,7 @@ static const CGFloat kIpadCanvasHeight = 1080.0;
                                                                  insideView:self.view
                                                                 aspectRatio:aspect]];
 
-    self.heroBackgroundView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:kAssetHeroBackground]];
+    self.heroBackgroundView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:(self.isRegularWidth ? kAssetHeroBackgroundIpad : kAssetHeroBackground)]];
     self.heroBackgroundView.contentMode = UIViewContentModeScaleToFill;
     self.heroBackgroundView.accessibilityIdentifier = @"purposeSelection.hero";
     [self.canvasView addSubview:self.heroBackgroundView];
@@ -276,7 +283,7 @@ static const CGFloat kIpadCanvasHeight = 1080.0;
     CGRect backFrame = [self backDesignFrame];
     CGRect progressFrame = [self progressDesignFrame];
 
-    self.navBackView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:kAssetNavBack]];
+    self.navBackView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:(self.isRegularWidth ? kAssetNavBackIpad : kAssetNavBack)]];
     self.navBackView.contentMode = UIViewContentModeScaleToFill;
     self.navBackView.userInteractionEnabled = YES;
     self.navBackView.accessibilityIdentifier = @"purposeSelection.back";
@@ -333,10 +340,23 @@ static const CGFloat kIpadCanvasHeight = 1080.0;
     CGSize canvasDesign = [self canvasDesignSize];
     CGRect frame = [self titleDesignFrame];
 
+    // index.css sets `line-height` per board — phone 29, iPad 36. UILabel's
+    // intrinsic height uses the font's own line height, which differs from the
+    // CSS line box, vertically shifting the glyphs (measured ~3.5pt low on iPad).
+    // Pin the line height explicitly so the headline lands where the board says.
+    CGFloat lineHeight = self.isRegularWidth ? 36.0 : 29.0;
+    NSMutableParagraphStyle *style =
+        [[PurposeSelectionStyle paragraphStyleWithLineHeight:lineHeight] mutableCopy];
+    style.lineBreakMode = NSLineBreakByClipping;
+
     self.titleLabel = [[UILabel alloc] init];
-    self.titleLabel.text = @"How\u00A0can\u00A0we\u00A0help\u00A0you?";
-    self.titleLabel.font = [self headlineFont];
-    self.titleLabel.textColor = PurposeSelectionStyle.primaryTextColor;
+    self.titleLabel.attributedText = [[NSAttributedString alloc] initWithString:@"How\u00A0can\u00A0we\u00A0help\u00A0you?"
+                                                                     attributes:@{
+        NSFontAttributeName: [self headlineFont],
+        NSForegroundColorAttributeName: PurposeSelectionStyle.primaryTextColor,
+        NSParagraphStyleAttributeName: style,
+    }];
+    self.titleLabel.numberOfLines = 1;
     self.titleLabel.textAlignment = NSTextAlignmentLeft;
     self.titleLabel.accessibilityIdentifier = @"purposeSelection.title";
     [self.canvasView addSubview:self.titleLabel];
@@ -410,7 +430,11 @@ static const CGFloat kIpadCanvasHeight = 1080.0;
 
     self.ctaBackgroundView = [[UIView alloc] initWithFrame:CGRectZero];
     self.ctaBackgroundView.userInteractionEnabled = YES;
-    self.ctaBackgroundView.backgroundColor = [UIColor colorWithRed:205/255.0 green:204/255.0 blue:206/255.0 alpha:1];
+    // CTA colour is per-board: phone resolves to flat grey rgb(205,204,206); the
+    // iPad board's Continue pill is flat blue rgb(89,87,255) (its own img_5 plate).
+    self.ctaBackgroundView.backgroundColor = self.isRegularWidth
+        ? [UIColor colorWithRed:89/255.0 green:87/255.0 blue:255/255.0 alpha:1]
+        : [UIColor colorWithRed:205/255.0 green:204/255.0 blue:206/255.0 alpha:1];
     self.ctaBackgroundView.layer.cornerRadius = kCtaCornerRadius;
     self.ctaBackgroundView.layer.masksToBounds = YES;
     self.ctaBackgroundView.accessibilityIdentifier = @"purposeSelection.continue";

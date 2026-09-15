@@ -6,10 +6,27 @@
 
 1. iOS 先查 `.xcassets`、已有 `Resources/Assets/Images` 目录、`Contents.json` 的命名和渲染规则；Android 先查 `res/drawable*`、`mipmap*`、`res/font` 以及项目的资源前缀约定。
 2. 若工程已有资源体系，复用其目录、命名、scale/density、渲染模式和模块归属；禁止另建平行 `assets` 目录或把 Lanhu 原名直接复制进生产工程。
-3. 若工程没有约定，采用平台默认最佳实践：iOS 使用目标模块 `.xcassets`，Android 使用 `res/drawable-nodpi` 或对应 density 目录。
-4. 命名必须表达使用场景，而非 `img_0.png`、`image1.png` 等来源编号。推荐 `<screen>_<region>_<role>`，例如 `plan_selection_hero_collage`、`plan_selection_close_icon`。
+3. **切图归位是硬禁令，不可例外**（与 `SKILL.md`「资源归位硬约束」同步）：切图/位图/SVG **严禁散落在项目根目录、源码目录或任意 `*.m/*.swift/*.kt/*.java` 同级**。iOS 一律进目标模块 `Assets.xcassets`，按业务域分组为 `Assets.xcassets/<业务域>/<语义名>.imageset/`，每个 imageset 内放 `Contents.json` 与 `1x/2x/3x` 三张资源；Android 一律进 `res/drawable(-density)*`。即使只有一张也必须入 imageset，不得平铺。
+4. 命名必须表达使用场景，而非 `img_0.png`、`image1.png` 等来源编号。推荐 `<screen>_<region>_<role>`，例如 `plan_selection_hero_collage`、`plan_selection_close_icon`；imageset 目录名与资源语义一致。
 5. 资源映射写入页面 `source/assets-manifest.json` 和目标 run 的 `resource-policy.json`，包含来源、目标路径、语义名、scale/density 和是否复用。
 6. 复制/转换到目标工程后才标记 `verified=true`；缺失、重复或命名冲突阻塞交付。
+
+### iOS imageset 标准结构（参考 `ColorfulPaint` 工程）
+
+```
+Assets.xcassets/
+  guide/                          # 业务域分组
+    guide_img_1.imageset/
+      Contents.json               # { "images": [
+                                  #   { "filename": "guide_img_1.png",  "scale": "1x" },
+                                  #   { "filename": "guide_img_1@2x.png", "scale": "2x" },
+                                  #   { "filename": "guide_img_1@3x.png", "scale": "3x" } ] }
+      guide_img_1.png
+      guide_img_1@2x.png
+      guide_img_1@3x.png
+```
+
+每个 imageset 的 `Contents.json` 必须显式声明 `1x/2x/3x` 三档 filename 与 scale；缺 `Contents.json` 或 scale 声明不全会导致 Xcode 无法识别该资源。业务域分组用语义词（如 `guide`、`paywall`、`onboarding`）而非页面 id 或随机编号。
 
 资源接入还必须验证显示 frame 来自页面 `canvasTransform.coordinateMapper`。图片 frame、`contentMode`/`scaleType`/`ContentScale` 与 alpha 内容 bounds 的硬约束以 `SKILL.md` 的「图片缩放硬约束」一节为准，本文件不再重复；每张图片仍必须在 `resource-policy.json` 中记录 Lanhu frame、目标 mapped frame、scaleX/scaleY 与最终截图 frame。
 
