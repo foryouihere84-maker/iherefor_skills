@@ -626,6 +626,7 @@ skill 根目录的 `index.html` 是一个纯静态差异查看器（无需服务
 |---|---|---|
 | `scripts/canvas_map.py` | 唯一的坐标换算入口，正向 + 逆向 + 默认 `fit` 策略；`to_ratios` / `axis_deviation` 给出比例形式与模型偏差 | 任何需要换算坐标的分析之前；改坐标逻辑后跑 `--self-test` |
 | `scripts/render_reference.mjs` | 确定性渲染基准图与事实表（含 `rectInReference`、`alphaBounds`、`textMetrics`、运行时字体） | 第 1 步建立基准 |
+| `scripts/normalize_lanhu_fonts.py` | 渲染前把 Lanhu 导出的「系统不存在族名」替换成真实族名（`AvenirLT-*` → `Avenir-*`），避免基准图带着回落字体（Times）自洽地错 | **下载后、渲染前必做**（第 1 步） |
 | `scripts/lanhu_design_facts.py` | 把 `lanhu_get_design_document` 返回体解析成紧凑设计事实摘要（父视图归属 / 字号字体文本颜色 / 描边填充阴影），供实现计划直接引用而非从渲染 DOM 反推 | 第 1 步调用 `lanhu_get_design_document` 之后 |
 | `scripts/layout_proportions.py` | 把事实表位置转成 `layoutProportions` 约束规格（尺寸是常量、位置相对直接父视图），并列出「探针设备推导值」禁止清单 | 第 2 步写实现计划时；缺它就没法核对「有没有写成探针设备上的固定 pt」 |
 | `scripts/check_layout_proportions.py` | 计划驱动地核对源码有没有照计划声明的 `kind` 实现；`--plan-only` 只校验计划 | **门 0（`--plan-only`）在写码前，门 1 在写码完成后、编译之前**；改了布局代码就重跑。纯静态（只读计划与源码文本），秒级，不编译不起浏览器 |

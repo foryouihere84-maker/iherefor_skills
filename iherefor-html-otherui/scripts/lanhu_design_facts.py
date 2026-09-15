@@ -114,6 +114,8 @@ def build_facts(document):
     borders = []
     fills = []
     shadows = []
+    raw_font_sizes = set()   # 采集所有原始 fontSize，用于检测「字号坍缩」
+    gradient_stops_all = []  # 采集所有 gradient fill 的 stops，用于检测「渐变失真」
     for node in layers:
         style = node.get("style") or {}
         meta = node.get("metadata") or {}
@@ -130,6 +132,8 @@ def build_facts(document):
             font_family = ty.get("fontFamily")
             normalized = _FONT_NORMALIZE.get(font_family, font_family)
             raw_size = _num(ty.get("fontSize"))
+            if raw_size is not None:
+                raw_font_sizes.add(raw_size)
             row = dict(common)
             row.update({
                 "text": ty.get("text"),
@@ -154,6 +158,12 @@ def build_facts(document):
         if style.get("fills"):
             fills.append({"id": nid, "name": node.get("name"),
                           "fills": style["fills"]})
+            # 收集 gradient 的 stops，检测「渐变失真」（stops 为空则渐变信息丢失）
+            for fill in style["fills"]:
+                if fill.get("type") == "gradient":
+                    grad = fill.get("gradient") or {}
+                    stops = grad.get("stops") if isinstance(grad.get("stops"), list) else None
+                    gradient_stops_all.append(stops)
         if style.get("shadows"):
             shadows.append({"id": nid, "name": node.get("name"),
                             "shadows": style["shadows"]})
@@ -168,6 +178,15 @@ def build_facts(document):
         1 for n in layers if (n.get("metadata") or {}).get("hasExportImage")
     )
 
+    # 失真检测：document 的数据对某些事实有系统性失真，须显式标出让下游别当成权威。
+    # 1) 字号坍缩：所有 typography 的 fontSize 都相同（实测「目的」页 15 个文本全 7），
+    #    而真实 CSS 里明明有 14/18/24 三档 —— 字号层级丢失，要回退下载的 HTML CSS。
+    # 2) 渐变失真：gradient fill 的 stops 为空数组，颜色停靠点丢失，要回退 imageUrl 位图。
+    font_size_degraded = len(raw_font_sizes) <= 1 and len(typography) > 1
+    gradient_degraded = len(gradient_stops_all) > 0 and all(
+        not stops for stops in gradient_stops_all
+    )
+
     return {
         "source": {
             "name": document.get("name"),
@@ -179,6 +198,14 @@ def build_facts(document):
             "canvasScale": scale,
             "fontSizeScaled": bool(scale and scale != 1),
             "note": "rect 坐标未缩放（画布点坐标）；fontSize 已按 canvas.scale 还原，fontSizeRaw 是 document 原文",
+        },
+        "degraded": {
+            "fontSizeDegraded": font_size_degraded,
+            "gradientDegraded": gradient_degraded,
+            "note": "document 数据只在「层级(children/depth)+几何(rect)+描边/纯色填充」上可信；"
+                   "字号/渐变/文本语义可能有系统性失真。fontSizeDegraded=true 时字号层级丢失，"
+                   "要以下载的 HTML CSS 为准；gradientDegraded=true 时渐变 stops 为空，"
+                   "要回退 imageUrl 位图。",
         },
         "summary": {
             "layerCount": len(layers),

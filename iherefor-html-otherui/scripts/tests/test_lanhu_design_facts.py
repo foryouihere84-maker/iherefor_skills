@@ -175,6 +175,46 @@ def test_rgba_fallback_hexless_color():
     assert facts["typography"][0]["color"] == "rgba(255,0,128,0.5)"
 
 
+def test_font_size_degraded_signal():
+    """多个文本都由同一字号、且各不相同时，必须标 fontSizeDegraded=true（字号层级丢失）。"""
+    doc = minimal_document()
+    # 在 ROOT 下再加一个子文本，与 TITLE 字号不同，模拟「字号层级被坍缩」
+    second = dict(doc["layers"][0]["children"][0])
+    second["id"] = "TITLE2"
+    second["name"] = "title2"
+    second["style"] = dict(second["style"])
+    second["style"]["typography"] = dict(second["style"]["typography"])
+    second["style"]["typography"]["text"] = "World"
+    second["style"]["typography"]["fontSize"] = 7  # 与第一个相同 → 坍缩
+    second["metadata"] = {"depth": 1, "parentId": None, "hasExportImage": False, "exportFormats": []}
+    doc["layers"][0]["children"].append(second)
+    out = Path(tempfile.mkdtemp()) / "facts.json"
+    facts = run_facts(doc, out)
+    # 两个文本、字号相同 → 坍缩信号为 True
+    assert facts["summary"]["typographyCount"] == 2
+    assert facts["degraded"]["fontSizeDegraded"] is True
+    # 改了字号后（两个字号不同）→ 信号为 False
+    doc["layers"][0]["children"][1]["style"]["typography"]["fontSize"] = 9
+    out2 = Path(tempfile.mkdtemp()) / "facts.json"
+    facts2 = run_facts(doc, out2)
+    assert facts2["degraded"]["fontSizeDegraded"] is False
+
+
+def test_gradient_degraded_signal():
+    """gradient fill 的 stops 为空时，必须标 gradientDegraded=true（渐变信息丢失）。"""
+    doc = minimal_document()
+    fill = {"type": "gradient", "gradient": {"type": "linear", "stops": []}}
+    doc["layers"][0]["children"][0]["style"]["fills"] = [fill]
+    out = Path(tempfile.mkdtemp()) / "facts.json"
+    facts = run_facts(doc, out)
+    assert facts["degraded"]["gradientDegraded"] is True
+    # stops 有内容 → 不判失真
+    fill["gradient"]["stops"] = [{"color": "#000"}]
+    out2 = Path(tempfile.mkdtemp()) / "facts.json"
+    facts2 = run_facts(doc, out2)
+    assert facts2["degraded"]["gradientDegraded"] is False
+
+
 if __name__ == "__main__":
     test_typography_is_not_type()
     test_font_size_restored_by_scale()
@@ -184,4 +224,6 @@ if __name__ == "__main__":
     test_borders_extracted()
     test_summary_counts()
     test_rgba_fallback_hexless_color()
+    test_font_size_degraded_signal()
+    test_gradient_degraded_signal()
     print("lanhu_design_facts 解析还原：全部通过")

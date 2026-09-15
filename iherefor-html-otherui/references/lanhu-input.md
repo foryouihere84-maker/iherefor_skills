@@ -74,9 +74,16 @@ python3 scripts/check_lanhu_mcp.py --registries /path/to/my-registries.json
    - `lanhu_get_annotations` 与 `lanhu_get_design_document` 的图层树/字号/文本基本重叠，**不用重复调用**；
      `lanhu_get_layer_detail` 仅在某一层与渲染事实对不上、需要看 Sketch 原始帧时按需调用；
      `lanhu_get_tokens` 仅在需要具名设计 token 时调用。
-6. 对每个成功读取或下载的资源执行 Lanhu cache hook，保存到项目 `.lanhu-cache/<project-id>/`；禁止缓存 Cookie、Authorization 或原始 MCP envelope。
-7. 校验 `source/index.html`、CSS/JS 和 `img/` 非空，记录文件清单、sha256、image_id、版本和来源 URL 到 `source/manifest.json`。
-8. 只有 source manifest 校验通过后，才运行 Playwright reference、page-facts 和目标平台 Agent loop。
+6. **字体族名预处理（下载后、渲染前，必做）**：运行
+   `scripts/normalize_lanhu_fonts.py --source .ihereforUI/pages/<page-id>/source`，
+   把 Lanhu 导出的「系统不存在族名」替换成真实族名（`AvenirLT-*` → `Avenir-*`）。
+   **这一步不能省、不能靠 Agent 手工 sed**：漏了它，基准图会带着回落字体（Times）渲染，
+   而且回落是静默的——DOM 与基准图互相印证、对齐审计判 `aligned`，等于「基准图自洽地错」，
+   后续所有 diff 都在跟错误基准比。实测「目的」页主标题 `How can we help you?` 就是
+   `AvenirLT-Black` 回落成 Times，替换后重渲染即正确命中 `Avenir Black`。
+7. 对每个成功读取或下载的资源执行 Lanhu cache hook，保存到项目 `.lanhu-cache/<project-id>/`；禁止缓存 Cookie、Authorization 或原始 MCP envelope。
+8. 校验 `source/index.html`、CSS/JS 和 `img/` 非空，记录文件清单、sha256、image_id、版本和来源 URL 到 `source/manifest.json`。
+9. 只有 source manifest 校验通过后，才运行 Playwright reference、page-facts 和目标平台 Agent loop。
 
 ## 页面命名与链接映射
 
