@@ -223,11 +223,11 @@ Agent 必须建立页面事实表：可见区域、真实叠层、组件候选�
 
 **只有当 `rowDims` 缺失或不可信时，才降级到备用链路**：渲染 HTML、读 DOM 实测值。
 
-**「权威有来源」是可执行约束 —— 计划里的每个文字/描边区域都必须带 `typeFacts` 溯源。**
-几何（位置/尺寸/父归属）在 `rowDims` 可得时指向 `dds-schema.json` 的节点（`kindSource: "dds-rowdims"`）；
-样式恒量（字号/字体族/颜色/描边/圆角）指向官方 HTML/CSS（`kindSource: "html-css"`）或 fallback 的
-`page-facts`（`kindSource: "page-facts"`）。凡是权威来源已给出、Agent 却写成 `kindSource: "agent-decided"`
-或凭空编造常量值的，都属于可消除的推断。字段与规则见 [references/artifact-contract.md](references/artifact-contract.md)。
+**「权威有来源」是可执行约束。** 几何溯源落在 `layoutProportions`（其 `regions`/`relations` 直接引用 `rowDims` 坐标），
+样式恒量另由 `typeFacts` 溯源：每个文字/描边区域必须带一条 `typeFacts`，`kindSource` 指向
+官方 HTML/CSS（`"html-css"`）或 fallback 的渲染 DOM（`"page-facts"`）。凡是权威来源已给出、
+Agent 却写成 `kindSource: "agent-decided"` 或凭空编造常量值的，都属于可消除的推断。
+字段与规则见 [references/artifact-contract.md](references/artifact-contract.md)。
 
 `lanhu_get_design_document` 是**可选辅助**，不是强制来源：它只可靠地提供「图层几何（`rect`）与描边/纯色填充」，
 字号/渐变/文本语义存在系统性失真。**默认不调**，只有 `rowDims` 与官方 HTML 在某处结论打架、需要回看 Sketch
@@ -291,7 +291,7 @@ python3 scripts/check_adaptive_layout.py --plan <run>/ui-implementation-plan.jso
 | 产物 | 关键字段 |
 |---|---|
 | `dds-schema.json` | `rowDims`（`left`/`top`/`width`/`height`，几何权威）；`style`（CSS 属性）；`children`（父子树）；`type`/`componentName`/`layerId` |
-| `ui-implementation-plan.json` | `layoutProportions.regions[].basis`·`parentIndex` + `relations[].kind`·`of`·`why` + `forbiddenLiterals`；`adaptiveLayout.windowSamples[]` + `regions[].widthPolicy` + `firstLevelWidthClass` + `forbiddenAdaptations`；`typeFacts[].kindSource`（`dds-rowdims` / `html-css` / `page-facts`）；`runtimeRisks`；`unsupported` |
+| `ui-implementation-plan.json` | `layoutProportions.regions[].basis`·`parentIndex` + `relations[].kind`·`of`·`why` + `forbiddenLiterals`；`adaptiveLayout.windowSamples[]` + `regions[].widthPolicy` + `firstLevelWidthClass` + `forbiddenAdaptations`；`typeFacts[].kindSource`（`html-css` / `page-facts`）；`runtimeRisks`；`unsupported` |
 | `runtime-device.json` | 运行时尺寸 API 返回值、根 view bounds、device scale |
 | `review.json` | `runId`·`parentRunId`·`decision`·`feedback`·`observations`·`changes`·`verification`·`nextAction` |
 | `delivery-gate.json` | 6 项基础闸门状态（声明 `adaptiveLayout` 时为 7 项）、`unsupported.count`、`deliveryReady`（只由脚本推导） |

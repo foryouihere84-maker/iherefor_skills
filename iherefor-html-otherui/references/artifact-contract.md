@@ -4,10 +4,9 @@
 与 `scripts/validate_run.py` 都以本文件为准；出现分歧时先改本文件，再同步其他两处。
 
 > **`v3` 起的主链路变更**：几何坐标以 `dds-schema.json` 的 `rowDims` 为主链路（见页面级
-> `reference/`），渲染 DOM 的 `page-facts.json`、像素 `diff/`、`canvasTransform` 坐标换算、
-> `gateReachability` 等渲染链产物已**降级为备用链路或废弃**，不再属于默认流程的必要产物。
-> 下文保留这些章节仅为文档完整性与向后兼容；`scripts/validate_run.py` 对缺失的渲染链产物
-> 一律按「未提供」跳过，不判 fail。
+> **主链路（v3 起）**：几何坐标以 `dds-schema.json` 的 `rowDims` 为主链路，样式恒量与切图以官方
+> HTML/CSS 为准。渲染 DOM 的 `page-facts.json`、像素 `diff/`、`canvasTransform` 坐标换算等
+> **渲染链产物已整体删除**，不再属于本契约的任何流程。
 
 机器校验入口：
 
@@ -51,132 +50,15 @@ pages/<page-id>/
 ├── plans/
 │   ├── ui-implementation-plan.json
 │   └── integration-plan.json     # 仅既有项目接入时需要
-└── reference/                   # 当前**已批准**的视觉基准（冻结）
-    ├── reference.png            # HTML 基准截图
-    ├── page-facts.json          # 页面事实表（rect / rectInReference / textMetrics / 资源 / 父视图归属）
-    ├── browser-meta.json        # 浏览器版本、viewport、运行时字体、注入记录、加载错误
+└── reference/                   # 当前**已批准**的几何基准（冻结）
+    ├── dds-schema.json          # rowDims 几何事实（主链路，组件位置/尺寸/父子归属）
     ├── design-document.json     # （可选）lanhu_get_design_document 原始返回体，仅交叉佐证用
     ├── design-facts.json        # （可选）设计事实摘要，仅佐证图层几何/描边/纯色填充，不参与权威判定
     └── approved.json            # 批准记录：sha256、批准时间、批准人
 ```
 
-事实表与浏览器元数据属于**基准**，因此放在页面级而不是 run 级：重新渲染不会自动替换
-已批准基准，只有显式批准才写入 `approved.json`。
-
-### `page-facts.json`（schemaVersion 3）
-
-v3 起每个元素都带 `parentIndex` / `parentHops` / `positioningContextIndex`
-（绝对定位元素才带最后一项）。**读不到这些字段时不得假设层级已知** ——
-那意味着这是一份 v2 时代的事实表（v2 只有绝对 `rect`，没有父子关系），
-任何「相对父视图」的推算都会退化成「相对整屏画布」。
-
-```json
-{
-  "schemaVersion": 3,
-  "title": "Special Offer",
-  "url": "file:///…/index.html",
-  "viewport": {"width": 393, "height": 852, "devicePixelRatio": 2, "scroll": {"x": 0, "y": 0}},
-  "documentSize": {"width": 393, "height": 852},
-  "coordinateSpace": {
-    "note": "rect 是 CSS px（视口相对）；rectInReference 是 reference.png 的像素坐标",
-    "parentNote": "parentIndex 是最近可见祖先在 elements 里的下标；null 表示直接父视图就是整屏画布；parentHops 是中间跳过的不可见层数；positioningContextIndex 只出现在 absolute/fixed 元素上，null 表示坐标原点即视口；缺该字段表示元素不是绝对定位"
-  },
-  "referenceImage": {"path": "reference.png", "width": 786, "height": 1704,
-                     "alphaBounds": {"x": 0, "y": 0, "width": 786, "height": 1704}},
-  "elements": [
-    {
-      "index": 12,
-      "tag": "div",
-      "id": "plan-yearly",
-      "className": "plan-card plan-card--yearly",
-      "role": null,
-      "ariaLabel": null,
-      "src": null,
-      "text": "Yearly $59.99 Save 40%",
-      "ownText": "Yearly",
-      "ownsText": true,
-      "textMark": "12",
-      "parentIndex": 4,
-      "parentHops": 2,
-      "rect": {"x": 20, "y": 310, "width": 353, "height": 190},
-      "rectInReference": {"x": 40, "y": 620, "width": 706, "height": 380},
-      "style": {"fontFamily": "\"PingFang SC\", sans-serif", "fontSize": "16px",
-                "lineHeight": "24px", "color": "rgb(17, 17, 17)"},
-      "fontFamily": "\"PingFang SC\", sans-serif",
-      "fontsResolved": [{"family": "PingFang SC", "glyphCount": 214, "isCustomFont": false}],
-      "primaryFont": {"family": "PingFang SC", "glyphCount": 214, "isCustomFont": false},
-      "textMetrics": {
-        "charCount": 6,
-        "fontSize": 16,
-        "lineHeight": 24,
-        "advanceWidth": 147.5,
-        "ownOnlyText": true,
-        "hasDescendantTextElement": false,
-        "rects": [{"x": 40, "y": 620, "width": 147.5, "height": 24}]
-      }
-    }
-  ],
-  "images": [
-    {
-      "src": "assets/hero.png",
-      "rectInReference": {"x": 0, "y": 0, "width": 786, "height": 600},
-      "naturalWidth": 500,
-      "naturalHeight": 382,
-      "alphaBounds": {"x": 0, "y": 0, "width": 500, "height": 382}
-    }
-  ],
-  "textMetricsNote": "advanceWidth 是排版宽度（CSS px），字体被替换时必然变化；用它判断 fallback，不要用 CSS 声明的 fontFamily"
-}
-```
-
-**字段以实际渲染产物为准。** 上面的清单由 `scripts/tests/test_page_facts_text_elements.py`
-与实际渲染结果逐字段核对：契约里承诺的字段，渲染器必须真的产出。
-
-| 字段 | 用途 |
-|---|---|
-| `id` / `className` / `tag` | 元素的 DOM 身份。这是事实表能提供的定位信息；**没有 `selector`**，要定位就自己按 `id`/`className` 组选择器 |
-| `text` | `innerText` 聚合结果（含后代）。**不要拿它判断「这是不是文本元素」**，用 `ownText`/`ownsText` |
-| `role` / `ariaLabel` | 可访问性事实，用于映射原生 accessibility identifier |
-| `src` | 图片元素的资源地址（无则为 `null`） |
-| `ownText` | 元素**自身直接子文本节点**拼成的文本。判断「这个元素是不是一个文本元素」只用它，不要用 `innerText` |
-| `ownsText` | `ownText` 非空的布尔快照。审计脚本用它挑文本元素，避免把「只是包含文本的容器」混进来 |
-| `textMark` | 该元素在标记阶段拿到的 `data-iherefor-text` 值。与 `index` 一致才说明字体是按同一套下标注入的（见下方 `fontJoin`） |
-| `rectInReference` | 「DOM 说元素该在基准图的哪个像素位置」的唯一事实来源。比对 DOM 与基准图时用它，不要自己乘 dpr |
-| `textMetrics.rects` | 实测排版结果（多行文本有多段）。有它时优先作为文本内容的预测位置，而不是 `rectInReference`（文本框比实际字迹大） |
-| `textMetrics.ownOnlyText` | `rects` 只来自直接子文本节点（不含后代元素里的文字）。`false` 或缺失说明这是旧版事实表，`rects` 可能是跨后代的并集框 |
-| `textMetrics.hasDescendantTextElement` | 该文本元素内部还嵌着别的文本元素。为 `true` 时 `rects` 与 `glyphCount` 的语义都变宽，做断言前必须看这一位 |
-| `textMetrics.advanceWidth` | 排版宽度。字体被 fallback 替换时必然变化，是判断「字体没生效」的可靠信号 |
-| `fontsResolved` / `primaryFont` | 运行时**实际用上**的字体（来自 CDP `CSS.getPlatformFontsForNode`，附 `glyphCount`）。CSS 声明的 `fontFamily` 只是请求，不是结果 |
-| `style` | 元素的 computed style 快照（`display`/`position`/`overflow`/`color`/`backgroundColor`/`backgroundImage`/`fontFamily`/`fontSize`/`fontWeight`/`lineHeight`/`letterSpacing`/`borderRadius`/`boxShadow`/`opacity`/`transform`/`objectFit`/`backgroundSize` + 四边 `border*Width`/`borderStyle`/`borderColor`）。它是样式恒量溯源（`typeFacts`）的取值来源 |
-| `border` | 归一化描边事实：`widthPx`（四边最大）、`color`、`style`。用于判「描边画在 frame 上还是独立装饰层」——后者是覆盖式装饰子视图吞点击的根因 |
-| `alphaBounds` | 图片非透明内容 bounds。「frame 已缩放」不等于「图片已缩放」—— 透明留白会让两者不一致 |
-
-**文本元素的定义必须只有一个**：`innerText` 会把所有后代文字聚合上来，于是每一个容器都成了
-「幻影文本元素」。事故 run 里 34 个元素有 `innerText`、只有 18 个有直接文本 —— 用前者当文本
-元素清单，字体测量和位置预测都会指到错误的框上。**一旦事实表里的文本元素含容器，那份事实表
-就不适合再做元素级审计，只能重新渲染取一份新的。**
-
-**不要用 `document.fonts.check()` 判断 fallback**：它对未安装的字体族同样返回 `true`。
-
-`browser-meta.json`（schemaVersion 3）相关字段：
-
-| 字段 | 内容 |
-|---|---|
-| `fontMeasurement` | `method: "cdp:CSS.getPlatformFontsForNode"` 与是否成功；`glyphCountScope: "subtree-of-node"`（见下） |
-| `fontMeasurementCoverage` | `{textElements, measured}` —— 有多少文本元素真的量到了 |
-| `fontJoin` | 标记阶段与采集阶段是否同一套下标：`markedElements` / `joinedElements` / `unjoinedIndexes` / `textElements` / `textMarkMatches` / `textMarkMismatchCount` / `indexSpaceSkew` / `ok`。`ok: false` 时**整份字体数据作废**，它意味着字体被挂到了别的元素上 |
-| `fontProbe` | `document.fonts` 的 `FontFace` 列表与 `probeNote`（记录 `check()` 不可用这件事） |
-| `images[].alphaBounds` | 每张图片的非透明内容 bounds |
-| `referenceImage` | `reference.png` 自己的 alpha bounds |
-
-`browser-meta.json` 的 v3 与 v2 **字段完全一样**，变的只有版本号：一次渲染同时产出两份文件，
-层级是加在 `page-facts.json` 上的。版本号跟涨是为了让「这份基准是哪一代渲染器采的」
-一眼可辨 —— 看到 v2 的 `browser-meta.json` 就说明配套的 `page-facts.json` 里也读不到
-`parentIndex`。
-
-**`glyphCount` 是子树的字形数，不是该元素自身文字的字符数**。对叶子文本元素
-`glyphCount == charCount` 成立；对内部还嵌着文本的元素，它是整棵子树的合计。断言前先看
-`hasDescendantTextElement`，否则会误判成「量错了」。
+几何基准（`dds-schema.json`）属于**基准**，因此放在页面级而不是 run 级：只有显式批准才
+写入 `approved.json`。
 
 ### `design-facts.json`（可选，由 `scripts/lanhu_design_facts.py` 产出）
 
@@ -233,13 +115,13 @@ v3 起每个元素都带 `parentIndex` / `parentHops` / `positioningContextIndex
 |---|---|---|
 | `run.json` | always | 运行标识、目标模式、父 run、基准哈希、状态 |
 | `review.json` | always | 观察 / 假设 / 变更 / 验证 / 下一步（含 `parentRunId`） |
-| `delivery-gate.json` | always | 7 项基础闸门状态（声明 `adaptiveLayout` 时为 8 项）、`unsupported` 计数、`deliveryReady` |
-| `ui-implementation-plan.json` | always | 本次实现的区域、坐标系、资源映射、`runtimeRisks`、`gateReachability`、`adaptiveLayout` 与 `unsupported` |
+| `delivery-gate.json` | always | 6 项基础闸门状态（声明 `adaptiveLayout` 时为 7 项）、`unsupported` 计数、`deliveryReady` |
+| `ui-implementation-plan.json` | always | 本次实现的区域、坐标系、资源映射、`runtimeRisks`、`adaptiveLayout` 与 `unsupported` |
 | `resource-policy.json` | always | 资源目录决策、复用与新增、语义命名 |
-| `runtime-device.json` | 所有目标模式 | 运行时尺寸 API 返回值与截图像素尺寸 |
+| `runtime-device.json` | 所有目标模式 | 运行时尺寸 API 返回值 |
 | `adaptive-targets.json` | 声明了 `adaptiveLayout` | 宽度档采样清单与各自的几何证据位置 |
 | `ios-environment.json` | iOS 目标模式 | 工程入口、scheme、destination 探测结果 |
-| `actual/` | always | 目标 App 截图、构建/测试日志、各采样的几何转储 |
+| `actual/` | always | 构建/测试日志 |
 | `diff/` | always | 结构/纹理/填充三分与区域差异摘要；元素级对齐审计 `alignment.json`；基准字体链 `font-chain.json`；自适应几何审计 `adaptive-audit.json`（声明 `adaptiveLayout` 时必需） |
 
 ### `run.json`
@@ -252,7 +134,7 @@ v3 起每个元素都带 `parentIndex` / `parentHops` / `positioningContextIndex
   "targetMode": "ios-uikit-objective-c",
   "parentRunId": "20260907-140000-objc-010",
   "createdAt": "2026-09-07T15:00:00+08:00",
-  "referenceBaseline": {"approved": "reference/approved.json", "sha256": "<reference.png 哈希>"},
+  "referenceBaseline": {"approved": "reference/approved.json", "sha256": "<dds-schema.json 哈希>"},
   "status": "needs-review",
   "legacy": false
 }
@@ -269,10 +151,10 @@ v3 起每个元素都带 `parentIndex` / `parentHops` / `positioningContextIndex
   "parentRunId": "20260907-104000-objc-005",
   "decision": "rejected",
   "feedback": [{"text": "标题和卡片整体偏下", "source": "user", "at": "2026-09-07T12:00:00+08:00"}],
-  "observations": [{"region": "title", "category": "geometry", "evidence": ["diff/full-page.json"]}],
+  "observations": [{"region": "title", "category": "geometry", "evidence": ["reference/dds-schema.json"]}],
   "hypotheses": ["safe-area 自动 inset 与 Lanhu underlap 重复计算"],
   "changes": [{"file": "testUIProject/SubscriptionPlanSelectionViewController.m", "reason": "关闭自动 content inset"}],
-  "verification": {"build": "pass", "tests": "pass", "visualDiff": "pass-with-review", "runtimeDevice": "runtime-device.json"},
+  "verification": {"build": "pass", "tests": "pass", "runtimeDevice": "runtime-device.json"},
   "nextAction": "等待用户复核"
 }
 ```
@@ -286,51 +168,32 @@ v3 起每个元素都带 `parentIndex` / `parentHops` / `positioningContextIndex
   "schemaVersion": 1,
   "runId": "20260907-150000-objc-011",
   "status": {
-    "reference": "pass",
-    "browser": "pass",
+    "source": "pass",
     "sourceAssets": "pass",
     "implementation": "pass",
     "build": "pass",
     "tests": "pass",
-    "visualDiff": "fail",
     "adaptiveAudit": "not-run"
   },
   "unsupported": {"count": 0, "reviewedCount": 0, "items": []},
   "deliveryReady": false,
-  "blockingReasons": ["visualDiff=fail"]
+  "blockingReasons": ["adaptiveAudit=not-run"]
 }
 ```
 
 每个状态取值：`pass` | `pass-with-review` | `fail` | `not-run`。
 
-**`adaptiveAudit` 是条件必需的第八项**：`ui-implementation-plan.json` 声明了
+**`adaptiveAudit` 是条件必需的第七项**：`ui-implementation-plan.json` 声明了
 `adaptiveLayout` 时，`status` 必须包含该键；未声明时不要求，写进去也必须取合法值。
 它是**几何契约审计**，不做像素比对 —— 理由见
 [adaptive-layout.md §7](adaptive-layout.md#7-验证adaptiveaudit-与为什么不做像素-diff)。
-它与 `diff/adaptive-audit.json` 交叉核对：审计判 `fail` 时闸门不得记 `pass`。
-
-`visualDiff` 的取值受 `diff/` 的证据约束（机器可核，`scripts/validate_run.py` 逐条校验）：
-
-- `diff/alignment.json` 判 `needs-review` ⇒ `visualDiff` **不得**为 `pass`（尺寸相同、整页比例达标都推翻不了元素级位移超容差）。
-- 比较器判 `fail` ⇒ `visualDiff` **不得**为 `pass`。
-- 比较器判 `pass-with-review` ⇒ 默认**必须原样记 `pass-with-review`**；**唯一例外**是
-  `reason == "structural-within-declared-floor"`（升格口径见 [SKILL.md 的「交付闸门」](../SKILL.md#7-交付闸门)，本文件不另立口径）。
-- `diff/` 里任何放行类结论（`pass` / `pass-with-review`）必须自带 `structuralRatio` 与非空
-  `regions`；只有 `changedRatio` 的结论不足以放行（占位件不参与判定，非放行依据）。
-
-`reference` 的取值另有基准字体链约束：`diff/font-chain.json` 的 `substituted` 为 `true` ⇒
-`reference` **不得**为 `pass`（基准图用错字体排版，先修基准字体栈并重渲染）。
 
 `deliveryReady` 为 `true` 的**充要条件**（校验脚本按此判定，不接受手写覆盖）：
 
-1. **本次适用的全部闸门**为 `pass` —— 基础 7 项，加上声明了 `adaptiveLayout` 时的
-   `adaptiveAudit`（第 8 项）；
+1. **本次适用的全部闸门**为 `pass` —— 基础 6 项，加上声明了 `adaptiveLayout` 时的
+   `adaptiveAudit`（第 7 项）；
 2. `unsupported.count == unsupported.reviewedCount`（不存在未审查的降级项）；
 3. `unsupported` 的两个计数必须是**可读的整数**。
-
-第 1 条里的 `visualDiff` 不能凭手写：它的 `pass` 必须由上文的证据约束支持
-（比较器判 `pass`，或判 `pass-with-review` 且 `reason == "structural-within-declared-floor"`）。
-把一条 `structural-diff-above-warn` 写成 `pass` 来凑 `deliveryReady`，会被校验脚本拦下。
 
 第 3 条的意思是「推不出来就别推」：`unsupported` 对象缺失、或 `count` / `reviewedCount`
 不是整数（例如写成字符串 `"2"`）时，`delivery-gate.json` 本身已经不合规，校验脚本会**跳过**
@@ -340,55 +203,6 @@ v3 起每个元素都带 `parentIndex` / `parentHops` / `positioningContextIndex
 
 前两条不满足时 `deliveryReady` 必须为 `false`，并在 `blockingReasons` 中列出原因；
 第 3 条不满足时先补齐结构，再谈 `deliveryReady`。
-
-### `ui-implementation-plan.json` 的 `canvasTransform`
-
-```json
-{
-  "canvasSize": {"width": 393, "height": 852},
-  "deviceSize": {"width": 402, "height": 874},
-  "screenshotScale": 3,
-  "screenshotPixels": {"width": 1206, "height": 2622},
-  "policy": "fit",
-  "reason": null,
-  "uniformScale": true,
-  "ratioX": 1.02290076,
-  "ratioY": 1.0258216,
-  "scaleX": 1.02290076,
-  "scaleY": 1.02290076,
-  "origin": {"x": 0.0, "y": 1.2443},
-  "letterbox": {"x": 0.0, "y": 0.0},
-  "contentBox": {"x": 0.0, "y": 1.244, "width": 402.0, "height": 871.511},
-  "padding": {"left": 0.0, "top": 1.2443, "right": 0.0, "bottom": 1.2443, "max": 1.2443},
-  "coordinateMapper": {
-    "forward": {
-      "x": "(lanhuX - letterbox.x) * scaleX + origin.x",
-      "y": "(lanhuY - letterbox.y) * scaleY + origin.y",
-      "width": "lanhuWidth * scaleX",
-      "height": "lanhuHeight * scaleY"
-    },
-    "inverse": {
-      "x": "(deviceX - origin.x) / scaleX + letterbox.x",
-      "y": "(deviceY - origin.y) / scaleY + letterbox.y",
-      "width": "deviceWidth / scaleX",
-      "height": "deviceHeight / scaleY"
-    }
-  }
-}
-```
-
-**`policy` 必填，默认 `fit`。** 393×852 → 402×874 时 `fit = 1.02290`（`scaleX == scaleY`）、
-`fill = 1.02582`（`scaleX = 1.02290`、`scaleY = 1.02582`）。两者差 0.28%，在 852pt 高的画布上
-等于 **2.4pt 累计错位**，已超过 2pt 的位置容差。因此：
-
-- 缺省一律 `fit`（等比缩放并居中，余量均分为 letterbox）；
-- 需要 `fill` 或 `custom` 时必须同时写 `reason`，不得默默拉伸；
-- 不得为了让某个区域的位置对上而改 `policy` —— 那是拿整体比例去掩盖局部实现错误。
-
-**`coordinateMapper` 必须同时含 `forward` 与 `inverse`。** 只定义正向时，任何从截图反推
-Lanhu 坐标的分析代码都得自己反解，而手写反解正是「多乘一层 scaleY」的来源。实际换算一律
-走 `scripts/canvas_map.py`，它由 `canvasTransform` 或 `runtime-device.json + 画布尺寸` 构造，
-并保证 `inverse(forward(box)) == box`（见其 `--self-test`）。
 
 ### 布局关系与控件尺寸的约束口径（强制）
 
@@ -450,21 +264,6 @@ Lanhu 坐标的分析代码都得自己反解，而手写反解正是「多乘�
 | SwiftUI | `GeometryReader` + 归一化计算、`.containerRelativeFrame` |
 | Compose | `BoxWithConstraints` 的 `maxWidth` / `maxHeight` 派生比例、`weight` |
 | Views / XML | `layout_constraintGuide_percent`、`layout_constraintHorizontal_bias`、`layout_constraintDimensionRatio`、LinearLayout 的 `layout_weight` |
-
-#### 比例模型与 `fit` 策略的关系
-
-`fit` 映射（`deviceY = lanhuY * scaleY + origin.y`）与比例映射
-（`deviceY = (lanhuY / canvasH) * deviceH`）是两条直线，在纵横比不同的设备上并不等价：
-它们在画布中段相交，向两端分岔，**最大偏差恰好等于 letterbox 的厚度**，也就是
-`canvasTransform.padding.max`。于是判据是现成的：
-
-- `padding.max <= 位置容差（2pt）` ⇒ 两种模型在容差内等价，`fit` 的预测框可以直接与
-  比例实现比对，不需要额外处理；
-- `padding.max > 位置容差` ⇒ 二者不可互换。此时实现必须用比例模型，**并且对齐审计也必须
-  改用比例模型预测**，否则就是拿 `fit` 的预测框去量一个按比例布局的界面，把模型差报成实现错误。
-
-393×852 → 402×874 时 `padding.max = 1.2443pt`，仍在容差内 —— 但这是**算出来的**结论，
-不是可以假设的前提。`scripts/canvas_map.py` 的 `axis_deviation()` 给出这个值。
 
 #### `ui-implementation-plan.json` 的 `typeFacts`（样式恒量的事实溯源）
 
@@ -576,59 +375,9 @@ Lanhu 坐标的分析代码都得自己反解，而手写反解正是「多乘�
   `fontWithName:` 会落到同族其它字重（实测墨迹宽 264px vs 基准 265px），而不是掉到
   系统 UI 字体（那会是 237.7px）。这一条不影响布局闸门，但决定了「字体差异该不该被当缺陷修」。
 
-#### `ui-implementation-plan.json` 的 `gateReachability`
-
-文字密集页存在一个**物理下界**：基准图是在 `scale(1.0229)` 的画布上渲染的，所以基准字形 =
-设计字号 × 1.0229；而尺寸契约明令字号不得按比例缩放（见
-[sizing-and-positioning.md §2.2](sizing-and-positioning.md#22-哪些量永远不缩放)）。
-两者相差 2.29%，足以让字形边缘的相位差
-超过强边配对容差（2px）而被判成**结构差异**。也就是说，`structuralRatio` 对文字密集页
-**不可能降到 0**，反复逼近 0 只会换来无意义的编译截图轮次。
-
-正确做法不是「想办法压下去」，而是**在计划里显式声明这个下界并留档**，让比较器按它判，
-交付状态落到 `pass-with-review` + 量化归因。声明落在 `gateReachability`：
-
-```json
-{
-  "gateReachability": {
-    "expectedStructuralFloor": 0.02,
-    "unavoidable": [
-      {"cause": "基准画布 scale(1.0229) 使基准字形 = 设计字号 × 1.0229，而字号不得缩放",
-       "measuredShare": 0.01563},
-      {"cause": "CoreText 与基准 Skia 的栅格化相位差（亚像素抗锯齿）",
-       "measuredShare": 0.0021}
-    ]
-  }
-}
-```
-
-字段约束：
-
-| 字段 | 类型 | 约束 |
-| --- | --- | --- |
-| `expectedStructuralFloor` | number | **必须 ≥ 比较器的 `maxStructuralRatio`**。低于上限的「下界」没有意义，只会把本该正常放行的页面也降级 |
-| `unavoidable` | array | **非空**。每项必须同时有 `cause` 与 `measuredShare`，否则无从复核它是不是在给实现缺陷开脱 |
-| `unavoidable[].cause` | string | 「为什么不可消除」的物理/机制原因，不是「我觉得可以接受」 |
-| `unavoidable[].measuredShare` | number | 该原因对 `structuralRatio` 的**实测**占比，各项之和应接近 `expectedStructuralFloor` |
-
-比较器（`scripts/compare_reference.py --expected-structural-floor`）在 CLI 未传值时**回读本字段**，
-所以下界只需在这里声明一次。放行后 `review.json` 的 `declaredStructuralFloor` 会记录
-`value` / `source`（`plan` 或 `cli`）/ `maxStructuralRatio` / `withinFloor` / `headroom`。
-
-三条可核性由 `scripts/validate_run.py` 的 `check_gate_reachability` 强制（计划与结论交叉核对）：
-
-1. 判 `structural-within-declared-floor` 时，计划里**必须真的声明了** `gateReachability`
-   （含 `unavoidable` 的来源与实测占比），且实际值确实在下界内 —— 不能由比较器自己给下界；
-2. 计划声明了下界，比较结论**却把下界内的值判 `fail`** —— 声明白写了，同样是错；
-3. 计划声明了下界，比较结论里**却没有 `expectedStructuralFloor`** —— 声明了没按它判。
-
-**下界是「不可消除的下界」，不是「豁免额度」。** 它只对文字类结构差异成立；一旦
-`fillRatio` 超限，或结构差异超出下界，仍然判 `fail`。想靠调高下界来放行实现缺陷，
-会在第 1 条上撞墙。
-
 #### `ui-implementation-plan.json` 的 `layoutProportions`
 
-由 `scripts/layout_proportions.py` 从 `page-facts.json` 生成。**字段以实际产物为准**，下面是
+由 `scripts/layout_proportions.py` 从 `rowDims`（`dds-schema.json` 几何事实）生成。**字段以实际产物为准**，下面是
 真实结构（数值取自 402×874 探针设备上的 Special Offer 页；原始素材在评测套件里，
 路径 `evals/fixtures/device-derived-layout/` —— 那个目录不会装到被测工程上，
 所以这里只写路径不做链接）：
@@ -868,163 +617,6 @@ regular / medium / expanded 档下第一层位置改由 `widthPolicy` 重排。
 **禁止**由设备型号推断 —— 分屏与自由窗口下型号不变而窗口宽度变了。
 `deviceFamily` 对 iOS 记录 `TARGETED_DEVICE_FAMILY`，Android 记录 `sw600dp` 资源目录是否存在。
 
-### 各采样的几何转储（`actual/geometry-<sample-id>.json`）
-
-`adaptiveAudit` 的输入是**几何**，不是像素。每份转储由目标 App 运行时打印后整理：
-
-```json
-{
-  "schemaVersion": 1,
-  "sampleId": "tablet-regular-portrait",
-  "source": "runtime NSLog of view.bounds and element frames",
-  "windowBoundsPoints": {"width": 1024, "height": 1366},
-  "screenshotScale": 2,
-  "compatibilityMode": false,
-  "letterbox": {"x": 0, "y": 0, "width": 0, "height": 0},
-  "touchTargetMinimum": 44,
-  "elements": [
-    {"id": "offers", "region": "offers", "kind": "fixed",
-     "rect": {"x": 212, "y": 793, "width": 347, "height": 68},
-     "interactive": false, "overflowOk": false, "overlapAllowed": false}
-  ]
-}
-```
-
-| 字段 | 含义 |
-|---|---|
-| `compatibilityMode` | 是否以 iPhone 兼容缩放模式运行。`true` 直接判 `fail` —— 那是「声称支持平板但没适配」 |
-| `letterbox` | 非零表示有黑边。同样判 `fail` |
-| `touchTargetMinimum` | 平台最小点击区（iOS 44 / Android 48）。缺省按平台推断 |
-| `elements[].kind` | 取自计划 `layoutProportions` 的 `kind`。`sizeInvariance` 只对 `fixed` 断言 |
-| `elements[].interactive` | 参与 `touchTarget` 断言的元素 |
-| `elements[].overflowOk` | 显式声明「这个元素允许越界」（如故意出血的装饰）。缺省 `false` |
-| `elements[].overlapAllowed` | 参与 `continuity` 的重叠断言。缺省 `false` |
-
-### `diff/` 的三类结论
-
-| 文件 | 产出脚本 | 作用 |
-|---|---|---|
-| `comparison.json`（或 `full-page.json`） | `scripts/compare_reference.py` | 像素比较：`structuralRatio` / `textureRatio` / `fillRatio` 三分 + `regions` 网格明细 + `attribution` 具名区域归因 |
-| `alignment.json` | `scripts/audit_alignment.py` | 元素级位移：`domVsReference` 与 `referenceVsActual` 两组比较 |
-| `font-chain.json` | `scripts/audit_fonts.py` | 基准字体链：逐元素比对 CSS 声明的族与运行时实际用上的族 |
-| `layout-proportions.json` | `scripts/check_layout_proportions.py` | 计划声明的布局关系有没有被源码照做（两轴口径） |
-| `adaptive-layout.json` | `scripts/check_adaptive_layout.py` | 宽度轴：声明与源码是否一致（封顶原语存在性、禁止模式） |
-| `adaptive-audit.json` | `scripts/audit_adaptive.py` | 多宽度采样的**几何**契约审计（`sizeInvariance` 等八项），**不做像素比对** |
-
-`adaptive-audit.json` 的结构：
-
-```json
-{
-  "schemaVersion": 1,
-  "model": "continuous-window-width",
-  "status": "pass",
-  "tolerancePt": 2.0,
-  "samples": [{"id": "tablet-regular-portrait", "widthClass": "medium",
-               "windowBoundsPoints": {"width": 1024, "height": 1366},
-               "geometry": "actual/geometry-tablet-regular-portrait.json"}],
-  "checks": {
-    "sampleCoverage": {"status": "pass", "required": 3, "present": 3, "missing": []},
-    "sizeInvariance": {"status": "pass", "compared": 12, "violations": []},
-    "insetPreservation": {"status": "pass", "compared": 4, "violations": []},
-    "noOverflow": {"status": "pass", "violations": []},
-    "maxContentWidth": {"status": "pass", "compared": 2, "violations": []},
-    "touchTarget": {"status": "pass", "compared": 6, "minimum": 44, "violations": []},
-    "noLetterbox": {"status": "pass", "violations": []},
-    "continuity": {"status": "pass", "violations": []}
-  },
-  "violations": [],
-  "warnings": [],
-  "exitCode": 0
-}
-```
-
-`status` 取 `pass` / `fail` / `insufficient-evidence`。**证据不足不等于通过**：
-必需采样缺几何转储时 `sampleCoverage` 判 `fail`，因为其余七项检查会在缺采样的情况下
-「全绿」—— 那是假绿。`sizeInvariance` 是本审计最有价值的一项：它把
-[sizing-and-positioning.md §2.2](sizing-and-positioning.md#22-哪些量永远不缩放)
-的「尺寸不缩放」从文档口号变成了可执行断言。
-
-`comparison.json` 的 `regions` 与 `attribution` 分工不同，**不要互相替代**：
-
-- `regions` 是**网格切块**（`row` / `col` / `box`，由 `--grid-rows` / `--grid-cols` 均分），
-  回答「差在哪一带」；它是放行结论的必需证据。
-- `attribution` 是**具名区域归因**（需 `--page-facts`，可选加 `--plan`），回答「差在哪个控件」。
-  它的字段：
-
-  | 字段 | 含义 |
-  |---|---|
-  | `status` | `ok` / `insufficient-evidence` / `not-run`。缺 `--page-facts` 记 `not-run`；事实表没有 `rectInReference` 记 `insufficient-evidence`。**不冒充**「归因完成」 |
-  | `regions[]` | 每个具名区域的 `region` / `index` / `box`，四类像素数与占整页比值的贡献（`*PageShare`），以及区域内的 `structuralRatio` / `fillRatio` |
-  | `unattributed` | 不属于任何区域的差异像素。恒等式：`Σ(regions[].changedPixels) + unattributed.changed.pixels == changedPixels` |
-  | `attributedShare` | 每类差异被归因覆盖的比例。低于 1 说明有差异落在所有区域之外，必须解释 |
-  | `declaredUnsupported.located` / `.unlocated` | 计划里 `unsupported.items[]` 声明的差异覆盖区；`unlocated` 是没有坐标、**扣不掉**的那些（必须如实说明，不能当作已扣除） |
-  | `residual` | **扣除已声明差异之后**的剩余三类比值 —— `review.json` 的放行论述应引用这一组数字，而不是整页比值 |
-
-  归属规则是**最小包含元素优先**（面积升序）且**互斥且穷尽**：一个差异像素只算进一个区域。
-  `attribution` 只增不改，不影响 `status` / `exitCode` 的判定语义。
-
-`alignment.json` 里，图片/容器元素（`probeKind != "text"`）若框内墨迹覆盖度低于
-`--ink-asset-coverage-min`（默认 0.10），其 `confidence` 记 `insufficient` 并给出 `reason`，
-**不参与**位移与比例拟合，同时列进 `coverage.excludedLowCoverage`。理由是这类元素的框可以
-远大于其内容（透明留白、卡片美术只占一角），墨迹质心代表的是那块稀疏内容自己的位置、
-不是外框中心，会让 `dxPt` 跳到几十 pt 并伪造出比例误差信号。文本元素不走这条豁免：
-它的预测框紧贴字形，覆盖度低就是真的没排出来，那是有效信号。
-
-`alignment.json` 判「基准不可信」（`reason: baseline-disagrees-with-dom`）时会带
-`crossCheckRequired: true` 与 `crossCheck`（`why` / `how` / `workedExample` / `discipline` /
-`checkCoverage`）。**必须照 `crossCheck` 先做一次原理不同的复核**（硬边高对比特征 + 线性拟合，
-看偏差是常量偏置还是随坐标增长），确认存在真实比例/位移误差后才允许重渲染基准。
-契约禁止手写覆盖工具结论：保留 `alignment.json` 原样，另写独立证据文件并在 `review.json`
-里说明异议。
-
-`font-chain.json` 的字段：`status`（`clean` / `substituted` / `insufficient-evidence`）、
-`substituted`（true / false / null）、`missingFamilies`（声明了却没落地的族）、
-`landedFamilies`（实际回落到什么）、`affectedElements`（含 `index` / 文本 / `advanceWidth`）、
-`evidence`、`fixSide`（`baseline` / `none`）。`substituted` 为 `null` 表示证据不足 ——
-事实表没做过字体测量，或 `fontMeasurement.ok` / `fontJoin.ok` 为 `false`。**不要**把
-「证据不足」当成「没问题」。
-
-比较结论的三分法不是分类癖好，而是判定的前提：
-
-- `structuralRatio` —— 强边在两张图里对不上（`--edge-tolerance` 内找不到对应）。几何错位、
-  尺寸变化、圆角/间距改错。超过 `maxStructuralRatio` 判 `fail` —— **但若该值仍在计划声明的
-  `gateReachability.expectedStructuralFloor` 之内、且 `fillRatio` 未超限，判 `pass-with-review`
-  （`structural-within-declared-floor`）**。文字密集页的结构差异存在物理下界，**不可能降到 0**；
-  成因见 [sizing-and-positioning.md](sizing-and-positioning.md#22-哪些量永远不缩放)，
-  字段与可核性见下文「`ui-implementation-plan.json` 的 `gateReachability`」。
-- `fillRatio` —— 平坦区颜色不同。填充色/背景色/文字颜色写错、整块缺遮罩。超过
-  `maxFillRatio` 判 `fail`。**下界不为 `fillRatio` 开口子。**
-- `textureRatio` —— 几何一致、只是像素值不同（字体栅格化、抗锯齿、次像素相位差）。
-  **不参与放行判定**。
-
-判定只看前两类。把它们混在 `changedRatio` 里会双输：抗锯齿多的页面（HTML 侧用 Web 字体、
-App 侧用系统字体）永远撞上限而无法交付，而真正错位的图只要背景色接近也可能因为纹理差异低
-而侥幸通过。
-
-**两类在放行形态上是不对称的**：`fillRatio` 超限一律 `fail`（颜色写错永远是缺陷，
-没有物理下界一说）；`structuralRatio` 超限时**先问它是不是文字类的物理下界**，
-是则按声明的下界放行并做量化归因。把这两类同等对待，正是「文字密集页永远交付不了」的成因。
-
-`alignment.json` 把「谁和谁不符」分成两个需要**相反动作**的故障：
-
-```json
-{
-  "schemaVersion": 1,
-  "status": "needs-review",
-  "reason": "constant-offset",
-  "comparisons": {
-    "domVsReference":    {"status": "aligned",      "reason": null},
-    "referenceVsActual": {"status": "needs-review", "reason": "constant-offset",
-                          "domDisagrees": false}
-  }
-}
-```
-
-- `domVsReference` 不符 ⇒ **基准不可信**（渲染 viewport/scale 与采集事实表时不一致）。
-  先重修基准，**不要**照着基准图调 App 代码。
-- `referenceVsActual` 不符 ⇒ 基准可信，问题在 App 实现侧，按区域改代码。
-- 判 `needs-review` 时 `delivery-gate.status.visualDiff` 不得为 `pass`。
-
 ### `runtime-device.json`
 
 ```json
@@ -1036,14 +628,12 @@ App 侧用系统字体）永远撞上限而无法交付，而真正错位的图�
   "source": "runtime NSLog from UIScreen and UIView bounds",
   "screenBoundsPoints": {"width": 402, "height": 874},
   "rootViewBoundsPoints": {"width": 402, "height": 874},
-  "screenshotPixels": {"width": 1206, "height": 2622},
-  "screenshotScale": 3,
   "evidence": "actual/runtime.log"
 }
 ```
 
-`screenBoundsPoints` 与 `screenshotScale` 必须来自运行时 API，禁止由设备型号推断；
-`reference.png` 的像素尺寸必须等于 `screenshotPixels`（见 `SKILL.md` 的画布契约）。
+`screenBoundsPoints` 必须来自运行时 API，禁止由设备型号推断；它是布局契约里
+「第一层位置按页面比例重排」的参考要素（见 `SKILL.md` 的尺寸与定位契约）。
 
 ## 已废弃字段与文件
 
@@ -1052,8 +642,9 @@ App 侧用系统字体）永远撞上限而无法交付，而真正错位的图�
 | `visual-review.json` | 废弃 | `review.json` 的观察/验证字段 |
 | `manifest.json` | 废弃 | `run.json` |
 | run 级 `assets/` | 废弃 | `resource-policy.json` + 页面 `source/assets-manifest.json` |
-| run 级 `page-facts.json` / `browser-meta.json` | 废弃 | 页面级 `reference/` 下的同名文件 |
-| run 级 `canvas-transform.json` | 废弃 | `ui-implementation-plan.json` 的 `canvasTransform` |
+| `page-facts.json` / `browser-meta.json` | 整体删除（渲染链撤裁） | `reference/dds-schema.json`（rowDims 几何） |
+| `canvas-transform.json` / `canvasTransform` | 整体删除（渲染链撤裁） | 布局契约内化的 `fit` 闭合（`SKILL.md` 尺寸与定位契约） |
+| `diff/` 目录 | 整体删除（像素 diff 撤裁） | 「布局契约静态门 + 编译通过」 |
 
 历史 run 不需要迁移：在 `run.json` 中标记 `"legacy": true` 后，校验脚本跳过上述必需项，
 但**不得**据此把页面判为 `ready`。

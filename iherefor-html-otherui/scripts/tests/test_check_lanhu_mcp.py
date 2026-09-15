@@ -49,7 +49,7 @@ def write_json_config(path, entrypoint, *, relative=False):
         "mcpServers": {
             "lanhu-mcp": {
                 "type": "stdio",
-                "command": "/usr/bin/node",
+                "command": "/usr/bin/python3",
                 "args": [written],
                 "env": {"LANHU_COOKIE": "placeholder"},
             }
@@ -62,7 +62,7 @@ def write_toml_config(path, entrypoint):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         "[mcp_servers.lanhu-mcp]\n"
-        'command = "/usr/bin/node"\n'
+        'command = "/usr/bin/python3"\n'
         f'args = ["{entrypoint}"]\n'
         "\n"
         "[mcp_servers.lanhu-mcp.env]\n"
@@ -83,7 +83,7 @@ def write_cli_stub(bin_dir, entrypoint, *, name="fake-mcp-cli"):
         "lanhu-mcp\n"
         "  enabled: true\n"
         "  transport: stdio\n"
-        "  command: /usr/bin/node\n"
+        "  command: /usr/bin/python3\n"
         f"  args: {entrypoint}\n"
         "  cwd: -\n"
         "  env: LANHU_AUTHORIZATION=*****, LANHU_COOKIE=*****\n"
@@ -105,16 +105,16 @@ def main():
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
         skill = tmp / "skill"
-        dist = skill / "lanhu-mcp-server" / "dist" / "index.js"
+        dist = skill / "lanhu-mcp" / "lanhu_mcp_server.py"
         dist.parent.mkdir(parents=True)
-        dist.write_text("// stub\n")
+        dist.write_text("# stub\n")
 
         empty_table = tmp / "empty-table.json"
         empty_table.write_text(json.dumps({"registries": []}), encoding="utf-8")
 
-        elsewhere = tmp / "other-checkout" / "lanhu-mcp-server" / "dist" / "index.js"
+        elsewhere = tmp / "other-checkout" / "lanhu-mcp" / "lanhu_mcp_server.py"
         elsewhere.parent.mkdir(parents=True)
-        elsewhere.write_text("// other checkout\n")
+        elsewhere.write_text("# other checkout\n")
 
         # —— 方向 1：JSON 配置指向别的 checkout ——
         cfg_bad = write_json_config(tmp / "wrong" / "mcp.json", elsewhere)

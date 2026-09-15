@@ -65,11 +65,8 @@
 
 于是两条对称的纪律：
 
-- **不许**为了让 `structuralRatio` 降下来去缩放字号 —— 那是拿违反本条的代价迎合一个
-  测量侧产物，见 §6 反例清单末行。
-- **应当**在实现计划里声明 `gateReachability.expectedStructuralFloor`，把这个下界连同
-  它的成因与**实测占比**写下来，交付状态记 `pass-with-review`。字段、约束与三条可核性见
-  [artifact-contract.md](artifact-contract.md#ui-implementation-planjson-的-gatereachability)。
+- **不许**缩放字号 —— 那会破坏排版、命中可访问性红线，见 §6 反例清单末行。
+- **应当**把「字号不缩放」作为硬约束写进实现计划，不因任何测量产物而松动。
 
 **多设备稿的「照稿还原」（不是例外，是另一种输入形态）：** 当同一设计在 Lanhu 里同时有
 `xx` 与 `xx-iPad` 两份稿时，这两份稿是**两套并列的独立参考**，iPad 组件的宽、高、
@@ -249,9 +246,7 @@
 - [ ] 每个可见元素在尺寸轴上归入 `fixed` / `pinned` / `intrinsic`，并写出判据；
 - [ ] 每个元素在位置轴上确定**基准父视图**（写进 `of`），确认不了的一律留待确认，不默认 `root`；
 - [ ] `proportional` 只用于确实随父容器成比例变化的关系，且给出理由；
-- [ ] 所有 `fixed` 值能在设计稿里直接读到（不是从测量换算得来）；
-- [ ] 若本页文字密集，已声明 `gateReachability.expectedStructuralFloor`（≥ 比较器的
-      `maxStructuralRatio`）与非空 `unavoidable[]`（每项含 `cause` 与 `measuredShare`）。
+- [ ] 所有 `fixed` 值能在设计稿里直接读到（不是从测量换算得来）。
 
 写代码后：
 
@@ -264,10 +259,7 @@
       宽档下的第一层水平位置由 `widthPolicy` 重排；
 - [ ] 垂直位置在所有宽度档下始终按页面高度比例重排（§3.1.2），
       不被 `firstLevelWidthClass` 收口；较短手机纵向不缺失；
-- [ ] 对齐关系用对齐锚点表达，而不是用两个各自算出来的数值凑巧相等；
-- [ ] `structuralRatio` 高于上限时，先判它是不是 §2.2 的物理下界：是则声明
-      `gateReachability` 并记 `pass-with-review`，**不是**去改字号 / 行高 / 整体缩放
-      来把这个数字压下去。
+- [ ] 对齐关系用对齐锚点表达，而不是用两个各自算出来的数值凑巧相等。
 
 ## 8. 规范条款与实现落点对照
 

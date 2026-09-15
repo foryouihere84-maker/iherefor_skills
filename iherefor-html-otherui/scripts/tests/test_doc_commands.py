@@ -47,9 +47,7 @@ def markdown_files() -> list[Path]:
     candidates = [SKILL_ROOT / "SKILL.md", SKILL_ROOT / "README.md"]
     candidates += sorted((SKILL_ROOT / "references").glob("*.md"))
     candidates += sorted((SKILL_ROOT / "evals").rglob("*.md"))
-    candidates += sorted((SKILL_ROOT / "lanhu-mcp-server").glob("README.md"))
     candidates += sorted((SKILL_ROOT / "testUIProject").glob("README.md"))
-    candidates += sorted((SKILL_ROOT / "scripts" / "tests" / "fixtures").glob("README.md"))
     return [p for p in candidates if p.is_file()]
 
 

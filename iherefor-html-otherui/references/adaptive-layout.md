@@ -314,10 +314,9 @@ iPad 没有刘海与灵动岛，但有 home indicator、Stage Manager 的窗口�
 
 ### 7.1 平板这一关**不能**做像素比对
 
-Lanhu 只提供一份设计稿，`reference/reference.png` 是**某一台设备**的像素基准。
-拿它去比 iPad 截图，等于拿两个不同画布比对，会直接判「基准不可信」——因为基准的渲染
-viewport 与采集事实表时的 viewport 是同一套、而 iPad 截图不是。这不是「容差不够大」，
-是**证据类型不匹配**。
+Lanhu 只提供一份设计稿，其几何基准是**某一台设备**的 `rowDims`。拿它直接比 iPad 的几何，
+等于拿两个不同画布比对 —— 这不是「容差不够大」，是**证据类型不匹配**。所以 `adaptiveAudit`
+只断言**几何关系**（尺寸不变、贴边、不溢出、封顶等），不做像素比对。
 
 所以 `adaptiveAudit` 是**几何契约审计**：只断言几何关系，不比对像素。这与本 skill 的
 优化方向（把问题从「需要截图诊断」降级为「静态告警并给出位置」）是同一个思路。
@@ -350,8 +349,7 @@ viewport 与采集事实表时的 viewport 是同一套、而 iPad 截图不是�
 
 `adaptiveLayout` 声明的计划，其 `delivery-gate.status` **必须**包含 `adaptiveAudit`，
 且 `scripts/validate_run.py` 会交叉核对：`diff/adaptive-audit.json` 判 fail 时
-`adaptiveAudit` 不得记 `pass`。这与「对齐审计 needs-review 却 visualDiff=pass」是同一类
-自相矛盾。未声明 `adaptiveLayout` 的计划不受这条约束（但会在计划里留下告警）。
+`adaptiveAudit` 不得记 `pass`。未声明 `adaptiveLayout` 的计划不受这条约束（但会在计划里留下告警）。
 
 ## 8. 反例清单（看起来对，其实错）
 
