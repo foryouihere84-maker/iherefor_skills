@@ -67,10 +67,14 @@ description: 将 Lanhu 导出的可运行 HTML/CSS/JS 页面作为视觉基准�
 
 - 第一层的**水平位置** `x = page.width × ratio`、**垂直位置** `y = page.height × ratio`，
   都写成相对 page 的比例原语（`multiplier`），标记 `forced: "first-level"`；
-  **不得**写成探针设备上的绝对坐标（如 `x = 83`）—— 那在换台设备时就错。
+  **不得**写成探针设备上的绝对坐标（如 `x = 83`、`y = 132`）—— 那在换台设备时就错。
 - 第一层的**尺寸仍是 `fixed`**（组件尺寸恒等于设计稿，绝不缩放）；自适应的是**位置**，不是尺寸。
 - 第一层 → 第二层（及更深）的**相对关系固定**：第二层的位置基准是它的直接父视图（某个第一层元素），
   不是页面。只有第一层这一档按页面比例，往下不再套。
+- **两条轴不共享同一个收口**：水平位置受**宽度档**收口（宽档改由 `widthPolicy` 重排，见下一节），
+  但**垂直位置在所有宽度档下都按页面高度比例重排**——垂直轴的参考要素是**高度不是宽度**。
+  较短手机、横屏下设备高度不足，若把纵向也写死贴边，底部内容会被挤出可用区甚至裁掉，
+  正是「较短手机纵向 UI 部分缺失」的根因。按高度比例重排让第一层元素随可用高度均匀收缩。
 - 背景（`.page` 外框）按 `pinned + fullBleed` 四边铺满，与第一层子视图按比例重排是两回事：
   前者是背景容器的铺满，后者是前景组件的重排。
 
@@ -136,20 +140,26 @@ Stage Manager 与 iPadOS 26 自由窗口下宽度在 320~1366pt 之间连续可�
 - `max-content-width` / `centered-column` 必须给 `maxContentWidth.value`（设计常量，
   600~700pt 量级，**不随窗口缩放**）与 `reason`；`grid` 必须给 `columnCount` 的三档
   且单调不减。
-- **`firstLevelWidthClass` 缺省 `compact`**：上一节的「第一层位置按页面比例」只在这一档
-  生效；regular / medium / expanded 档下第一层位置改由 `widthPolicy` 重排。这条是必需的收口，
-  不是可选开关。
+- **`firstLevelWidthClass` 缺省 `compact`**：上一节的「第一层位置按页面比例」里，只有**水平位置**
+  （`x = page.width × ratio`）受这一档收口；regular / medium / expanded 档下第一层水平位置改由
+  `widthPolicy` 重排。**垂直位置不受这条收口**——它在所有宽度档下都按页面高度比例重排，
+  因为纵向的参考要素是高度不是宽度。这条区分不是可选开关，是必需收口。
 
 三条交界规则：
 
-1. **宽度轴只改「容器宽度」与「第一层位置」，不改任何尺寸。** 字号、行高、圆角、描边宽度、
-   最小点击区（≥44pt / 48dp）在全部宽度档上逐字相同。「平板上字大一点更好看」是错的 ——
-   设计稿只有一套排版，那不是适配，是重新设计。
-   **唯一例外：同一设计存在多设备稿（`xx` 与 `xx-iPad`）时，几何尺寸可照各自稿分档**，
-   但必须逐档声明在 `adaptiveLayout.sizeVariants[]`（带 `basis`/`why`），否则
-   `audit_adaptive.py` 仍按「尺寸随窗口变」判 `size-not-invariant`。字号/圆角/描边/点击区
-   **永不参与分档**。详见 [references/adaptive-layout.md §4.1](references/adaptive-layout.md)。
-2. **第一层位置比例规则只在 `compact` 档成立**，见上。
+1. **宽度轴只改「容器宽度」与「第一层位置」，不改任何尺寸 —— 作用域是「同一份参考稿、同一个平台」。**
+   字号、行高、圆角、描边宽度、最小点击区（≥44pt / 48dp）在**同一平台的各个宽度档之间**逐字相同。
+   它说的是「一份 iPhone 稿在手机不同宽度档之间尺寸不变」「一份 iPad 稿在 iPad 不同宽度档之间尺寸不变」，
+   **不是**「iPhone 的尺寸必须等于 iPad 的尺寸」。
+   **只有一套稿时**，「平板上字大一点更好看」是错的 —— 设计稿只有一套排版，那不是在适配，是重新设计。
+   **双稿时**，`xx` 与 `xx-iPad` 是两套并列的独立参考，iPad 组件的宽、高、字号、圆角、描边
+   **全部以 `xx-iPad` 稿自身为准**，与 `xx` 稿**没有派生关系** —— 因此不存在「把手机稿等比放大到
+   iPad」这个说法。跨平台尺寸/字号照两份稿各自取值、出现差异时，必须逐档声明在
+   `adaptiveLayout.sizeVariants[]`（带 `basis`/`why`），否则 `audit_adaptive.py` 仍按
+   「尺寸随窗口变」判 `size-not-invariant`。iPhone 与 iPad 的字号**可以相同、也可以不同**，
+   唯一不随稿动的是平台硬下限（最小点击区 ≥44pt / 48dp）。
+   详见 [references/adaptive-layout.md §4.1](references/adaptive-layout.md)。
+2. **第一层水平位置比例规则只在 `compact` 档成立**，垂直位置始终按页面高度比例，见上。
 3. **窗口 ≠ 屏幕。** 分屏与自由窗口下 `UIScreen.main.bounds` / `DisplayMetrics.widthPixels`
    返回的是**整块屏**，不是你的窗口，用它做布局基准会得到错的原点与错的可用宽度。
    iOS 用 `view.bounds` / `windowScene`，Android 用 `WindowMetrics` / `WindowSizeClass`。
@@ -179,8 +189,9 @@ python3 scripts/audit_adaptive.py --targets <run>/adaptive-targets.json \
     --plan <run>/ui-implementation-plan.json --output <run>/diff/adaptive-audit.json
 ```
 
-`audit_adaptive.py` 的八项里，`sizeInvariance`（同一 `fixed` 元素在全部采样上点值**逐字
-相等**）最有价值 —— 它把上两节的「尺寸不缩放」从文档口号变成可执行断言。`sampleCoverage`
+`audit_adaptive.py` 的八项里，`sizeInvariance`（未声明分档的同一 `fixed` 元素在**同一平台**的
+全部采样上点值**逐字相等**，`sizeVariants` 声明的跨平台分档除外）最有价值 —— 它把上两节的
+「尺寸不缩放」从文档口号变成可执行断言。`sampleCoverage`
 缺必需采样时判 `fail`：缺采样会让其余七项「全绿」，那是**假绿**。
 
 完整规范、六模式原语对照、反例清单与落地检查清单见
@@ -206,7 +217,7 @@ python3 scripts/audit_adaptive.py --targets <run>/adaptive-targets.json \
 
 ## 资源与代码质量
 
-在复制资源或编写代码前，必须读取 [references/resource-and-code-quality.md](references/resource-and-code-quality.md)。先扫描并复用目标工程已有资源体系；没有既有约定时才使用平台默认目录。资源必须按使用场景语义命名，不能把 `img_0` 等来源编号作为生产名。生成代码必须按 screen/section/style/resources 分层，所有按钮和可点击元素都要连接到命名明确的点击处理空函数。
+在复制资源或编写代码前，必须读取 [references/resource-and-code-quality.md](references/resource-and-code-quality.md)。先扫描并复用目标工程已有资源体系；没有既有约定时才使用平台默认目录。**切图归位是硬禁令**：切图/位图/SVG 严禁散落项目根目录或与源码混放，iOS 一律进 `Assets.xcassets/<业务域>/<name>.imageset/`（含 `Contents.json` 与 1x/2x/3x），Android 一律进 `res/drawable(-density)*`；违反即 `needs-review`，细节见「资源归位硬约束」。资源必须按使用场景语义命名，不能把 `img_0` 等来源编号作为生产名。生成代码必须按 screen/section/style/resources 分层，所有按钮和可点击元素都要连接到命名明确的点击处理空函数。
 
 ## 既有项目接入
 
@@ -260,6 +271,16 @@ python3 scripts/canvas_map.py --self-test
 - 每轮 diff 必须至少抽查一张 hero 图片、一张卡片/背景图和一张图标，比较其实际 bounding box 与 mapper 预测值；整页 changedRatio 通过不能掩盖图片局部未缩放。
 - 如果出现图片一侧留白、图片只占 mapped frame 一部分或与相邻组件出现断裂，必须判定为图片缩放失败；禁止通过移动旁边组件、裁剪 reference 或增加随机 padding 掩盖。优先检查 `contentsGravity/contentMode/scaleType/ContentScale`、图片 layer 的 bounds/contentsScale、资源透明边界和截图坐标换算。
 - “图片 frame 已缩放”不等于“图片已缩放”：必须额外测量 PNG/SVG 的非透明 alpha 内容 bounds，并验证其在目标截图中的可见 bounds 与 Lanhu 可见 bounds 按 `scaleX/scaleY` 成比例；若资源存在透明留白，必须记录并按 HTML 的裁剪/背景尺寸规则处理。
+
+### 资源归位硬约束（不可例外）
+
+切图、位图、SVG 与任何静态图片资源**严禁散落在项目根目录或与源码混放**，必须进平台规定的资源目录统一管理。违反即交付闸门 `needs-review`，与「图片缩放硬约束」同级。
+
+- **iOS（UIKit / SwiftUI，含 Objective-C）**：所有切图必须进入目标模块的 `Assets.xcassets`，按业务域建子目录分组：`Assets.xcassets/<业务域>/<语义名>.imageset/`，每个 imageset 内含 `Contents.json` 与 `1x/2x/3x` 三张同名资源（文件名分别为 `<name>.png`、`<name>@2x.png`、`<name>@3x.png`）。参考形态见 `ColorfulPaint` 工程：`Assets.xcassets/guide/guide_img_1.imageset/`。
+- **严禁**把切图直接放到 Xcode 工程根目录、`<工程>/` 顶层、或任意 `*.m/*.swift` 同级目录；即使只有一张也须入 imageset。
+- **Android**：位图进 `res/drawable(-density)*`（矢量进 `res/drawable`），按 density 桶归位，禁止散落 `app/` 根目录或 `java/` 包目录。
+- **命名**用语义名（`<screen>_<region>_<role>`），禁止 `img_0.png`、`image1.png` 等来源编号；imageset 目录名与资源语义一致。
+- 资源最终落位与每张图的 `1x/2x/3x`（或 density）映射写入 `resource-policy.json`，复制到位后 `verified=true`；散落、缺失或命名冲突阻塞交付。图片 frame/缩放/`contentMode`/alpha bounds 的硬约束仍以「图片缩放硬约束」为准，本条只约束**资源存放位置**，二者不互相替代。
 
 目标设备尺寸必须在应用运行时通过平台 API 获取，禁止根据设备型号、截图常见尺寸或手工常量推断。每次运行必须同时记录 API 返回值、根窗口/内容 view bounds、截图像素尺寸和 device scale，再计算 mapper：
 
@@ -390,14 +411,35 @@ Agent 必须查看运行中的页面和基准截图，建立页面事实表：�
 
 输出 `ui-implementation-plan.json`，至少包含目标模式、参考 viewport、组件边界、坐标系、布局策略、资源映射、可访问性标识、交互候选和 `unsupported` 项。布局策略分两段：`layoutProportions`（尺寸轴 + 位置轴）与 `adaptiveLayout`（宽度轴，见「宽度轴与平板适配」）。该文件是 Agent 决策记录，不是生产源码生成器的输入模板。
 
-**布局与字号的权威来源是 ``design-facts.json``，不是渲染 DOM 的反推。** 第 1 步已调用
-`lanhu_get_design_document`（**必须 `depth: 99`**，默认只展开 2 层）并经 `scripts/lanhu_design_facts.py`
-解析成 `reference/design-facts.json`：父视图归属（由 `children` 树推导，`metadata.parentId` 实测全 null
-不可靠）→ `regions[].parentIndex`；字号/字体/文本/颜色（`style.typography`，字号已按 `canvas.scale` 还原）
-→ `unsupported[typography]` 与字号常量；描边/填充/阴影（`style.borders`/`fills`/`shadows`）→ 覆盖式装饰层
-与 border 内缩判据。**凡是 design-facts 已给出、Agent 却写成 `kindSource: "agent-decided"` 或靠 CDP/
-`advanceWidth` 反推的，都属于可消除的推断，应回填。** 渲染 DOM 事实只负责 design-facts 给不了的那一半
-（字体实际命中、计算后样式、`rectInReference`）。
+**布局与字号的权威来源是运行中的浏览器 DOM 解析（`page-facts.json`），不是设计声明。** 第 1 步渲染
+基准图时已由 `scripts/render_reference.mjs` 产出 `reference/page-facts.json`，它回答「实际渲染成了什么样」：
+父视图归属（`parentIndex` / `parentHops` / `positioningContextIndex`，来自真实 DOM 嵌套，不是图层树反推）
+→ `regions[].parentIndex`；字号/字体/文本/颜色（`style` + `textMetrics`，即 CDP `getBoundingClientRect` /
+`CSS.getPlatformFontsForNode` 实测值）→ `unsupported[typography]` 与字号常量；描边/填充/阴影（computed
+style 与覆盖式装饰层）→ border 内缩判据。**凡是 page-facts 已给出、Agent 却写成 `kindSource:
+"agent-decided"` 或凭空编造常量值的，都属于可消除的推断，应回填。** DOM 事实是唯一权威，Agent 必须先
+读 `page-facts.json`（必要时用 Playwright 读运行中页面的 computed style / bounding box 补齐），再写计划。
+
+**「权威来自 DOM」不是一句口号，而是可执行约束 —— 计划里的每个文字/描边区域都必须带
+`typeFacts` 溯源。** 字号、字体族、颜色、描边、圆角这些样式恒量不再靠 Agent 自觉抄，而是强制
+在计划里写一条 `typeFacts` 记录，`elementIndex` 指向 `page-facts.json` 里那个真实元素、
+`kindSource: "page-facts"`。有了这条，`scripts/check_layout_proportions.py --plan-only`（门 0）就能
+拦死「不读 DOM、拍脑袋编个 fontSize=14 交差」—— 而以前四个门对这种偷懒是全部放行的。
+字段与规则见 [references/artifact-contract.md](references/artifact-contract.md#ui-implementation-planjson-的-typefacts样式恒量的-dom-事实溯源)。
+
+`lanhu_get_design_document` 是**可选辅助**，不是强制来源：它只可靠地提供「图层几何（`rect`）与描边/纯色
+填充」这一小半，其「字号、渐变、文本语义」存在系统性失真（见过 `canvas.scale` 把字号折半、`metadata.parentId`
+全 null 的实测）。**默认不调**，只有命中下面任一触发条件时才调（经 `scripts/lanhu_design_facts.py` 解析成
+`design-facts.json`）：
+
+- 页面的描边/装饰层在 `page-facts` 里**无法判定归属**（例如某个 0.5pt 描边到底是独立覆盖式子视图
+  还是画在 frame 上的 border，`border.widthPx` 采不到足以区分的前后层关系）——此时它唯一可靠的
+  `rect` + 描边几何是交叉佐证来源；
+- 需要核对「图层几何归属」而 `page-facts` 的 `parentIndex`/`parentHops` 在某个叠层复杂区域给出的
+  结论与视觉不符，需要回看 Sketch 原始帧的图层树。
+
+**任何场合都不得用设计声明值去覆盖渲染 DOM 实测值**——两者不一致时以渲染 DOM 为准，并作为归因信号记录。
+不命中触发条件就调它，属于过度取数；命中了却不调，属于漏掉它唯一可靠的几何佐证。
 
 计划里还必须有一份 `runtimeRisks` —— 把「只能在运行期暴露、但**现在就能决策**」的风险提前写下来，
 逐条给出决策与理由。第 5 步是分钟级的取证门，这些问题一旦漏到那里才发现，就要重走一次编译截图：
@@ -546,6 +588,8 @@ Agent 修改 canonical 源码后重新编译和截图，直到达到任务指定
 
 只有在所选目标模式的编译、资源接入、测试和视觉比较都通过时才标记 `deliveryReady=true`。缺失基准、编译失败、测试未运行、存在未处理 `unsupported` 或重大视觉差异时，只能标记 `pass-with-review`、`fail` 或 `not-run`。
 
+「资源接入」包含**资源归位**：切图散落在项目根目录/源码目录、未进 `Assets.xcassets`（iOS）或 `res/drawable(-density)*`（Android）、imageset 缺 `Contents.json` 或 1x/2x/3x 声明不全，均视为资源接入未通过 —— 不得记 `deliveryReady=true`。
+
 **闸门是 7 项还是 8 项，取决于计划有没有声明 `adaptiveLayout`。** 声明了就多一项
 `adaptiveAudit`（多宽度采样的几何契约审计），且它的取值受 `diff/adaptive-audit.json` 约束：
 审计判 `fail` 时闸门不得记 `pass`，与「对齐审计 needs-review 却 visualDiff=pass」是同一类
@@ -631,14 +675,20 @@ skill 根目录的 `index.html` 是一个纯静态差异查看器（无需服务
 | `scripts/canvas_map.py` | 唯一的坐标换算入口，正向 + 逆向 + 默认 `fit` 策略；`to_ratios` / `axis_deviation` 给出比例形式与模型偏差 | 任何需要换算坐标的分析之前；改坐标逻辑后跑 `--self-test` |
 | `scripts/render_reference.mjs` | 确定性渲染基准图与事实表（含 `rectInReference`、`alphaBounds`、`textMetrics`、运行时字体） | 第 1 步建立基准 |
 | `scripts/normalize_lanhu_fonts.py` | 渲染前把 Lanhu 导出的「系统不存在族名」替换成真实族名（`AvenirLT-*` → `Avenir-*`），避免基准图带着回落字体（Times）自洽地错 | **下载后、渲染前必做**（第 1 步） |
-| `scripts/lanhu_design_facts.py` | 把 `lanhu_get_design_document` 返回体解析成紧凑设计事实摘要（父视图归属 / 字号字体文本颜色 / 描边填充阴影），供实现计划直接引用而非从渲染 DOM 反推 | 第 1 步调用 `lanhu_get_design_document` 之后 |
+| `scripts/lanhu_design_facts.py` | （**可选**）把 `lanhu_get_design_document` 返回体解析成紧凑设计事实摘要，仅用于交叉佐证图层几何/描边/纯色填充；**不参与权威判定**，渲染 DOM 实测值为准 | 需要交叉佐证时 |
 | `scripts/layout_proportions.py` | 把事实表位置转成 `layoutProportions` 约束规格（尺寸是常量、位置相对直接父视图），并列出「探针设备推导值」禁止清单 | 第 2 步写实现计划时；缺它就没法核对「有没有写成探针设备上的固定 pt」 |
 | `scripts/check_layout_proportions.py` | 计划驱动地核对源码有没有照计划声明的 `kind` 实现；`--plan-only` 只校验计划 | **门 0（`--plan-only`）在写码前，门 1 在写码完成后、编译之前**；改了布局代码就重跑。纯静态（只读计划与源码文本），秒级，不编译不起浏览器 |
 | `scripts/check_adaptive_layout.py` | 宽度轴静态核对：`adaptiveLayout` 声明自身完整，且源码里有封顶原语、无方向锁 / `UIScreen.main` / 屏幕系数；`--plan-only` 只校验计划 | 同上，与布局约束同属门 0 / 门 1；声明了 `adaptiveLayout` 就必须跑。纯静态，秒级 |
 | `scripts/compare_reference.py` | 像素比较，输出结构/纹理/填充三分、网格 `regions`，以及具名区域 `attribution`（含 `declaredUnsupported` 与扣除后的 `residual`） | 每次截图后 |
+| `scripts/audit_run.py` | **聚合入口**：一次跑完「每次截图后」的 `audit_fonts` + `audit_alignment` + `compare_reference`（+ 声明宽度轴时 `audit_adaptive`），按落盘 `status` 归一成 pass/review/fail/insufficient 四态聚合退出码，落 `diff/audit-summary.json`。**只做编排不重算**，四个 audit 仍单独可跑 | 每次截图后，替代逐条手动跑那四个脚本（`--only` 可只跑部分） |
+| `scripts/decide_next_step.py` | 决定「这轮修复后该不该再开一轮编译」：读落盘产物，把 feedback-loop.md「停止条件」里**机制可判的那一半**变成确定性判定（基准不可信 / 证据不足 / 物理下界已达 / y 单调递增 / 连续两轮无改善 ⇒ `stop`，附原因+动作），退出码 0=继续 / 1=停止 / 2=用法错误 | 每次截图 + 出 diff 后、考虑再开下一轮编译之前；`--with-parent` 连上一轮一起判 |
 | `scripts/audit_alignment.py` | 元素级对齐审计，区分「基准不可信」与「App 不对」；框内近乎空白的图片/容器元素判 `insufficient-evidence`，不参与位移与比例拟合 | 每次截图后；尺寸一致也必须跑 |
 | `scripts/audit_fonts.py` | 字体链审计：逐元素比对「CSS 声明的族」与「运行时实际用上的族」，判出静默字体替换 | 每次截图后；`alignment.json` 说「问题在 App 侧」时更要跑 |
-| `scripts/audit_adaptive.py` | 多宽度采样的**几何**契约审计（八项：`sampleCoverage` / `sizeInvariance` / `insetPreservation` / `noOverflow` / `maxContentWidth` / `touchTarget` / `noLetterbox` / `continuity`），**不做像素比对** | 交付前；声明了 `adaptiveLayout` 就必须跑，结果落 `diff/adaptive-audit.json` |
+| `scripts/audit_adaptive.py` | 多宽度采样的**几何**契约审计（八项：`sampleCoverage` / `sizeInvariance` / `insetPreservation` / `noOverflow` / `maxContentWidth` / `touchTarget` / `noLetterbox` / `continuity`），**不做像素比对**。`sizeInvariance` 按设备平台区分「同设备内强制相等」与「跨设备走 sizeVariants 分档」 | 交付前；声明了 `adaptiveLayout` 就必须跑，结果落 `diff/adaptive-audit.json` |
+| `scripts/diff_device_variants.py` | 双稿尺寸 diff：输入两份设备稿的 `design_document`（`xx` 与 `xx-iPad`），按图层名对齐 diff 容器宽高差异，自动生成 `sizeVariants[]`（排除文本层与位置差异）。产出可直接粘进 `adaptiveLayout.sizeVariants` | 存在 `xx` / `xx-iPad` 成对稿、写实现计划时；替代手写 sizeVariants |
+| `scripts/check_device_asset_variants.py` | 双稿资源分档清单：逐字节 md5 比对 `xx` 与 `xx-iPad` 两份 `img` 目录的同名资源，md5 不同的即为「必须按稿分档」的资源（附像素尺寸/字节）。复用手机稿资源到 iPad 档会低清/比例错/颜色错，此清单是判据 | 存在成对稿时，写实现计划前先跑，产物落 `diff/asset-variants.json` |
+| `scripts/check_pbxproj_ids.py` | pbxproj Object ID 唯一性门：扫描重复的 24 位对象定义（含 `isa`），重复即资源/对象被覆盖、静默丢进不了 bundle（编译仍 SUCCEEDED、UI 渲染 0×0） | 每次手动改 `project.pbxproj` 之后、编译之前 |
 | `scripts/validate_run.py` | run 产物契约校验，交叉核对闸门与证据；带 `--source` 时连同布局约束与宽度轴一起判 | 每次写完 run |
+| `scripts/cleanup_run.py` | 回收 run 里契约外的 Xcode `DerivedData`（`xcodebuild -derivedDataPath <run>/DerivedData` 塞进的编译缓存，不在 run 契约内）；只删 `DerivedData`，`actual/`·`diff/`·`*.json` 证据一律保留。默认 dry-run，`--yes` 才删 | 每次 run 交付后（`deliveryReady` 落定）回收该 run；或按 `--page` / `--project` 批量回收历史 run，阻止体积无界累积 |
 
 脚本级回归见 `scripts/tests/run_all.sh`（不需要 LLM，CI 每次跑）；Agent 行为红线见 `evals/README.md`。

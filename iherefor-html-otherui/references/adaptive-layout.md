@@ -18,6 +18,48 @@
 前两轴保证「换设备不崩」；宽度轴保证「换设备**不难看**」。缺宽度轴时，前两轴在 1024pt 上
 会给出一个**错的**结果（见 §4 第 2 条），而不是「没有结果」。
 
+> **垂直（高度）轴不是第四根轴，它是位置轴本来就管的事。** 第一层子视图的纵向位置按
+> 「页面高度」比例重排，与宽度档**无关**（见 §4.2）——较短手机 / 横屏下设备高度不足，
+> 用「贴边」写死纵向位置会让底部缺失。宽度轴管不到的「高变矮」，交给位置轴的垂直分量处理。
+
+## 0.5 多设备稿：先判断「有没有 xx-iPad 稿」，这决定走哪条路
+
+本文后续的「宽度是连续函数、不要两个断点」（§1）**有一个前提**：设计稿**只有一份**（手机稿），
+平板形态要靠宽度轴从那份稿**推导**出来。但 Lanhu 里常出现**成对稿**：`xx` 与 `xx-iPad`。
+那一对不是「同一张稿在不同设备」，而是**两套并列的独立参考**——iPad 组的宽、高、字号、
+资源、颜色都照 `xx-iPad` 稿自身取值，与 `xx` 稿**没有派生关系**。
+
+所以第一步是分岔，而不是直接套宽度轴：
+
+| 情形 | 判定 | 走哪条路 |
+|---|---|---|
+| 只有 `xx`（无 iPad 稿） | 设计列表里搜不到 `xx-iPad` | 宽度轴（§1 起的连续推导，`widthPolicy` 让内容在 1024pt 上合理排布） |
+| 有 `xx` 与 `xx-iPad` | 同名成对 | **多设备稿**：iPad 档照 `xx-iPad` 稿完整还原，尺寸/字号/资源按稿分档（见下） |
+
+**多设备稿不是宽度轴的例外，而是更具体的输入形态**：宽度轴回答「只有手机稿时 iPad 怎么办」，
+多设备稿回答「有 iPad 稿时以哪份为准」。两者不冲突——有了 iPad 稿，就以稿为准，不再靠
+宽度轴去猜。
+
+多设备稿的硬规则，一句话：**「xx」和「xx-iPad」按两个独立 page 处理，逐维照各自稿还原，
+只在 md5 逐字节相同时才允许共享。** 具体分四维，每一维都有「手机稿值 vs iPad 稿值」要落到
+计划里，且取值必须来自**各自稿渲染后的 page-facts**（不是 design_document 图层坐标，见
+[lanhu-input.md](lanhu-input.md)）：
+
+| 维度 | 分档依据 | 校验门 |
+|---|---|---|
+| 几何宽/高 | `diff_device_variants.py` diff 同名容器，产出 `sizeVariants[]` | `audit_adaptive.py` `sizeInvariance` 白名单 |
+| 字号/字重 | 两稿 HTML 的 `font-size`/`font-family` 逐级对比（iPad 稿常更大，如标题 24→30） | 人工 + `resource-policy.json` 声明 |
+| 位图资源 | `check_device_asset_variants.py` 逐字节 md5 对比，md5 不同即分档 | 该脚本的 variants 清单 |
+| 颜色 | 两稿 CSS 的 `background-color`/`color` 逐元素对比（如 CTA 灰→蓝） | 人工 + 计划声明 |
+
+**数据源铁律（本次多轮踩坑的根）**：`design_document` 的图层 `rect` 有负偏移根画板、
+rect 是相对父容器的、字号是 scale 还原中间值、文字节点可能缺失——**任何一维都要用
+各自稿「下载渲染后的 page-facts」取值**，design_document 只在「父视图归属」上可靠。
+
+历史教训（都写成了门）：① 复用手机稿资源到 iPad 档，得到低清/比例错/颜色错的画面——
+已由 `check_device_asset_variants.py` 拦；② 手动往 pbxproj 加资源时 Object ID 撞既有对象，
+资源静默不进 bundle、UI 渲染成 0×0 且编译仍 SUCCEEDED——已由 `check_pbxproj_ids.py` 拦。
+
 ## 1. 为什么不能只做两个断点
 
 「手机 / 平板」两个断点是最常见的错解，因为**「平板」根本不是一个尺寸**：
@@ -48,15 +90,36 @@ Android 还有一条硬约束：**Android 15（API 35）起，`sw >= 600dp` 的�
 
 计划里**必须声明至少四个采样**：
 
-| 采样 id | 档 | 为什么必须有 |
-|---|---|---|
-| `phone-compact` | `compact` | 设计稿探针设备，像素基准所在 |
-| `tablet-regular-portrait` | `medium` | 最常见的平板姿态 |
-| `tablet-regular-landscape` | `expanded` | 最宽的一档，`maxContentWidth` 是否生效在这里暴露 |
-| `phone-regular-landscape` | `medium` | 手机横屏；漏掉它就会把「medium 一定来自平板」写成假设 |
+| 采样 id | 设备平台 | 宽度档 | 为什么必须有 |
+|---|---|---|---|
+| `phone-compact` | `phone` | `compact` | 设计稿探针设备，像素基准所在 |
+| `tablet-regular-portrait` | `tablet` | `medium` | 最常见的平板姿态 |
+| `tablet-regular-landscape` | `tablet` | `expanded` | 最宽的一档，`maxContentWidth` 是否生效在这里暴露 |
+| `phone-regular-landscape` | `phone` | `medium` | 手机横屏；漏掉它就会把「medium 一定来自平板」写成假设 |
 
 采样是**验证的取样点**，不是布局的分支条件。实现里不得出现
 `if device == "iPad"` 这类判断，也不得把采样 id 写进生产代码。
+
+**「设备平台」（phone / tablet）与「宽度档」（compact / medium / expanded）是两根正交的轴。**
+宽度档回答「父视图变宽时内容怎么收敛」，由窗口宽度决定；设备平台回答「照哪套稿的尺寸 /
+字号」，由设备决定。`sizeInvariance` 的「尺寸不缩放」作用域是**同设备内**——同一台 phone 或
+同一台 tablet 的各个宽度档之间尺寸必须逐字相等；跨设备（phone vs tablet）的差异才走
+`sizeVariants` 分档（此时有 `xx` 与 `xx-iPad` 两份稿）。声明 `sizeVariants` 时，两个设备平台的
+采样都必须有。
+
+**宽度档由「实际窗口宽度」决定，不是随设备型号写死。** 上面表格里的 1024 / 1366 只是
+iPad **全屏**的常见值，不是「iPad 的宽度档定义」：iPad 分屏 1/3、Slide Over 会回落到
+~320pt（compact），Stage Manager / 自由窗口会在 320~1366 之间连续变化，而 Lanhu 导出的
+iPad 稿画布也可能是 810pt 这类**非标值**（实测存在，不是只有 1024 / 1366）。所以 `width`
+与 `widthClass` 都照**实际画布宽度**填报，810 宽的 iPad 稿按阈值（600~840）就近归 `medium`，
+而不是因为「它是 iPad」就硬套 1024。`check_adaptive_layout.py` 会对「宽度与档位明显越界」的
+采样给 warning 提示自查。
+
+> **历史口径待澄清**：本文 §2 阈值表里 `medium` 定义为 600–839、`expanded` ≥ 840，但
+> 「iPad 竖全屏 1024」在示例里被标为 `medium`——1024 > 839，按数值本应 `expanded`。
+> 这是一个既有的、与数值阈值不一致的口径，牵涉多份示例与评测素材，**尚未收敛**。写计划时
+> 优先照**实际宽度数值**归类（810→medium、1366→expanded），遇到 1024 这类边界值，明确标注
+> 你把它归到哪一档并说明理由，不要默认「iPad 竖 = medium」。
 
 ## 3. 宽度轴：`widthPolicy` 六档
 
@@ -83,18 +146,29 @@ Android `sw600dp` 惯用 600dp。声明时必须同时给 `of`（基准父视图
 ### 4.1 宽度轴只改「容器宽度」与「第一层位置」，不改任何尺寸
 
 字号、行高、圆角、描边宽度、阴影、图标与位图资源的点值尺寸、最小点击区
-（≥44pt / 48dp）在**全部宽度档上逐字相同**。这与
+（≥44pt / 48dp）在**同一个平台的各个宽度档之间逐字相同**。这与
 [sizing-and-positioning.md §2.2](sizing-and-positioning.md#22-哪些量永远不缩放) 是同一条约束，
 只是现在多了一个更容易踩的场景：平板。
 
-**「平板字大一点更好看」是错的。** 那会让同一页面在 iPhone 与 iPad 上出现两套排版，
-而设计稿只有一套。
+**这条约束的作用域是「同一份参考稿、同一个平台」，不是「iPhone 必须等于 iPad」。**
+它说的是：一份 iPhone 稿，在手机的不同宽度档（竖屏 / 横屏 / 大屏手机）之间组件尺寸不变；
+一份 iPad 稿，在 iPad 的不同宽度档（竖屏 / 横屏 / 分屏）之间组件尺寸不变。
+它**不**表达「iPhone 的尺寸必须等于 iPad 的尺寸」——那是一条不存在的约束。
 
-**唯一的合法例外：多设备稿的「照稿分档」。** 当同一设计在 Lanhu 里同时存在
-`xx` 与 `xx-iPad` 两份稿、且 iPad 稿确实给出了**不同的尺寸参数**（例如按钮框 22 → 28 高、
-而字号不变）时，iPad 档照 iPad 稿还原尺寸是**合规的分档**，不是「把手机稿等比放大」。
-但这一档必须显式声明，才能和「整页等比放大」区分开 —— 位置在
-`adaptiveLayout.sizeVariants[]`：
+**「只有一套稿时，平板上字大一点更好看」是错的。** 当 Lanhu 里只有 `xx` 这一份稿时，
+iPad 侧的尺寸没有任何独立出处，Agent 擅自放大就是重新设计，不是适配。
+
+**双稿是「两套并列的独立参考」，不是「手机稿 + 放大」。** 当同一设计同时存在 `xx` 与
+`xx-iPad` 两份稿时，这两份稿是**互相独立的**：iPad 组件的宽、高、字号、圆角、描边
+**全部以 `xx-iPad` 稿自身为准**，与 `xx` 稿**没有派生关系**。因此「把手机稿等比放大到
+iPad」这个说法本身就不成立——「放大」隐含了一个「从手机稿派生」的来源，而双稿之间
+不存在这个来源。Agent 要做的不是「放大」，是「照 `xx-iPad` 稿再读一遍尺寸」。
+
+跨平台尺寸若照两份稿各自取值、出现了差异，必须逐档声明在
+`adaptiveLayout.sizeVariants[]`，`audit_adaptive.py` 的 `sizeInvariance` 才按分档白名单放行；
+未声明的尺寸差异仍判 `size-not-invariant`。**不必手写**：用
+`scripts/diff_device_variants.py --phone <xx>.document.json --tablet <xx-iPad>.document.json`
+按图层名对齐自动 diff 容器宽高、生成 sizeVariants 片段（文本层与位置差异自动排除）：
 
 ```json
 "adaptiveLayout": {
@@ -106,7 +180,7 @@ Android `sw600dp` 惯用 600dp。声明时必须同时给 `of`（基准父视图
         "phone-compact":           { "width": 68,  "height": 22 },
         "tablet-regular-portrait": { "width": 141, "height": 28 }
       },
-      "why": "iPad 稿给出该档更大的按钮框；字号仍为设计值、未缩放"
+      "why": "目的-iPad 稿中该按钮宽高为 141×28，照 iPad 稿取值，与目的稿无派生关系（字号跨稿差异走 typeFacts 溯源，不进本条目）"
     }
   ]
 }
@@ -116,27 +190,40 @@ Android `sw600dp` 惯用 600dp。声明时必须同时给 `of`（基准父视图
 
 1. **`basis` 与 `why` 都是必填**。没有这两项，`audit_adaptive.py` 的 `sizeInvariance`
    不把该元素算进分档白名单 —— 仍按「尺寸随窗口变」判 `size-not-invariant`。
-2. **只有「尺寸真的分档」才需声明**；字号、圆角、描边、最小点击区**永远不参与分档**，
-   它们在任何设备的稿里都该相等。分档的是「容器/控件的宽高」这类几何尺寸。
-3. **`sizeInvariance` 不是被放宽，是被收窄到「未声明即违规」。** 声明过的分档放行，
-   没声明的尺寸变化依旧拦下 —— 这条改动是为「双稿照稿还原」开合法的门，不是为
-   「平板上把东西放大点」开的口子。
+2. **`sizeVariants` 声明的是「跨平台分档」，不是「平板上放大」。** 它的条目表达
+   「`xx` 稿给 A、`xx-iPad` 稿给 B」，两个值各自由各自的稿决定，谁也不派生自谁。
+   `sizeVariants` 的 `values` **只放宽高**——因为 `sizeInvariance` 只审计几何尺寸。
+   **字号、圆角、描边不经 `sizeVariants` / `sizeInvariance`**：它们是样式恒量（`typeFacts`），
+   各自照稿溯源，**iPhone 与 iPad 的字号可以相同，也可以不同**，二者没有强关联。
+   唯一不随稿动的只有**平台硬下限**：最小点击区 ≥44pt / 48dp，那是可访问性规范，不是设计值。
+3. **`sizeInvariance` 不是被放宽，是被收窄到「未声明即违规」，且「同设备内」永不豁免。**
+   声明过的**跨平台**分档放行，没声明的尺寸变化依旧拦下。但有一条更硬的线：**同一设备
+   （phone / tablet）内部的各个宽度档之间，尺寸必须逐字相等，`sizeVariants` 不能豁免**——
+   同一台手机竖屏 / 横屏两个采样之间按钮尺寸变了，判 `size-not-invariant-within-device`。
+   分档只允许发生在**跨设备**（phone vs tablet）之间，因为只有那里才有 `xx` 与 `xx-iPad`
+   两份稿作为两个独立的取值来源。设备维度由 `windowSamples[].deviceClass` 声明或由 id 前缀
+   （`phone-*` / `tablet-*`）推断——这是 `sizeInvariance` 能区分「同设备」与「跨设备」的依据。
 
-### 4.2 `adaptiveLayout` 存在时，第一层位置比例规则只在 `compact` 档生效
+### 4.2 `adaptiveLayout` 存在时，第一层**水平**位置比例规则只在 `compact` 档生效
 
 [sizing-and-positioning.md §3.1.1](sizing-and-positioning.md#311-第一层子视图位置按页面比例重排设备尺寸--设计稿尺寸时的适配核心)
-规定「第一层子视图的位置按页面比例重排」，这条规则在 `393×852 → 402×874` 上是对的
-（两轴比例差 2.3%，位置确实该跟着动）。但它**只在 compact 档成立**。
+规定「第一层子视图的位置按页面比例重排」。这条规则要**分轴看**：
 
-推到 1024pt 就会出事：位置按比例 ×2.6、而尺寸按契约 ×1，于是
+- **水平位置** `x = page.width × ratio` 只在 **compact 档成立**。推到 1024pt 就会出事：
+  位置按比例 ×2.6、而尺寸按契约 ×1，于是
 
-- 卡片左起从 33pt 变成 86pt，宽度仍是 327pt —— 右侧空出 611pt；
-- 卡片间距从设计稿的 13pt 被拉成 285pt；
-- 整个页面的视觉重心落在左侧 40%，右边一片空白。
+  - 卡片左起从 33pt 变成 86pt，宽度仍是 327pt —— 右侧空出 611pt；
+  - 卡片间距从设计稿的 13pt 被拉成 285pt；
+  - 整个页面的视觉重心落在左侧 40%，右边一片空白。
 
-所以：**`adaptiveLayout` 存在时，regular / medium / expanded 档下第一层位置改由
-`widthPolicy` 重排**（`max-content-width` 就是把它们收进居中的内容列里）。
-`compact` 档维持原规则不变。
+  所以：**`adaptiveLayout` 存在时，regular / medium / expanded 档下第一层水平位置改由
+  `widthPolicy` 重排**（`max-content-width` 就是把它们收进居中的内容列里）。
+  `compact` 档维持原规则不变 —— 这条收口由 `firstLevelWidthClass` 表达，**只管水平轴**。
+
+- **垂直位置** `y = page.height × ratio` **不受宽度档收口**，在所有宽度档下都按页面高度比例
+  重排。垂直轴的参考要素是高度不是宽度：较短手机、横屏下设备高度不足，第一层元素若写死
+  贴边/居中，底部会被推出可用区甚至裁掉。按高度比例重排让整列随可用高度均匀收缩，
+  底部不缺失。这条**不属于**宽度轴，也不该被 `firstLevelWidthClass` 收进去。
 
 ### 4.3 安全区与系统 UI 参与位置求解，不参与尺寸；平板的系统区域与手机不同
 
@@ -250,7 +337,7 @@ viewport 是同一套、而 iPad 截图不是。这不是「容差不够大」�
 | 检查 | 断言 | 为什么它值得单独存在 |
 |---|---|---|
 | `sampleCoverage` | 计划声明的必需采样都有几何证据 | 缺采样时其余检查会「全绿」，那是假绿 |
-| `sizeInvariance` | 同一 `fixed` 元素在全部采样上点值**逐字相等** | **把「尺寸不缩放」从文档口号变成可执行断言** —— 这是本规范最有价值的一条 |
+| `sizeInvariance` | 未声明分档的同一 `fixed` 元素，在**同一平台**的全部采样上点值**逐字相等** | **把「尺寸不缩放」从文档口号变成可执行断言** —— 这是本规范最有价值的一条（`sizeVariants` 声明的跨平台分档除外） |
 | `insetPreservation` | 设计常量内边距在各采样上相等 | 拦「平板上边距被撑大」 |
 | `noOverflow` | 元素不越出窗口 bounds | 拦分屏与自由窗口下的溢出 |
 | `maxContentWidth` | 声明封顶的区域宽度 ≤ 声明值 + 容差，且水平居中 | 拦「声明了封顶但没生效」与「封顶了但没居中」 |
@@ -269,13 +356,13 @@ viewport 是同一套、而 iPad 截图不是。这不是「容差不够大」�
 
 | 反例 | 为什么错 |
 |---|---|
-| 整页等比放大到平板 | 44pt 点击区变 115pt、17pt 字号变 44pt；每个尺寸都错，而它「处处对齐」 |
+| 只有一份手机稿、却拿它乘系数放大去填 iPad | 那是「没有 iPad 稿 + 擅自派生」；有 `xx-iPad` 稿时照 iPad 稿是独立取值，不是放大 |
 | 单列内容拉满 1024pt | 元素没越界、尺寸没变，断言全绿但阅读节奏彻底坏了 |
 | `if device == "iPad"` / 按设备型号分支 | 分屏、Slide Over、自由窗口下型号不变而宽度变了 |
 | 锁竖屏当作「只支持手机」的保险 | Android 15+ 在 sw≥600dp 上忽略方向锁；iOS 上会变成信箱模式 |
 | 用 `UIScreen.main.bounds` 当布局基准 | 分屏与自由窗口下它返回整块屏，不是窗口 |
 | 只声明两个断点（手机 / 平板） | 断点之间的连续宽度无定义，分屏必崩 |
-| 平板上把字号调大「更好看」 | 设计稿只有一套排版；这是把适配做成了重新设计 |
+| 只有一套稿时，平板上把字号调大「更好看」 | 设计稿只有一套排版，字号无独立出处；这是把适配做成了重新设计。有 `xx-iPad` 稿时字号照 iPad 稿，不在此列 |
 | 为了 iPad 单独写一套布局文件，手机档下不生效 | 死代码会污染 diff，且在门 1 里被判成未声明的分支 |
 | 用 `TARGETED_DEVICE_FAMILY = 1,2` 就算支持了 iPad | 只声明了设备族，没有任何宽度档决策与方向声明，实际以竖屏或兼容模式运行 |
 
@@ -298,7 +385,7 @@ viewport 是同一套、而 iPad 截图不是。这不是「容差不够大」�
 - [ ] 声明 `max-content-width` 的区域，源码里有对应封顶原语；
 - [ ] 声明 `grid` 的区域没有固定列数；
 - [ ] 六模式各自的预留 hook 已就位（§6 表），且手机档视觉结果未变；
-- [ ] 字号、圆角、描边、最小点击区在全部宽度档上数值一致。
+- [ ] 字号、圆角、描边、最小点击区在**同一平台的**全部宽度档上数值一致（跨平台无此约束，双稿各自照稿）。
 
 交付前：
 
@@ -313,7 +400,7 @@ viewport 是同一套、而 iPad 截图不是。这不是「容差不够大」�
 | §2 宽度档 | `ui-implementation-plan.json` 的 `adaptiveLayout.windowSamples[]` + `adaptive-targets.json` 的 `samples[]` |
 | §3 宽度轴六档 | `adaptiveLayout.regions[].widthPolicy` + `maxContentWidth` |
 | §4.1 尺寸不缩放 | `audit_adaptive.py` 的 `sizeInvariance`（复用 `layoutProportions` 的 `kind == "fixed"`） |
-| §4.2 第一层比例只在 compact 生效 | `check_adaptive_layout.py` 的计划校验；`layoutProportions` 的 `forced: "first-level"` 需带 `widthClass: "compact"` |
+| §4.2 第一层水平比例只在 compact 生效、垂直始终按高度 | `check_adaptive_layout.py` 的计划校验（`firstLevelWidthClass` 只管水平轴）；`layoutProportions` 的 `forced: "first-level"` 对 x、y 都标记，但只有 x 受宽档收口 |
 | §4.3 窗口 ≠ 屏幕 | `check_adaptive_layout.py` 的 `screen-as-layout-source` / `display-metrics-as-layout-source` |
 | §6 预留 hook 可核 | `check_adaptive_layout.py` 的 `missing-max-content-width` / `fixed-column-count` |
 | §7 几何审计 | `diff/adaptive-audit.json`（`audit_adaptive.py` 产出） |
