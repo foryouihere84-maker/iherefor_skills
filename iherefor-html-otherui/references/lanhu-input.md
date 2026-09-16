@@ -49,7 +49,9 @@ Python 的绝对路径，`args` 指向 skill 内的 `lanhu-mcp/lanhu_mcp_server.
 2. 打开 `.env`，填入 `LANHU_COOKIE`（必填，蓝湖登录 Cookie）。获取方式见
    `<skill-root>/lanhu-mcp/GET-COOKIE-TUTORIAL.md`：登录 `lanhuapp.com` → 开发者工具 → Network →
    任意请求的 `Cookie` 请求头，复制整个值（不含 `Cookie:` 前缀）。
-3. 其余键（`SERVER_HOST` / `SERVER_PORT` / `DATA_DIR` 等）用默认值即可，按需调整。
+3. **`DATA_DIR` 要显式指向项目内缓存目录**（`.ihereforUI/cache/`），**不要用默认值**——默认是相对
+   MCP server 启动目录的 `./data`，会在工程根散落一个 `data/` 垃圾目录（实测本 skill 就踩过）。
+   其余键（`SERVER_HOST` / `SERVER_PORT` 等）用默认即可。
 4. 保存 `.env`，注册 MCP 后重启会话生效。
 
 > `.env` 含登录凭据，已被 `.gitignore` 忽略，**绝不提交**、绝不打印、绝不记录到任何日志或报告。
@@ -123,7 +125,8 @@ skill 目录迁移过、或注册仍指向其他 checkout 时，运行时启动�
    不能用它凑 imageset 3x）；需要按 `asset_id` 精准/位图类（`ddsImage`/render_fallback）资产时用
    `lanhu_export_design_assets({snapshot_id, asset_ids\|kind})`，返回 `bundle_resource` 用 `ReadMcpResource` 读 zip
    解包，再归位 `Assets.xcassets`。
-7. 成功读取/下载的资源执行 cache hook，落到 `.ihereforUI/cache/<project-id>/`；禁止缓存 Cookie/Authorization/原始 MCP envelope。
+7. 缓存由 **lanhu-mcp 自动写入** `DATA_DIR` 指向的目录（即第 3 步设的 `.ihereforUI/cache/`），agent 无需手动
+   干预；禁止把 Cookie/Authorization/原始 MCP envelope 落到任何可提交的文件。
 8. 校验资源非空，文件清单/sha256/image_id/版本/来源 URL 记到 `source/manifest.json`。
 9. 主链路（bounds 已拿到）：用 `dds-schema.json` 里的 `bounds` 生成 `layoutProportions`（布局契约）→ 进目标平台 Agent loop。样式恒量以
    `inspect_design_region.raw_style` 或 `ai_analyze_design_result` CSS 为准。

@@ -38,6 +38,7 @@
 ├── reports/
 │   ├── project-status.json       # 跨页面汇总
 │   └── delivery-gate.json        # 项目级交付闸门
+├── cache/                         # lanhu-mcp 自动缓存（DATA_DIR 指向这里；可再生，非证据）
 └── index.json                    # 可选机器索引；由管理脚本更新
 ```
 
