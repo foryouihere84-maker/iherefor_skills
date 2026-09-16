@@ -28,6 +28,23 @@ Assets.xcassets/
 
 每个 imageset 的 `Contents.json` 必须显式声明 `1x/2x/3x` 三档 filename 与 scale；缺 `Contents.json` 或 scale 声明不全会导致 Xcode 无法识别该资源。业务域分组用语义词（如 `guide`、`paywall`、`onboarding`）而非页面 id 或随机编号。
 
+### 切图倍率的真相与正确获取（强制，极易踩坑）
+
+MCP（`lanhu-mcp`）**拿不到无损的 1x/2x/3x 三套切图**，它只有「一张原图 + 一组在线缩放 URL」：
+
+- 蓝湖切图**只存一张图**：`stored = logical × sliceScale`（通常 `sliceScale = 2`，即原图就是 2x）。这张原图是唯一无损像素源。
+- `lanhu_get_design_slices` 返回的 `scale_urls`（`1x/2x/3x`/`ios_*`/`android_*`）**全部是 OSS `x-oss-process=image/resize` 在线缩放拼出来的 URL，不是预先生成的无损三套文件**。
+- 其中 `2x` 是原图本身（真高清）；`1x` 是下采样（无损收容，安全）；**`3x` 是从 2x 上采样插值放大（信息量 = 2x，会糊）——这是假高清**。
+
+**正确主张（务必遵守）**：
+
+1. **禁止用 `scale_urls` 的上采样结果去凑 imageset 的 `3x` 坑位**。上采样不增加信息，Retina 屏放大后反而暴露糊边。
+2. `1x` 可由原图安全下采样；`2x` 直接取原图；**`3x` 只能来自两条路之一**：
+   - 设计师在蓝湖按 `3x` 重新导出（服务端真的生成 3x 原图）；或
+   - **矢量 SVG**（`is_vector` 资源 `resolution_limited` 恒为 `false`，任意倍率无损，是真正的"任意倍率高清"）。
+3. 需要真 3x 时优先拿 SVG；只有必须用栅格 3x 且蓝湖确已按 3x 导出时，才用栅格。**不要用 MCP 或本地工具对 2x 做放大来伪造 3x。**
+4. 若只有一张原图、无 SVG、也无 3x 原图，则 imageset 里只放 `@2x` 一张（`Contents.json` 仅声明 `2x`），并把「缺 3x」写入 `unsupported` 说明原因，**不得**用假 3x 冒充。
+
 资源接入还必须验证显示 frame 来自页面 `canvasTransform.coordinateMapper`。图片 frame、`contentMode`/`scaleType`/`ContentScale` 与 alpha 内容 bounds 的硬约束以 `SKILL.md` 的「图片缩放硬约束」一节为准，本文件不再重复；每张图片仍必须在 `resource-policy.json` 中记录 Lanhu frame、目标 mapped frame、scaleX/scaleY 与最终截图 frame。
 
 ## 生产文件命名（强制）

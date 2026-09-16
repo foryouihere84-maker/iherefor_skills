@@ -42,7 +42,7 @@
 
 多设备稿的硬规则，一句话：**「xx」和「xx-iPad」按两个独立 page 处理，逐维照各自稿还原，
 只在 md5 逐字节相同时才允许共享。** 具体分四维，每一维都有「手机稿值 vs iPad 稿值」要落到
-计划里，且几何取值优先来自**各自稿的 `rowDims`**（`rowDims` 缺失时才是渲染后的 `page-facts`；
+计划里，且几何取值优先来自**各自稿的 `bounds`**（`bounds` 缺失时才是渲染后的 `page-facts`；
 不是 design_document 图层坐标，见 [lanhu-input.md](lanhu-input.md)）：
 
 | 维度 | 分档依据 | 校验门 |
@@ -54,7 +54,7 @@
 
 **数据源铁律（本次多轮踩坑的根）**：`design_document` 的图层 `rect` 有负偏移根画板、
 rect 是相对父容器的、字号是 scale 还原中间值、文字节点可能缺失——**几何维优先用各自稿的
-`rowDims`（`dds-schema.json`）取值，`rowDims` 缺失时才用「下载渲染后的 page-facts」**，
+`bounds`（`dds-schema.json`）取值，`bounds` 缺失时才用「下载渲染后的 page-facts」**，
 design_document 只在「父视图归属」上可靠。
 
 历史教训（都写成了门）：① 复用手机稿资源到 iPad 档，得到低清/比例错/颜色错的画面——
@@ -314,7 +314,7 @@ iPad 没有刘海与灵动岛，但有 home indicator、Stage Manager 的窗口�
 
 ### 7.1 平板这一关**不能**做像素比对
 
-Lanhu 只提供一份设计稿，其几何基准是**某一台设备**的 `rowDims`。拿它直接比 iPad 的几何，
+Lanhu 只提供一份设计稿，其几何基准是**某一台设备**的 `bounds`。拿它直接比 iPad 的几何，
 等于拿两个不同画布比对 —— 这不是「容差不够大」，是**证据类型不匹配**。所以 `adaptiveAudit`
 只断言**几何关系**（尺寸不变、贴边、不溢出、封顶等），不做像素比对。
 

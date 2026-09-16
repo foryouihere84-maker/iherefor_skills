@@ -4,11 +4,12 @@
 
 **坐标为王的双链路模型：**
 
-- **主链路（默认）**：`lanhu_get_dds_schema` 的 `rowDims`（`{left, top, width, height}` 绝对坐标）是**组件几何的权威来源**。它能拿到的 `rowDims` 直接用，据此生成布局契约与原生代码；不要再用「渲染 DOM 读位置」去反推坐标。
-- **样式与切图**：`lanhu_download_design` 的官方 HTML/CSS 管样式恒量（字号/颜色/圆角/描边）与切图资源。
-- **备用链路（fallback）**：只有当 `rowDims` 缺失/不可信时，才走旧的「下载官方 HTML → 渲染 DOM → 读几何」路径反推坐标。
+- **主链路（默认）**：`lanhu_get_design_overview` 的 `nodes[].bounds`（`{x, y, width, height}` 绝对坐标）是**组件几何的权威来源**。能拿到的 `bounds` 直接用，据此生成布局契约与原生代码；不要再用「渲染 DOM 读位置」去反推坐标。
+- **样式与切图**：`lanhu_inspect_design_region` 的 `raw_style` 管样式恒量（字号/颜色/圆角/描边，权威），
+  `lanhu_export_design_assets`（或 `lanhu_get_design_slices`）管切图资源。
+- **备用链路（fallback）**：只有当 `bounds` 缺失/不可信时，才走旧的「下载官方 HTML → 渲染 DOM → 读几何」路径反推坐标。
 
-> 一句话：**能用 `rowDims` 就直接用；用不了 `rowDims` 才退回 DOM 渲染路径。** 不要因为"还保留了备用链路"就又默认退回 DOM 反推几何。
+> 一句话：**能用 `bounds` 就直接用；用不了 `bounds` 才退回 DOM 渲染路径。** 不要因为"还保留了备用链路"就又默认退回 DOM 反推几何。
 
 ## MCP 未安装或未注册时
 
@@ -84,44 +85,48 @@ skill 目录迁移过、或注册仍指向其他 checkout 时，运行时启动�
 
 ## 固定调用链
 
-1. 调用 `lanhu_set_project({url})`，使用用户提供的完整 URL；不截断或自行拼接 UUID。
-2. 调用 `lanhu_get_designs({projectId})`，根据用户指定的设计名、image_id 或 URL 解析结果选择页面。若存在多个候选，记录选择依据；不能猜错页面。
-   **设备稿判定规则（同一设计名常同时存在手机稿与 iPad 稿）**：设计名**不带「iPad」后缀 = 手机稿**；
-   带「iPad」后缀 = iPad 稿。用户给的是 URL（只有 image_id、没有设计名）时，先按 image_id 精确匹配，
-   再读它对应的 `name` 确认设备形态；若用户意图是「手机端页面」，却匹配到带「iPad」后缀的稿，属选错了要纠正。
-3. 对每个选定页面调用 `lanhu_get_design_detail`，确认 image_id、版本和原始 URL。
-4. **（主链路，默认）调用 `lanhu_get_dds_schema({imageId})` 取语义化组件树。** 每个节点带
-   `rowDims`（`{left, top, width, height}` 绝对坐标）、`style`（含 `left/top/width/height/background/
-   padding/margin` 等 CSS 属性）、`type`/`componentName`/`uiType`（语义组件类型）、`layerId`，以及
-   `children` 嵌套树（给出父子层级 = `parentIndex` 的来源）。**`rowDims` 是组件几何的权威坐标来源：**
-   - 把返回体存到 `.ihereforUI/pages/<page-id>/reference/dds-schema.json`；
-   - 用 `rowDims` 生成布局契约（`layoutProportions` 的 `regions[].basis` 与 `relations[].kind`/`of`），
-     `left/top` 是位置、`width/height` 是尺寸；`style.background` 等给颜色/背景，`children` 给父子归属。
-   - **能拿到 `rowDims` 就直接用，不要退回 DOM 反推几何。** 只有当整棵 schema 拿不到、或某个区域
-     `rowDims` 明显不可信（坐标出界、与其它节点互相矛盾）时，才降级到备用链路。
-5. **（备用链路，仅主链路失效时）调用 `lanhu_download_design({imageId, projectId, outputPath})`**，
-   把官方生成的 `index.html/index.css/common.css/flexible.js/img/` 下载到 `.ihereforUI/pages/<page-id>/source/`，
-   再走旧的「渲染 DOM → 读 `page-facts.json`」路径反推几何。注意：
-   - 即使主链路已拿 `rowDims`，若需要**样式恒量**（字号/颜色/圆角/描边）与**切图**，仍应调
-     `lanhu_download_design` 拿官方 HTML/CSS 与 `img/`——它是样式与资源的权威、`rowDims` 是几何的权威，
-     两者分工、不是二选一。
-   - 不要调用 `lanhu_generate_code` 作为原生代码生成器。
-6. **（可选）调用 `lanhu_get_design_document` 并解析成设计事实摘要，仅作交叉佐证**：
-   - 只在 `rowDims` 与官方 HTML 在某处结论打架、需要回看 Sketch 原始帧时才调；
-   - 若调用则**必须传 `depth: 99`**（工具默认只展开 2 层，漏传只会拿到残缺层级）；
-   - 把返回体存到 `.ihereforUI/pages/<page-id>/reference/design-document.json`，运行
-     `scripts/lanhu_design_facts.py --document <该文件> --output .ihereforUI/pages/<page-id>/reference/design-facts.json`；
-   - 它只可靠地提供**图层几何（`rect`）与描边/纯色填充**这一小半，字号/渐变/文本语义存在系统性失真，**不得当权威**；
-   - `lanhu_get_annotations` 与 `lanhu_get_design_document` 的图层树/字号/文本基本重叠，**不用重复调用**；
-     `lanhu_get_layer_detail` 仅在某一层需要看原始帧时按需调用；`lanhu_get_tokens` 仅在需要具名 token 时调用。
-7. 对每个成功读取或下载的资源执行 Lanhu cache hook，保存到项目 `.lanhu-cache/<project-id>/`；禁止缓存 Cookie、Authorization 或原始 MCP envelope。
-8. 校验 `source/index.html`、CSS/JS 和 `img/` 非空，记录文件清单、sha256、image_id、版本和来源 URL 到 `source/manifest.json`。
-9. **主链路（rowDims 已拿到）**：直接用 `dds-schema.json` 生成布局契约并进入目标平台 Agent loop。
-   **备用链路（rowDims 缺失）**：走 `lanhu_download_design` → 渲染 → `page-facts.json`，此时它是
-   布局几何的权威来源（父视图归属、画布尺寸都以它为准）。
-   **两链路并存时的优先级**：几何坐标 `rowDims` 优先；`rowDims` 拿不到或不可信时，DOM 的 `page-facts.json`
-   是 fallback。样式恒量（字号/颜色/圆角/描边）与切图以官方 HTML/CSS 为准；`design_document` 只能交叉佐证，
-   不得覆盖以上任一来源。
+> **⚠️ 别按本 skill 历史版本的旧工具名找工具**：`lanhu_set_project` / `lanhu_get_dds_schema` /
+> `lanhu_download_design` / `lanhu_get_design_document` / `lanhu_get_design_detail` 这些名字**已不适用**。
+> 下表是**当前 lanhu-mcp 实机暴露的全部工具**，照它调：
+
+| 用途 | 工具 + 关键入参 | 关键产出 |
+|---|---|---|
+| UI 设计图清单（先调） | `lanhu_get_designs({url})` | 设计列表 + `index`/`name`/`image_id` |
+| 几何快照（主链路） | `lanhu_get_design_overview({url, design_id})` | `snapshot_id` + `nodes[]`（`bounds`/`asset_ids`）+ `canvas` |
+| 深层元素样式 | `lanhu_inspect_design_region({snapshot_id, region\|node_ids})` | 区域裁剪图 + `raw_style`（font/fills/radius） |
+| HTML/CSS 参考（legacy） | `lanhu_get_ai_analyze_design_result({url, design_names})` | 官方 HTML/CSS 声明值 |
+| 切图（按名，单 design） | `lanhu_get_design_slices({url, design_name})` | 切图列表 + `scale_urls`（1x/2x/3x） |
+| 切图（按 asset_id，精准） | `lanhu_export_design_assets({snapshot_id, asset_ids\|kind})` | `bundle_resource`（zip）+ manifest |
+
+> 需求文档/PRD/原型走另一套：`lanhu_list_product_documents` → `lanhu_get_pages` → `lanhu_get_ai_analyze_page_result`。
+> 本项目是 UI 设计稿，**不走**这套。
+
+**几何 vs 样式的权威（三选一别混）：**
+- 几何（位置/尺寸/父子）唯一权威 = `get_design_overview` 的 `nodes[].bounds`（字段是 `{x,y,width,height}`，
+  父视图看 `parent_id`/`source_parent_id`，**没有 `rowDims` 也没有 `children` 树**——别按旧文档去这两个键里找）。
+- 样式（字号/颜色/圆角/描边）权威 = `inspect_design_region` 的 `raw_style`；`ai_analyze_design_result` 的 CSS
+  是 legacy 参考，能看但不是最权威。
+
+1. `lanhu_get_designs({url})`：用用户完整 URL（不截断、不自己拼 UUID）。按设计名 / image_id / URL 选页面，
+   多候选时记依据，别猜错页。**设备稿判定：名字不带「iPad」= 手机稿，带「iPad」= iPad 稿**；URL 只有
+   image_id 时先精确匹配再读 `name` 确认设备形态。
+2. 每个页面 `lanhu_get_design_overview({url, design_id})`：取 `snapshot_id`（**后续 inspect/export 的入参**）、
+   `canvas`（画布尺寸权威）、`nodes[]`（`bounds` 几何 + `asset_ids`）。**注意 `limit` 默认 30 且分层分页**：
+   顶层 `nodes[]` 只含 ~30 个顶层节点，导航/按钮/进度条等深层元素**不在里面**，是「元素找不到」的头号来源。
+3. 用 `nodes[].bounds` 生成布局契约并落 `reference/dds-schema.json`：`bounds.x/y`=位置、`width/height`=尺寸、
+   `parent_id`=父视图归属。能拿到 `bounds` 就直接用，别退回 DOM 反推。
+4. 深层元素（导航/按钮/进度条等）用 `lanhu_inspect_design_region({snapshot_id, region})`：它返回**完整 nested
+   nodes + raw_style**（`font.size/color/lineHeight`、`fills`、`radius`、描边），是拿被编组折叠元素的唯一可靠途径。
+5. 样式恒量以 `inspect_design_region` 的 `raw_style` 为准；需要整页参考时再调 legacy 的
+   `lanhu_get_ai_analyze_design_result({url, design_names})` 兜底。
+6. 切图：先用 `lanhu_get_design_slices({url, design_name})` 拿按名的切图（注意它 `scale_urls` 的 3x 是上采样假高清，
+   不能用它凑 imageset 3x）；需要按 `asset_id` 精准/位图类（`ddsImage`/render_fallback）资产时用
+   `lanhu_export_design_assets({snapshot_id, asset_ids\|kind})`，返回 `bundle_resource` 用 `ReadMcpResource` 读 zip
+   解包，再归位 `Assets.xcassets`。
+7. 成功读取/下载的资源执行 cache hook，落到 `.ihereforUI/cache/<project-id>/`；禁止缓存 Cookie/Authorization/原始 MCP envelope。
+8. 校验资源非空，文件清单/sha256/image_id/版本/来源 URL 记到 `source/manifest.json`。
+9. 主链路（bounds 已拿到）：`dds-schema.json` 生成布局契约 → 进目标平台 Agent loop。样式恒量以
+   `inspect_design_region.raw_style` 或 `ai_analyze_design_result` CSS 为准。
 
 ## 页面命名与链接映射
 
@@ -132,28 +137,21 @@ skill 目录迁移过、或注册仍指向其他 checkout 时，运行时启动�
 
 ## 已知坑（实测，先读再排查）
 
-- **`lanhu_download_design` 首次调用可能报「未能从 DDS 页面提取代码」，重试即成功。** 该工具用固定
-  `wait 8000ms` 等 DDS 生成代码，冷启动（该 version_id 第一次打开、DDS worker 未预热）时会超时，
-  此时页面上 `CodeMirror` 实例还是空的。**不要据此判定「这个设计稿没有 HTML」**——先原样重试一次；
-  连续两次都失败，再用 `CHROME_PATH` 确认 Chrome 可执行文件、并检查 Cookie 是否过期。
-- **`lanhu_get_design_detail` 的 `width`/`height` 不是画布尺寸。** 它返回的是导出图（cover）的像素尺寸，
-  可能是画布的一半（实测：detail 报 `196.5x426`，实际画布是 `393x852`，`canvas.scale=2`）。画布尺寸以
-  **渲染后 `page-facts.json` 的 `documentSize` 为准**（第 9 步实测得出）；`design_document.canvas` 只是可选佐证。
-- **`layout_data` / `version_layout_data` 里的 `file_info.format: "png"` 不代表设计稿没有图层。** 它只描述
-  导出格式；同一份设计稿照样能拿到完整图层树和 DDS HTML。不要因为它就跳过 `download_design`。
+> ⚠️ 下面保留的坑都是**针对现行工具有效**的。历史上针对 `lanhu_download_design` /
+> `lanhu_get_design_detail` / `lanhu_get_design_document` 的坑（盲等重试、detail 的 width/height ≠ 画布等）
+> 已随工具下架一并删除；其教训已迁移到现行工具：**画布尺寸看 `get_design_overview` 返回的 `canvas`，
+> `reference_size`/`image_size` 是导出像素，别当画布用。**
 
-## design_document 真实结构速查（可选辅助，写解析/读数据前先看）
-
-`lanhu_get_design_document` 的返回体**不是**散列字段平铺，而是 `layers[]` 嵌套树。几个踩过坑、别再猜的字段位置：
-
-- 顶层：`name` / `imageId` / `projectId` / `canvas`（含 `width`/`height`/`scale`/`device`）+ `layers[]`。
-- 每层：`id`（UUID）/ `name` / `type` / `rect`（`{x,y,width,height}`）/ `style` / `children` / `metadata`。
-- **`type` 对文本、形状、组全返回 `"artboard"`**——不要用它判断「这是不是文本层」。
-- **文本在 `style.typography`**（`fontFamily`/`fontSize`/`fontWeight`/`lineHeight`/`letterSpacing`/`textAlign`/`color`/`text`），不在 `style.text`。`color` 是 `{r,g,b,a,value}` 双份，`value` 可能是 `#hex` 或 `rgba(...)`。
-- **描边/填充/阴影在 `style.borders` / `style.fills` / `style.shadows`**，每个 border 形如 `{color,width,style,radius}`。
-- **`depth` / `hasExportImage` / `exportFormats` 在 `metadata`；但 `metadata.parentId` 实测全为 null、不可靠**，父视图归属必须按 `children` 嵌套树推导（`lanhu_design_facts.py` 已这么处理）。
-- **`canvas.scale` 语义**：`rect` 坐标是**未缩放**的画布点坐标（实测最大 = 画布尺寸）；但 `typography.fontSize` 是**除过 scale 的**（scale=2 稿里 fontSize=7 = 真实 14/2）。解析器已按 scale 还原字号。
-- 画布尺寸因稿而异（同一项目不同 device 稿可能一个 393×852、一个 810×1080），**按稿读根 artboard，不能假设**。
+- **`lanhu_get_design_overview` 分层分页，顶层默认只回 ~30 个节点。** `total_nodes` 可能远大于返回的
+  `nodes[]` 长度（实测 age 页 total=65、返回 30）。导航/按钮/进度条等深层元素藏在下层编组，需要
+  `offset`/`limit` 翻页，或直接 `lanhu_inspect_design_region` 按 region 拿完整 nested nodes。**别以为
+  overview 的 `nodes[]` 就是「全页所有元素」。**
+- **`lanhu_get_design_slices` 的 `scale_urls`（1x/2x/3x）不是无损三套图，而是 OSS 在线缩放 URL。**
+  蓝湖只存一张原图（`stored = logical × sliceScale`，通常 2x）；`1x/2x/3x` 是 `x-oss-process=image/resize`
+  拼的临时缩放。**`3x` 是从 2x 上采样放大（会糊），禁止用它凑 imageset 的 3x**（真 3x 只能来自 SVG 或蓝湖按 3x 重导出）。详见 `resource-and-code-quality.md`「切图倍率的真相与正确获取」。
+- **`lanhu_export_design_assets` 的 `kind` 决定拿到什么。** 默认 `kind=exported_asset` 只导出顶层
+  `:image` 背景；位图/图标等 `ddsImage`/render_fallback 类资产**不会**在这档里出现，要显式传
+  `kind="render_fallback"` 或按 `asset_ids` 逐个指定。`target_dpr` 只做源分辨率检查，**不会帮你放大**。
 
 ## 失败与凭据
 

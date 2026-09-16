@@ -28,8 +28,8 @@
 3. **分类反馈**：将反馈归类为 `geometry`（位置/尺寸）、`system-bars`（安全区/状态栏）、`asset`（资源/裁剪）、
    `typography`、`color-effect`、`layering`、`interaction`、`environment` 或 `unsupported`，
    并关联具体区域、元素、原生 view 和证据文件。
-4. **先对照权威来源定位根因**：几何以 `dds-schema.json` 的 `rowDims` 为准，
-   样式以官方 HTML/CSS 为准，不要凭记忆改。若反馈与权威来源冲突，先记录归因信号再改。
+4. **先对照权威来源定位根因**：几何以 `dds-schema.json` 的 `bounds` 为准，
+   样式以 `inspect_design_region` 的 `raw_style` 为准（legacy 官方 HTML/CSS 仅参考），不要凭记忆改。若反馈与权威来源冲突，先记录归因信号再改。
 5. **形成修复计划**：在新 run 的 `review.json` 写入 `observations`、`hypotheses`、`changes`。
    一次迭代优先处理同一根因，避免同时修改无关区域。
 6. **修改 canonical 源码**：只修改目标工程中登记在 `implementationPaths` 的生产代码和必要资源；

@@ -103,7 +103,7 @@
    这是最常见的一档，也是**唯一**可以写 `of: "root"` 的档位。
 3. **嵌套情形同理递推**：卡片里的按钮参照卡片，卡片参照屏幕；工具条里的图标参照工具条。
    一条关系只允许有一个基准，不允许「左边缘参照父、右边缘参照祖父」这种混合写法。
-4. **基准由权威来源自动推导**：主链路 `dds-schema.json` 的每个节点带 `children` 树（根节点的
+4. **基准由权威来源自动推导**：主链路 `dds-schema.json` 的每个节点带 `parent_id`（根节点的
    直接父即整屏画布），备用链路 `page-facts.json` 的每个元素带 `parentIndex`
    （根元素的直接父即整屏画布，为 `null`）与 `parentHops`，所以「`of` 是哪个父视图」
    是可算的，不必猜。权威来源里判不出层级的元素，实现计划里必须写成待确认项，
@@ -265,7 +265,7 @@
 
 | 规范条款 | 落点 |
 |---|---|
-| §3.1 基准 = 直接父视图 | `dds-schema.json` 的 `children` 树（主链路，根节点直接父即整屏画布，这是 `of: "root"` 唯一的适用场景）；`rowDims` 缺失时用 `page-facts.json` 的 `parentIndex` / `parentHops` / `positioningContextIndex`（`parentIndex == null` 表示直接父即整屏画布） |
+| §3.1 基准 = 直接父视图 | `dds-schema.json` 的 `parent_id`（主链路，根节点直接父即整屏画布，这是 `of: "root"` 唯一的适用场景）；`bounds` 缺失时用 `page-facts.json` 的 `parentIndex` / `parentHops` / `positioningContextIndex`（`parentIndex == null` 表示直接父即整屏画布） |
 | §3.1.2 水平比例只在 `compact` 档、垂直比例始终按高度 | `ui-implementation-plan.json` 的 `adaptiveLayout.firstLevelWidthClass`（缺省 `compact`，**只管水平轴**）+ `scripts/check_adaptive_layout.py`；垂直轴不参与收口 |
 | §2 尺寸轴三类 | `layout_proportions.py` 产出的 `relations[].kind`，五档 `fixed` / `pinned` / `proportional` / `intrinsic` / `centered`；`model` 为 `fixed-size-parent-relative-position` |
 | §3.1 每个区域声明基准 | region 的 `basis` / `parentIndex` / `parent` —— `basis` 与 relation 的 `of` 都指向直接父视图，只是分处 region 级与 relation 级，不是两个基准 |

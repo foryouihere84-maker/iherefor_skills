@@ -3,9 +3,10 @@
 本文件是 `.ihereforUI` 产物结构的**唯一事实来源**。`SKILL.md`、`project-management.md`
 与 `scripts/validate_run.py` 都以本文件为准；出现分歧时先改本文件，再同步其他两处。
 
-> **`v3` 起的主链路变更**：几何坐标以 `dds-schema.json` 的 `rowDims` 为主链路（见页面级
-> **主链路（v3 起）**：几何坐标以 `dds-schema.json` 的 `rowDims` 为主链路，样式恒量与切图以官方
-> HTML/CSS 为准。渲染 DOM 的 `page-facts.json`、像素 `diff/`、`canvasTransform` 坐标换算等
+> **`v3` 起的主链路变更**：几何坐标以 `dds-schema.json` 的 `bounds` 为主链路（见页面级
+> **主链路（v3 起）**：几何坐标以 `dds-schema.json` 的 `bounds` 为主链路，样式恒量以
+> `inspect_design_region` 的 `raw_style` 为准（legacy 的官方 HTML/CSS 仅参考），切图以
+> `lanhu_export_design_assets` 为准。渲染 DOM 的 `page-facts.json`、像素 `diff/`、`canvasTransform` 坐标换算等
 > **渲染链产物已整体删除**，不再属于本契约的任何流程。
 
 机器校验入口：
@@ -51,9 +52,9 @@ pages/<page-id>/
 │   ├── ui-implementation-plan.json
 │   └── integration-plan.json     # 仅既有项目接入时需要
 └── reference/                   # 当前**已批准**的几何基准（冻结）
-    ├── dds-schema.json          # rowDims 几何事实（主链路，组件位置/尺寸/父子归属）
-    ├── design-document.json     # （可选）lanhu_get_design_document 原始返回体，仅交叉佐证用
-    ├── design-facts.json        # （可选）设计事实摘要，仅佐证图层几何/描边/纯色填充，不参与权威判定
+    ├── dds-schema.json          # bounds 几何事实（主链路，组件位置/尺寸/父子归属）
+    ├── design-document.json     # （已废弃）旧 lanhu_get_design_document 原始返回体，仅交叉佐证用
+    ├── design-facts.json        # （已废弃）旧工具产物，仅佐证图层几何/描边/纯色填充，不参与权威判定
     └── approved.json            # 批准记录：sha256、批准时间、批准人
 ```
 
@@ -66,9 +67,9 @@ pages/<page-id>/
 应该什么样」。它是**可选交叉佐证**，只可靠地覆盖**图层几何（`rect`）与描边/纯色填充**这一小半；
 字号、渐变、文本语义存在系统性失真（`canvas.scale` 折半字号、`metadata.parentId` 全 null）。
 
-**几何的权威来源是 `dds-schema.json` 的 `rowDims`（主链路），渲染 DOM 的 `page-facts.json` 是备用链路**
-——凡是 rowDims 或 page-facts 已给出、计划却写成 `kindSource: "agent-decided"` 或
-凭空编造常量值的，都属可消除推断。`rowDims` 缺失/不可信时以渲染 DOM 为准；`design-facts` 与
+**几何的权威来源是 `dds-schema.json` 的 `bounds`（主链路），渲染 DOM 的 `page-facts.json` 是备用链路**
+——凡是 bounds 或 page-facts 已给出、计划却写成 `kindSource: "agent-decided"` 或
+凭空编造常量值的，都属可消除推断。`bounds` 缺失/不可信时以渲染 DOM 为准；`design-facts` 与
 两个权威来源不一致时，以权威来源为准并记归因信号。
 
 ```json
@@ -98,15 +99,15 @@ pages/<page-id>/
 | 字段 | 含义 |
 |---|---|
 | `scale.canvasScale` / `scale.fontSizeScaled` | 画布 scale 及「是否对字号做了还原」。**`rect` 坐标是未缩放的画布点坐标，但 `fontSize` 已按 scale 还原**（`fontSizeRaw` 是 document 原文） |
-| `hierarchy[].parentId` / `depth` | 父视图归属**由 `children` 树推导**（`metadata.parentId` 实测全 null 不可靠）；`parentId == null` 即根层。**仅供佐证，`regions[].parentIndex` 的权威来源是 `dds-schema.json` 的 `children` 树（主链路），`rowDims` 缺失时才是 `page-facts.json` 的 `parentIndex`/`parentHops`** |
+| `hierarchy[].parentId` / `depth` | 父视图归属**由 `parent_id`/`source_parent_id` 推导**（`metadata.parentId` 实测全 null 不可靠）；`parent_id == null` 即根层。**仅供佐证，`regions[].parentIndex` 的权威来源是 `dds-schema.json` 的 `parent_id`（主链路），`bounds` 缺失时才是 `page-facts.json` 的 `parentIndex`/`parentHops`** |
 | `typography[].fontSize` / `fontSizeRaw` | `fontSize` 是还原后的字号（**可能存在 scale 折半失真，勿当权威**），`fontSizeRaw` 是 document 原文（已除过 scale） |
-| `typography[].fontFamily` / `fontFamilyRaw` | `fontFamily` 已 normalize（`AvenirLT-*` → `Avenir-*`），`fontFamilyRaw` 是 document 原声明；**权威字号/字体以官方 HTML/CSS 为准，渲染 DOM 实测为辅（备用链路）** |
+| `typography[].fontFamily` / `fontFamilyRaw` | `fontFamily` 已 normalize（`AvenirLT-*` → `Avenir-*`），`fontFamilyRaw` 是 document 原声明；**权威字号/字体以 `inspect_design_region` 的 `raw_style` 为准，渲染 DOM 实测为辅（备用链路）** |
 | `borders[].borders[].width` | 描边粗细，回答「描边画在 frame 上还是独立装饰层」 |
 | `summary.depthDistribution` | 层级深度分布，快速判断画布叠层复杂度 |
 
-**几何权威是 `rowDims`（`dds-schema.json`，主链路），渲染 DOM（`page-facts.json`）是备用链路；样式权威是官方 HTML/CSS。** `design-facts` 只是可选佐证，给**声明值**（图层几何、描边、纯色填充）；
-`rowDims` 给**语义几何**（绝对坐标 + `children` 父子树），`page-facts` 给**渲染实测值**（父视图归属 `parentIndex`、`rectInReference`、字号、实际命中字体 `fontsResolved`、`advanceWidth`、计算后样式、颜色）。
-几何不一致时以 `rowDims` 为准、`rowDims` 缺失时以渲染 DOM 为准；样式不一致时以官方 HTML/CSS 为准，并把差异记为归因信号；
+**几何权威是 `bounds`（`dds-schema.json`，主链路），渲染 DOM（`page-facts.json`）是备用链路；样式权威是 `inspect_design_region` 的 `raw_style`（legacy 官方 HTML/CSS 仅参考）。** `design-facts` 只是可选佐证，给**声明值**（图层几何、描边、纯色填充）；
+`bounds` 给**语义几何**（绝对坐标 + `parent_id` 父子归属），`page-facts` 给**渲染实测值**（父视图归属 `parentIndex`、`rectInReference`、字号、实际命中字体 `fontsResolved`、`advanceWidth`、计算后样式、颜色）。
+几何不一致时以 `bounds` 为准、`bounds` 缺失时以渲染 DOM 为准；样式不一致时以 `raw_style` 为准，并把差异记为归因信号；
 「字体上声明 vs 命中」（`AvenirLT-*` 声明了却不存在的族名）是已知的正确差异，不做交叉核对产生噪音。
 
 ## 运行级（每次 run 必需）
@@ -272,8 +273,8 @@ pages/<page-id>/
 来源是 Agent 自觉，没有任何一道门核对「它是抄来的，还是拍脑袋编的」。这正是
 「只读 design_document / 跳过权威来源也能过闸门」的漏洞所在。
 
-**几何（位置/尺寸/父归属）的权威是 `rowDims`，样式恒量的权威是官方 HTML/CSS（主）或渲染 DOM
-的 `page-facts`（备用）。** `typeFacts` 是每项**样式恒量**的强制溯源：写计划时，每个区域的字号、
+**几何（位置/尺寸/父归属）的权威是 `bounds`，样式恒量的权威是 `inspect_design_region` 的 `raw_style`（主），
+legacy 的官方 HTML/CSS 或渲染 DOM 的 `page-facts`（备用）。** `typeFacts` 是每项**样式恒量**的强制溯源：写计划时，每个区域的字号、
 字体族、颜色、描边、圆角必须带一个指向权威来源的引用，证明这个值不是臆测。
 
 ```json
@@ -377,7 +378,7 @@ pages/<page-id>/
 
 #### `ui-implementation-plan.json` 的 `layoutProportions`
 
-由 `scripts/layout_proportions.py` 从 `rowDims`（`dds-schema.json` 几何事实）生成。**字段以实际产物为准**，下面是
+由 `scripts/layout_proportions.py` 从 `bounds`（`dds-schema.json` 几何事实）生成。**字段以实际产物为准**，下面是
 真实结构（数值取自 402×874 探针设备上的 Special Offer 页；原始素材在评测套件里，
 路径 `evals/fixtures/device-derived-layout/` —— 那个目录不会装到被测工程上，
 所以这里只写路径不做链接）：
@@ -642,7 +643,7 @@ regular / medium / expanded 档下第一层位置改由 `widthPolicy` 重排。
 | `visual-review.json` | 废弃 | `review.json` 的观察/验证字段 |
 | `manifest.json` | 废弃 | `run.json` |
 | run 级 `assets/` | 废弃 | `resource-policy.json` + 页面 `source/assets-manifest.json` |
-| `page-facts.json` / `browser-meta.json` | 整体删除（渲染链撤裁） | `reference/dds-schema.json`（rowDims 几何） |
+| `page-facts.json` / `browser-meta.json` | 整体删除（渲染链撤裁） | `reference/dds-schema.json`（bounds 几何） |
 | `canvas-transform.json` / `canvasTransform` | 整体删除（渲染链撤裁） | 布局契约内化的 `fit` 闭合（`SKILL.md` 尺寸与定位契约） |
 | `diff/` 目录 | 整体删除（像素 diff 撤裁） | 「布局契约静态门 + 编译通过」 |
 

@@ -3,12 +3,12 @@
 把 Lanhu（蓝湖）设计稿映射为 iOS / Android 原生 UI 的 Agent Skill。
 
 **输入是双链路**（详见 `references/lanhu-input.md`）：
-- **主链路（默认）**：`lanhu-mcp` 的 `lanhu_get_dds_schema` 给出 `rowDims` 绝对坐标（组件几何权威），
+- **主链路（默认）**：`lanhu-mcp` 的 `lanhu_get_design_overview` 给出 `nodes[].bounds` 绝对坐标（组件几何权威），
   据此直接生成布局契约与原生代码；
-- **备用链路（fallback）**：`rowDims` 拿不到或不可信时，回退到「`lanhu_download_design` 下载官方 HTML →
-  Playwright 渲染 → 读 DOM `page-facts.json`」的旧路径。
+- **备用链路（fallback）**：`bounds` 拿不到或不可信时，回退到「渲染 HTML → 读 DOM `page-facts.json`」的旧路径。
 
-样式恒量（字号/颜色/圆角/描边）与切图以官方 HTML/CSS 为准；输出是目标技术栈的生产代码，
+样式恒量（字号/颜色/圆角/描边）以 `inspect_design_region` 的 `raw_style` 为准、切图以 `export_design_assets`
+为准；输出是目标技术栈的生产代码，
 并且必须经过「编译 → 运行截图 → 与基准像素比对 → 修复」的闭环才算完成。
 
 ## 支持的目标模式
@@ -58,7 +58,7 @@ bash scripts/tests/run_all.sh                                   # 脚本级回�
 
 ## 工作流一览
 
-1. 取 `rowDims` 几何事实（主链路，拿不到才渲染 DOM 兜底）→ 2. 探测运行时设备尺寸 →
+1. 取 `bounds` 几何事实（主链路，拿不到才渲染 DOM 兜底）→ 2. 探测运行时设备尺寸 →
 3. 建立页面事实表 → 4. 输出实现计划 → 5. Agent 编写生产代码 → 6. 编译通过 → 7. 交付闸门。
 
 产物统一落在 `.ihereforUI/`，结构以 [`references/artifact-contract.md`](references/artifact-contract.md)

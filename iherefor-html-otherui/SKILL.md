@@ -1,13 +1,14 @@
 ---
 name: iherefor-html-otherui
-description: 将 Lanhu 设计稿映射为 SwiftUI、UIKit Swift、UIKit Objective-C、Jetpack Compose Kotlin、Android Views Kotlin 或 Android Views Java 原生 UI。以 lanhu-mcp 的 DDS schema（rowDims 绝对坐标）为主链路生成布局，官方 HTML/CSS 提供样式恒量与切图，编译通过为硬门槛。当用户要求从 Lanhu 落地 iOS/Android 原生页面时使用。
+description: 将 Lanhu 设计稿映射为 SwiftUI、UIKit Swift、UIKit Objective-C、Jetpack Compose Kotlin、Android Views Kotlin 或 Android Views Java 原生 UI。以 lanhu-mcp 的 design overview（nodes[].bounds 绝对坐标）为主链路生成布局，样式恒量与切图以 inspect_design_region / export_design_assets 为准，编译通过为硬门槛。当用户要求从 Lanhu 落地 iOS/Android 原生页面时使用。
 ---
 
 # Lanhu 设计稿到多平台原生 UI
 
-本 skill 面向「视觉还原优先」的 Lanhu 页面落地。几何坐标以 `lanhu-mcp` 的 DDS schema（`rowDims`）为主链路，
-样式恒量与切图以官方导出的 HTML/CSS/`img/` 为准；目标是由 Agent 针对所选原生技术栈编写生产代码，
-并**至少通过目标平台编译**。渲染 DOM 反推几何是备用链路（`rowDims` 拿不到时才回退）。
+本 skill 面向「视觉还原优先」的 Lanhu 页面落地。几何坐标以 `lanhu-mcp` 的 `get_design_overview` 返回的
+`nodes[].bounds`（`{x,y,width,height}` 绝对坐标）为主链路，样式恒量以 `inspect_design_region` 的 `raw_style`、
+切图以 `export_design_assets` 为准；目标是由 Agent 针对所选原生技术栈
+编写生产代码，并**至少通过目标平台编译**。渲染 DOM 反推几何是备用链路（`bounds` 拿不到时才回退）。
 
 ## 文档约定
 
@@ -28,9 +29,9 @@ description: 将 Lanhu 设计稿映射为 SwiftUI、UIKit Swift、UIKit Objectiv
 
 ## 核心原则
 
-1. **几何坐标以 `lanhu_get_dds_schema` 的 `rowDims` 为主链路**（`{left, top, width, height}` 绝对坐标，
-   语义组件树自带 `children` 父子层级）。渲染 DOM 读位置是**备用链路**——`rowDims` 拿不到或不可信时才回退。
-   官方 HTML/CSS 是样式恒量（字号/颜色/圆角/描边）与切图的权威来源。**`rowDims` 管几何、HTML 管样式，分工互补。**
+1. **几何坐标以 `lanhu_get_design_overview` 的 `nodes[].bounds`（几何权威）为主链路**（`{x,y,width,height}` 绝对坐标，
+   节点自带你 `parent_id` 父子层级）。渲染 DOM 读位置是**备用链路**——`bounds` 拿不到或不可信时才回退。
+   `inspect_design_region` 的 `raw_style` 是样式恒量（字号/颜色/圆角/描边）与切图的权威来源。**`bounds` 管几何、`raw_style` 管样式，分工互补。**
 2. Agent 负责语义理解、组件边界、目标技术栈实现。脚本可以提取事实、保存资源、编译和校验，但不得生成或覆盖生产 UI 源码。
 3. 不得因为某个 CSS/JS 特性无法等价映射而静默删除；必须写入 `unsupported` 并进入交付报告。
 4. 目标平台可以使用不同的组件树和布局策略；相同的是视觉目标，不是源代码形状。
@@ -78,8 +79,9 @@ description: 将 Lanhu 设计稿映射为 SwiftUI、UIKit Swift、UIKit Objectiv
   但**垂直位置在所有宽度档下都按页面高度比例重排**——垂直轴的参考要素是**高度不是宽度**。
 - 背景（`.page` 外框）按 `pinned + fullBleed` 四边铺满，与第一层子视图按比例重排是两回事。
 
-`scripts/layout_proportions.py` 由事实表与设备尺寸生成这份声明；`scripts/check_layout_proportions.py`
-按声明逐条核对源码，**计划驱动而非正则扫描**。
+`scripts/layout_proportions.py` 是**辅助工具**：它把事实表（`bounds`）+ 设备尺寸**转成 `layoutProportions` 声明片段**，
+供 Agent 参考；**Agent 负责把它合并进 `ui-implementation-plan.json` 并逐条人工核对 `kind`/`basis`/`of`**，
+不是「脚本生成 = 计划完成」。`scripts/check_layout_proportions.py` 按声明逐条核对源码，**计划驱动而非正则扫描**。
 
 判定分两档：数值 > 48pt 的字面量不可能是手选的设计常量，判违规；≤ 48pt 与常见设计常量无法区分，
 只列进 `ambiguousLiterals` 待人工确认，不计入违规。完整推演见 [references/sizing-and-positioning.md](references/sizing-and-positioning.md)。
@@ -148,15 +150,43 @@ python3 scripts/check_adaptive_layout.py --plan <run>/ui-implementation-plan.jso
 ## Lanhu MCP 输入
 
 用户提供 Lanhu 链接时，必须先使用已配置的 `mcp__lanhu_mcp` 服务获取设计数据：
-**主链路** `lanhu_get_dds_schema`（`rowDims` 几何）、样式/切图用 `lanhu_download_design`（官方 HTML/CSS/`img/`）。
-严格调用顺序、主/备链路与失败处理见 [references/lanhu-input.md](references/lanhu-input.md)。
+几何用 `lanhu_get_design_overview` 的 `nodes[].bounds`（几何权威），样式恒量用
+`lanhu_inspect_design_region` 的 `raw_style`（权威），整页 HTML/CSS 参考用
+`lanhu_get_ai_analyze_design_result`（**Legacy，仅参考**），切图用 `lanhu_export_design_assets`。
+**⚠️ 工具名以 `references/lanhu-input.md` 开头的「工具名对照表」为准**——本 skill 早期版本写过的
+`lanhu_get_dds_schema`/`lanhu_download_design`/`lanhu_get_design_document` 等名已不适用，不要按旧名找工具。
+严格调用顺序与失败处理见 [references/lanhu-input.md](references/lanhu-input.md)。
 
 若 MCP 未安装、未注册或凭据未配置，必须先运行 `scripts/check_lanhu_mcp.py` 并按输入参考引导安装/注册；
 这是阻塞条件，不能绕过 MCP。安装引导不得打印或持久化 Lanhu 凭据。
 
+## 每个阶段该读/写哪个文件（速查，回答「我现在该读什么」）
+
+上下文压缩、Agent 换手、或「不知道该看哪个文件」时，按这张表定位。**不要凭对话记忆，
+不要跨阶段混读。** 完整生命周期见 [references/project-management.md](references/project-management.md)。
+
+| 阶段 | 该读入的文件 / 调用 | 该写出的文件 |
+|---|---|---|
+| 1. 发现与输入 | `lanhu_get_designs`→`lanhu_get_design_overview`→`lanhu_inspect_design_region`（样式）→`export_design_assets`（切图） | `reference/dds-schema.json`、`source/` |
+| 2. 建事实表/计划 | `reference/dds-schema.json`（几何）+ `source/` CSS（样式恒量） | `ui-implementation-plan.json`（layoutProportions + typeFacts） |
+| 3. 写码（门 0/门 1） | **只有** `ui-implementation-plan.json` 的 `relations[].kind` | 生产源码 |
+| 4. 编译（门 2） | `ios-environment.json`（workspace/scheme/udid） | `actual/` 编译日志 |
+| 5. 交付闸门 | `delivery-gate.json` + `validate_run.py` 推导 | `delivery-gate.json`（脚本推导，勿手写） |
+| 6. 换手/恢复 | `project.json`→`page.json`→`status.json`→最新 run 的 `run.json`/`review.json`（按 run ID，不靠 mtime） | — |
+
+**三条铁律**（违反会直接导致「不知道读什么」）：
+
+1. **几何 vs 样式不混**：位置/尺寸/父子关系只看 `dds-schema.json` 的 `nodes[].bounds`；
+   字号/颜色/圆角/描边只看官方 CSS 或 `inspect_design_region` 的 `raw_style`。两者互不替代。
+2. **工具名以 lanhu-input.md 的对照表为准**：本 skill 早期写成 `lanhu_get_dds_schema`/`lanhu_download_design`/
+   `lanhu_get_design_document` 的名字已废弃，实际是 `lanhu_get_design_overview`/`lanhu_inspect_design_region`/
+   `lanhu_get_ai_analyze_design_result`/`lanhu_export_design_assets`。**先看对照表再调工具，别按旧名搜。**
+3. **深层元素走 inspect**：`get_design_overview` 只返回 ~30 个顶层节点，导航/按钮/进度条等藏在下层编组里，
+   必须用 `lanhu_inspect_design_region` 才拿得到——这是「元素找不到」的头号来源。
+
 ## 资源与代码质量
 
-在复制资源或编写代码前，必须读取 [references/resource-and-code-quality.md](references/resource-and-code-quality.md)。先扫描并复用目标工程已有资源体系；没有既有约定时才使用平台默认目录。**切图归位是硬禁令**：切图/位图/SVG 严禁散落项目根目录或与源码混放，iOS 一律进 `Assets.xcassets/<业务域>/<name>.imageset/`（含 `Contents.json` 与 1x/2x/3x），Android 一律进 `res/drawable(-density)*`；违反即 `needs-review`，细节见「资源归位硬约束」。资源必须按使用场景语义命名，不能把 `img_0` 等来源编号作为生产名。生成代码必须按 screen/section/style/resources 分层，所有按钮和可点击元素都要连接到命名明确的点击处理空函数。
+在复制资源或编写代码前，必须读取 [references/resource-and-code-quality.md](references/resource-and-code-quality.md)。先扫描并复用目标工程已有资源体系；没有既有约定时才使用平台默认目录。**切图归位是硬禁令**：切图/位图/SVG 严禁散落项目根目录或与源码混放，iOS 一律进 `Assets.xcassets/<业务域>/<name>.imageset/`（含 `Contents.json` 与 1x/2x/3x），Android 一律进 `res/drawable(-density)*`；违反即 `needs-review`，细节见「资源归位硬约束」。**注意：MCP 拿不到无损三倍率**，切图只有一张原图（通常 2x），`scale_urls` 里的 3x 是上采样假高清，禁止用它凑 imageset 的 3x 坑——真 3x 只能来自 SVG 或蓝湖按 3x 重新导出，详见「切图倍率的真相与正确获取」。资源必须按使用场景语义命名，不能把 `img_0` 等来源编号作为生产名。生成代码必须按 screen/section/style/resources 分层，所有按钮和可点击元素都要连接到命名明确的点击处理空函数。
 
 ## 既有项目接入
 
@@ -167,11 +197,11 @@ python3 scripts/check_adaptive_layout.py --plan <run>/ui-implementation-plan.jso
 以下事实必须贯穿发现、计划、编码全过程，不能只在首次分析时阅读后凭记忆实现：
 
 1. 资源位置与层级：记录每个图片/SVG/背景资源的 URL、原始尺寸、目标坐标、z-index/stacking context、裁剪和 transform，并建立原生资源映射。每张图片还要记录其**非透明内容 bounds**（`alphaBounds`），因为「frame 对了」不等于「内容对了」。
-2. 元素几何：从 `lanhu_get_dds_schema` 的 `rowDims`（`{left, top, width, height}` 绝对坐标）读取每个区域和关键元素的几何——这是「组件该在哪」的权威事实来源；`rowDims.left/top` 是位置、`width/height` 是尺寸、`children` 树是父子归属。`rowDims` 缺失时才用备用链路的 DOM 实测值。
-3. 视觉样式：记录字号、行高、颜色、透明度、渐变、阴影、圆角、overflow；来源是官方 HTML/CSS（`lanhu_download_design` 产出）。无法等价表达的属性写入 `unsupported`。
+2. 元素几何：从 `lanhu_get_design_overview` 的 `nodes[].bounds`（`{x,y,width,height}` 绝对坐标）读取每个区域和关键元素的几何——这是「组件该在哪」的权威事实来源；`bounds.x/y` 是位置、`width/height` 是尺寸、`parent_id` 是父子归属。`bounds` 缺失时才用备用链路的 DOM 实测值。深层元素（导航/按钮等被编组折叠的）用 `lanhu_inspect_design_region` 拿。
+3. 视觉样式：记录字号、行高、颜色、透明度、渐变、阴影、圆角、overflow；来源是 `inspect_design_region` 的 `raw_style`（权威），legacy 的官方 HTML/CSS（`lanhu_get_ai_analyze_design_result`）仅作参考。无法等价表达的属性写入 `unsupported`。
 4. 画布关系：保存设计稿画布尺寸、目标设备 bounds、`fit` 策略（scale、letterbox、inset）。禁止直接复制另一设备的绝对像素坐标。
 
-这些数据应落在 `dds-schema.json`（rowDims 几何）、`ui-implementation-plan.json`、`review.json` 和 `resource-policy.json` 中，并能从原始设计节点追溯到原生视图。上下文压缩或 Agent 换手后必须重新读取这些产物，不能依赖对话记忆。
+这些数据应落在 `dds-schema.json`（bounds 几何）、`ui-implementation-plan.json`、`review.json` 和 `resource-policy.json` 中，并能从原始设计节点追溯到原生视图。上下文压缩或 Agent 换手后必须重新读取这些产物，不能依赖对话记忆。
 
 ## 顶部系统区域与安全区
 
@@ -203,35 +233,36 @@ iOS 必须显式处理 `edgesForExtendedLayout`、`extendedLayoutIncludesOpaqueB
 ### 1. 发现、设备探测
 
 1. 确认设计稿（image_id / 版本）与页面状态；按 [references/lanhu-input.md](references/lanhu-input.md) 走固定调用链。
-2. **（主链路）调用 `lanhu_get_dds_schema` 取 `rowDims` 几何事实**，存到 `reference/dds-schema.json`。
-3. **（样式与切图）调用 `lanhu_download_design`** 下载官方 `index.html/index.css/img/` 到 `source/`，作为样式恒量与切图来源。
+2. **（主链路）调用 `lanhu_get_design_overview` 取 `nodes[].bounds`（几何权威）几何事实**，把**返回体原样落盘**到 `reference/dds-schema.json`——`dds-schema.json` 字段就是 MCP 的 `bounds`/`parent_id`/`node_type`/`name`/`asset_ids`，**不需要二次转换或脚本生成**。
+3. **（样式与切图）调用 `lanhu_inspect_design_region` 拿样式恒量（raw_style），`lanhu_export_design_assets` 拿切图**到 `source/`。整页 HTML/CSS 参考可用 legacy 的 `lanhu_get_ai_analyze_design_result` 兜底。
 4. 按目标模式探测运行时设备尺寸（iOS 见 [references/ios-environment.md](references/ios-environment.md)），
    写入本次 run 的 `runtime-device.json`。
 
 ### 2. 页面事实表
 
-Agent 必须建立页面事实表：可见区域、真实叠层、组件候选、文本、图片/SVG、渐变、阴影、滚动容器、交互状态和不支持特性。**几何以 `rowDims` 为主、样式以官方 HTML/CSS 为准**；`rowDims` 缺失时用基准截图/DOM 补齐。不得直接把每个设计节点当成原生组件。页面必须按视觉区域逐一复现（hero、标题/说明、每张卡片、CTA、页脚等），每个区域列出 bounding box、资源/层级、样式事实、原生组件映射。
+Agent 必须建立页面事实表：可见区域、真实叠层、组件候选、文本、图片/SVG、渐变、阴影、滚动容器、交互状态和不支持特性。**几何以 `bounds`（几何权威）为主、样式以 `inspect_design_region` 的 `raw_style` 为准**；`bounds` 缺失时用基准截图/DOM 补齐。不得直接把每个设计节点当成原生组件。页面必须按视觉区域逐一复现（hero、标题/说明、每张卡片、CTA、页脚等），每个区域列出 bounding box、资源/层级、样式事实、原生组件映射。
 
 ### 3. 目标实现计划
 
 输出 `ui-implementation-plan.json`，至少包含目标模式、参考 viewport、组件边界、坐标系、布局策略、资源映射、可访问性标识、交互候选和 `unsupported` 项。布局策略分两段：`layoutProportions`（尺寸轴 + 位置轴）与 `adaptiveLayout`（宽度轴）。
 
-**布局几何的权威来源，主链路是 `lanhu_get_dds_schema` 的 `rowDims`（绝对坐标）。** 它直接给出「组件该在哪」：
-`rowDims.left/top` → 位置、`rowDims.width/height` → 尺寸、`children` 嵌套树 → 父视图归属（`regions[].parentIndex`）。
-**能拿到 `rowDims` 就直接用它生成 `layoutProportions`，不要退回 DOM 反推几何。**
-样式恒量（字号/字体/颜色/描边/圆角）以官方 HTML/CSS 为准。
+**布局几何的权威来源，主链路是 `lanhu_get_design_overview` 的 `nodes[].bounds`（绝对坐标）。** 它直接给出「组件该在哪」：
+`bounds.x/y` → 位置、`bounds.width/height` → 尺寸、`parent_id` → 父视图归属（`regions[].parentIndex`）。
+**能拿到 `bounds` 就直接用它生成 `layoutProportions`，不要退回 DOM 反推几何。**
+样式恒量（字号/字体/颜色/描边/圆角）以 `inspect_design_region` 的 `raw_style` 为准，legacy 的官方 HTML/CSS 仅作参考。
 
-**只有当 `rowDims` 缺失或不可信时，才降级到备用链路**：渲染 HTML、读 DOM 实测值。
+**只有当 `bounds` 缺失或不可信时，才降级到备用链路**：渲染 HTML、读 DOM 实测值。
 
-**「权威有来源」是可执行约束。** 几何溯源落在 `layoutProportions`（其 `regions`/`relations` 直接引用 `rowDims` 坐标），
+**「权威有来源」是可执行约束。** 几何溯源落在 `layoutProportions`（其 `regions`/`relations` 直接引用 `bounds` 坐标），
 样式恒量另由 `typeFacts` 溯源：每个文字/描边区域必须带一条 `typeFacts`，`kindSource` 指向
-官方 HTML/CSS（`"html-css"`）或 fallback 的渲染 DOM（`"page-facts"`）。凡是权威来源已给出、
+`inspect_design_region` 的 `raw_style`（`"html-css"`）或 fallback 的渲染 DOM（`"page-facts"`）。凡是权威来源已给出、
 Agent 却写成 `kindSource: "agent-decided"` 或凭空编造常量值的，都属于可消除的推断。
 字段与规则见 [references/artifact-contract.md](references/artifact-contract.md)。
 
-`lanhu_get_design_document` 是**可选辅助**，不是强制来源：它只可靠地提供「图层几何（`rect`）与描边/纯色填充」，
-字号/渐变/文本语义存在系统性失真。**默认不调**，只有 `rowDims` 与官方 HTML 在某处结论打架、需要回看 Sketch
-原始帧时才调（经 `scripts/lanhu_design_facts.py` 解析成 `design-facts.json`）。
+`lanhu_get_design_document`（当前 MCP 已不暴露此工具，如需回看 Sketch 帧请用 `lanhu_inspect_design_region`）
+是**可选辅助**，不是强制来源：它只可靠地提供「图层几何（`rect`）与描边/纯色填充」，
+字号/渐变/文本语义存在系统性失真。**默认不调**，只有 `bounds` 与官方 HTML 在某处结论打架、需要回看 Sketch
+原始帧时才调。
 
 计划里还必须有一份 `runtimeRisks` —— 把「只能在运行期暴露、但现在就能决策」的风险提前写下来：
 `interactionCoverage`（覆盖式装饰子视图的 `userInteractionEnabled`，默认 NO）、`scrollInset`、
@@ -279,7 +310,7 @@ python3 scripts/check_adaptive_layout.py --plan <run>/ui-implementation-plan.jso
 - `run.json`、`review.json`、`delivery-gate.json`
 - `ui-implementation-plan.json`、`resource-policy.json`
 - `runtime-device.json`；iOS 目标另需 `ios-environment.json`
-- `reference/dds-schema.json`（rowDims 几何事实）、`reference/approved.json`
+- `reference/dds-schema.json`（bounds 几何事实）、`reference/approved.json`
 - `actual/`：编译日志
 
 每次写完 run 必须用 `scripts/validate_run.py --run <run-dir>` 自检；`deliveryReady` 只由闸门脚本推导，不得手写覆盖。
@@ -290,7 +321,7 @@ python3 scripts/check_adaptive_layout.py --plan <run>/ui-implementation-plan.jso
 
 | 产物 | 关键字段 |
 |---|---|
-| `dds-schema.json` | `rowDims`（`left`/`top`/`width`/`height`，几何权威）；`style`（CSS 属性）；`children`（父子树）；`type`/`componentName`/`layerId` |
+| `dds-schema.json` | `nodes[].bounds`（`{x,y,width,height}`，几何权威）；`nodes[].parent_id`（父视图）；`nodes[].node_type`/`name`/`asset_ids`；顶层 `canvas`（画布尺寸）/`snapshot_id` |
 | `ui-implementation-plan.json` | `layoutProportions.regions[].basis`·`parentIndex` + `relations[].kind`·`of`·`why` + `forbiddenLiterals`；`adaptiveLayout.windowSamples[]` + `regions[].widthPolicy` + `firstLevelWidthClass` + `forbiddenAdaptations`；`typeFacts[].kindSource`（`html-css` / `page-facts`）；`runtimeRisks`；`unsupported` |
 | `runtime-device.json` | 运行时尺寸 API 返回值、根 view bounds、device scale |
 | `review.json` | `runId`·`parentRunId`·`decision`·`feedback`·`observations`·`changes`·`verification`·`nextAction` |
@@ -320,7 +351,7 @@ python3 scripts/check_adaptive_layout.py --plan <run>/ui-implementation-plan.jso
 | 脚本 | 作用 | 何时必须跑 |
 |---|---|---|
 | `scripts/check_lanhu_mcp.py` | 检查 Lanhu MCP 注册与凭据就绪（只读，不打印凭据） | 开始前；阻塞时引导注册 |
-| `scripts/lanhu_design_facts.py` | （**可选**）把 `lanhu_get_design_document` 返回体解析成设计事实摘要，仅交叉佐证 | 需要回看 Sketch 原始帧时 |
+| `scripts/lanhu_design_facts.py` | （**可选/当前 MCP 不可用**）把 `lanhu_get_design_document` 返回体解析成设计事实摘要，仅交叉佐证 | 需要回看 Sketch 帧时（当前改用 `lanhu_inspect_design_region`） |
 | `scripts/layout_proportions.py` | 把几何事实转成 `layoutProportions` 约束规格，并列出「探针设备推导值」禁止清单 | 第 3 步写实现计划时 |
 | `scripts/check_layout_proportions.py` | 计划驱动地核对源码有没有照计划声明的 `kind` 实现；`--plan-only` 只校验计划 | 门 0 写码前、门 1 写码后编译前；纯静态 |
 | `scripts/check_adaptive_layout.py` | 宽度轴静态核对：声明完整 + 源码有封顶原语、无方向锁 / 屏幕系数 | 门 0 / 门 1；声明了 `adaptiveLayout` 就必须跑 |

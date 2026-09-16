@@ -19,7 +19,7 @@
 │       │   ├── manifest.json      # 文件清单、sha256、image_id、版本、来源 URL
 │       │   └── assets-manifest.json
 │       ├── reference/            # 当前「已批准」的冻结基准
-│       │   ├── dds-schema.json    # rowDims 几何事实（主链路）
+│       │   ├── dds-schema.json    # bounds 几何事实（主链路）
 │       │   └── approved.json
 │       ├── plans/                # 页面实现计划、接入计划、unsupported 清单
 │       │   ├── ui-implementation-plan.json
@@ -46,7 +46,7 @@
 ## 生命周期
 
 1. **注册页面**：为每个 Lanhu HTML 入口创建 `pages/<page-id>/page.json`，记录 source path、reference viewport、页面顺序和目标模式。
-2. **冻结基准**：在该页面的 `reference/` 保存 `dds-schema.json`（rowDims 几何事实）。只有明确批准后，才更新 `reference/approved.json`。
+2. **冻结基准**：在该页面的 `reference/` 保存 `dds-schema.json`（bounds 几何事实）。只有明确批准后，才更新 `reference/approved.json`。
 3. **建立计划**：把页面按 hero、标题/说明、每张卡片、CTA、页脚等区域写入 `plans/ui-implementation-plan.json`，每个区域引用 source selector 和事实来源。
 4. **创建运行**：每次生成或修复创建新的 `<run-id>`，例如 `20260906-133147-objc-001`。run 目录只追加产物，不覆盖旧 run；`run.json` 记录 git revision、target mode、设备、坐标变换和输入基准哈希。编译时 `xcodebuild -derivedDataPath <run>/DerivedData` 会往 run 里塞一份完整编译缓存，它**不在 run 产物契约内**（契约见 [artifact-contract.md](artifact-contract.md)），是回收对象而非证据。
 5. **页面审查**：在 `review.json` 记录每轮修改原因、受影响区域、事实来源和下一步动作。上下文压缩或换手后先读 `project.json`、当前页 `status.json` 和最新 run 的 `run.json`/`review.json`。
