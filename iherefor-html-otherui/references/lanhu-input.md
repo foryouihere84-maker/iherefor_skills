@@ -94,7 +94,7 @@ skill 目录迁移过、或注册仍指向其他 checkout 时，运行时启动�
 | 用途 | 工具 + 关键入参 | 关键产出 |
 |---|---|---|
 | UI 设计图清单（先调） | `lanhu_get_designs({url})` | 设计列表 + `index`/`name`/`image_id` |
-| 几何快照（主链路） | `lanhu_get_design_overview({url, design_id})` | `snapshot_id` + `nodes[]`（`bounds`/`asset_ids`）+ `canvas` |
+| 几何快照（主链路，**分页**） | `lanhu_get_design_overview({url, design_id, limit, offset})` | `snapshot_id` + `nodes[]`（`bounds`/`asset_ids`）+ `canvas`；`limit` 1~60、默认 30，需 `offset` 翻页拿全 |
 | 深层元素样式 | `lanhu_inspect_design_region({snapshot_id, region\|node_ids})` | 区域裁剪图 + `raw_style`（font/fills/radius） |
 | HTML/CSS 参考（legacy） | `lanhu_get_ai_analyze_design_result({url, design_names})` | 官方 HTML/CSS 声明值 |
 | 切图（按名，单 design） | `lanhu_get_design_slices({url, design_name})` | 切图列表 + `scale_urls`（1x/2x/3x） |
@@ -113,8 +113,11 @@ skill 目录迁移过、或注册仍指向其他 checkout 时，运行时启动�
    多候选时记依据，别猜错页。**设备稿判定：名字不带「iPad」= 手机稿，带「iPad」= iPad 稿**；URL 只有
    image_id 时先精确匹配再读 `name` 确认设备形态。
 2. 每个页面 `lanhu_get_design_overview({url, design_id})`：取 `snapshot_id`（**后续 inspect/export 的入参**）、
-   `canvas`（画布尺寸权威）、`nodes[]`（`bounds` 几何 + `asset_ids`）。**注意 `limit` 默认 30 且分层分页**：
-   顶层 `nodes[]` 只含 ~30 个顶层节点，导航/按钮/进度条等深层元素**不在里面**，是「元素找不到」的头号来源。
+   `canvas`（画布尺寸权威）、`nodes[]`（`bounds` 几何 + `asset_ids`）。**⚠️ 这是分页接口，必须翻页拿全**：
+   `limit` 范围 1~60、默认 30，**单次最多 60 个节点**。多数页面 `total_nodes` 超过 60（色板页就有 125 个），
+   一次只返回 `limit` 个并带 `truncated=true` + `next_offset`。**「只读第一页就停」会漏掉一半以上的节点**
+   （导航/按钮/进度条/色卡等深层元素就在没返回的后几页里）——这是「元素找不到」的头号来源。
+   **必须循环 `offset` 直到 `next_offset == null` 或 `truncated=false`，把每一页的 `nodes[]` 合并起来才算拿全。**
 3. 把 overview 返回体**原样落盘** `reference/dds-schema.json`；用 `nodes[].bounds` 生成 `layoutProportions`：
    `bounds.x/y`=位置、`width/height`=尺寸、`parent_id`=父视图归属。能拿到 `bounds` 就直接用，别退回 DOM 反推。
 4. 深层元素（导航/按钮/进度条等）用 `lanhu_inspect_design_region({snapshot_id, region})`：它返回**完整 nested
@@ -145,10 +148,12 @@ skill 目录迁移过、或注册仍指向其他 checkout 时，运行时启动�
 > 已随工具下架一并删除；其教训已迁移到现行工具：**画布尺寸看 `get_design_overview` 返回的 `canvas`，
 > `reference_size`/`image_size` 是导出像素，别当画布用。**
 
-- **`lanhu_get_design_overview` 分层分页，顶层默认只回 ~30 个节点。** `total_nodes` 可能远大于返回的
-  `nodes[]` 长度（实测 age 页 total=65、返回 30）。导航/按钮/进度条等深层元素藏在下层编组，需要
-  `offset`/`limit` 翻页，或直接 `lanhu_inspect_design_region` 按 region 拿完整 nested nodes。**别以为
-  overview 的 `nodes[]` 就是「全页所有元素」。**
+- **`lanhu_get_design_overview` 是分页接口，单页最多 60 个节点，必须翻页拿全。** `limit` 范围 1~60、
+  默认 30；`total_nodes` 常远超单页（实测色板页 total=125，传 `limit=200` 会直接报错 `limit between 1 and 60`）。
+  一次只返回 `limit` 个，带 `truncated=true` 和 `next_offset`。**正确做法：循环 `offset`（每轮 +limit）
+  直到 `next_offset==null`，把每页 `nodes[]` 合并；不要只读第一页就下结论——导航/按钮/进度条/色卡等
+  深层元素就在没返回的后几页。** 需要看某个区域的完整 nested nodes + 样式时，用
+  `lanhu_inspect_design_region({snapshot_id, region})` 拿。
 - **`lanhu_get_design_slices` 的 `scale_urls`（1x/2x/3x）不是无损三套图，而是 OSS 在线缩放 URL。**
   蓝湖只存一张原图（`stored = logical × sliceScale`，通常 2x）；`1x/2x/3x` 是 `x-oss-process=image/resize`
   拼的临时缩放。**`3x` 是从 2x 上采样放大（会糊），禁止用它凑 imageset 的 3x**（真 3x 只能来自 SVG 或蓝湖按 3x 重导出）。详见 `resource-and-code-quality.md`「切图倍率的真相与正确获取」。

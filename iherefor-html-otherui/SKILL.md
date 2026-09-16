@@ -181,8 +181,9 @@ python3 scripts/check_adaptive_layout.py --plan <run>/ui-implementation-plan.jso
 2. **工具名以 lanhu-input.md 的对照表为准**：本 skill 早期写成 `lanhu_get_dds_schema`/`lanhu_download_design`/
    `lanhu_get_design_document` 的名字已废弃，实际是 `lanhu_get_design_overview`/`lanhu_inspect_design_region`/
    `lanhu_get_ai_analyze_design_result`/`lanhu_export_design_assets`。**先看对照表再调工具，别按旧名搜。**
-3. **深层元素走 inspect**：`get_design_overview` 只返回 ~30 个顶层节点，导航/按钮/进度条等藏在下层编组里，
-   必须用 `lanhu_inspect_design_region` 才拿得到——这是「元素找不到」的头号来源。
+3. **分页拿全 + 深层元素走 inspect**：`get_design_overview` 是分页接口（`limit` 1~60、默认 30，单页最多 60 个节点），
+   节点多的页面只说一页会漏掉导航/按钮/进度条/色卡等深层元素——**必须循环 `offset` 直到 `truncated=false` 拿全所有
+   `nodes[]`**；要看某个区域的完整 nested nodes + 样式再配合 `lanhu_inspect_design_region`。这是「元素找不到」的头号来源。
 
 ## 资源与代码质量
 
