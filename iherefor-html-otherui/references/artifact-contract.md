@@ -120,6 +120,8 @@ pages/<page-id>/
 | `delivery-gate.json` | always | 6 项基础闸门状态（声明 `adaptiveLayout` 时为 7 项）、`unsupported` 计数、`deliveryReady` |
 | `ui-implementation-plan.json` | always | 本次实现的区域、坐标系、资源映射、`runtimeRisks`、`adaptiveLayout` 与 `unsupported` |
 | `resource-policy.json` | always | 资源目录决策、复用与新增、语义命名 |
+| `过程中页面分析表.md` | always | 第 2 步元素梳理摊平表：几何（`bounds`）+ 样式（`raw_style`）+ 资源 + 组件映射的单元素视图 |
+| `最终页面分析表.md` | always | 第 5 步验证对照表：关键元素实测几何 vs 设计稿 `bounds`，含偏差 / 状态 / 宽度档 |
 | `runtime-device.json` | 所有目标模式 | 运行时尺寸 API 返回值 |
 | `adaptive-targets.json` | 声明了 `adaptiveLayout` | 宽度档采样清单与各自的几何证据位置 |
 | `ios-environment.json` | iOS 目标模式 | 工程入口、scheme、destination 探测结果 |
@@ -205,6 +207,25 @@ pages/<page-id>/
 
 前两条不满足时 `deliveryReady` 必须为 `false`，并在 `blockingReasons` 中列出原因；
 第 3 条不满足时先补齐结构，再谈 `deliveryReady`。
+
+### `过程中页面分析表.md` 与 `最终页面分析表.md`
+
+这两个是 run 级必产的人读追踪表（.md），是权威事实的**摊平/对照视图**，不是新权威：
+
+- `过程中页面分析表.md`（第 2 步）——把 `dds-schema.json` 的几何（`nodes[].bounds`）与
+  `inspect_design_region` 的 `raw_style`（样式）按 `parent_id` 摊到同一行的单元素视图。
+  列：元素 / 层级 / bounds(x/y/w/h) / 语义尺寸 / 字号字重 / 字体族 / 颜色透明度 / 圆角 /
+  描边 / 渐变阴影 / 资源切图 / overflow / z-index / 原生组件映射 / 交互状态 / 待确认。
+- `最终页面分析表.md`（第 5 步）——关键元素实测渲染几何 vs 设计稿 `bounds` 的对照。
+  列：元素 / 实测 y/x / 实测尺寸 / 设计稿比例值 y/x / 设计稿尺寸 / 偏差 / 状态 / 宽度档 / 备注证据。
+
+**硬约束**：
+
+1. 表内数值必须与权威来源逐字一致（几何照抄 `bounds`、样式照抄 `raw_style`），不得在整理时改值、
+   不得编造缺失字段（缺失标 `—`）。表用于索引与排查，落码仍以权威源为准。
+2. 两个文件都用**精确文件名**（中文），缺任一判 `缺少必需产物`（由 `validate_run.py` 执行）。
+3. `最终页面分析表.md` 的「实测」由 Agent 采样自核，必须注明证据出处（哪份 `geometry-*.json`、
+   哪张截图、哪行日志）；声明 `adaptiveLayout` 时「宽度档」列需覆盖各采样档。
 
 ### 布局关系与控件尺寸的约束口径（强制）
 

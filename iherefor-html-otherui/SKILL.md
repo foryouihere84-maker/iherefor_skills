@@ -243,6 +243,33 @@ iOS 必须显式处理 `edgesForExtendedLayout`、`extendedLayoutIncludesOpaqueB
 
 Agent 必须建立页面事实表：可见区域、真实叠层、组件候选、文本、图片/SVG、渐变、阴影、滚动容器、交互状态和不支持特性。**几何以 `bounds`（几何权威）为主、样式以 `inspect_design_region` 的 `raw_style` 为准**；`bounds` 缺失时用基准截图/DOM 补齐。不得直接把每个设计节点当成原生组件。页面必须按视觉区域逐一复现（hero、标题/说明、每张卡片、CTA、页脚等），每个区域列出 bounding box、资源/层级、样式事实、原生组件映射。
 
+#### 2.1 过程中页面分析表（强制产物）
+
+第 2 步结束前，Agent 必须把上面的事实表**摊平成一张元素梳理表**，落成
+`<run>/过程中页面分析表.md`。它是 `dds-schema.json`（几何）与 `inspect_design_region`
+`raw_style`（样式）的**单元素视图**：把散落在两处的事实按 `parent_id` 对到同一行，
+让 Agent 与人一眼看清一个元素的几何 + 样式 + 资源 + 映射全貌，并**兜住「深层元素
+（导航/按钮等被编组折叠的）没拿到」这个头号遗漏**。
+
+**这张表是权威事实的摊平视图，不是新权威。** 表中每条数值必须与来源逐字一致——
+几何照抄 `nodes[].bounds`，样式照抄 `raw_style`，不得在「整理」时顺手改值。
+Agent 可据此快速定位、防遗漏，但**落码仍以 `dds-schema.json`（几何）与 `raw_style`
+（样式）为权威源**；表用于索引与排查，不替代权威。
+
+表头（横向已拓全 `bounds` / `raw_style` / `nodes[]` 元数据能拿到的属性；某属性缺失就填 `—`）：
+
+| 元素 | 层级(parent_id → 自身) | bounds(x/y/w/h) | 语义尺寸(w/h, pt) | 字号/字重 | 字体族 | 颜色/透明度 | 圆角 | 描边(宽/色/样式) | 渐变/阴影 | 资源/切图(URL·原始尺寸·alphaBounds) | overflow/裁剪 | z-index/叠层 | 原生组件映射 | 交互/状态 | 待确认 |
+
+填表要求：
+
+- 「元素」用语义名（而非 `img_0`/`矩形` 这类来源名）；「层级」写 `parent_id` 链，能区分「直接父是否为页面」。
+- 「bounds」照抄原值；「语义尺寸」是 `width`/`height` 的解读（控件尺寸一律 `fixed`，见尺寸与定位契约）。
+- 「样式」五列（字号/字重/颜色/圆角/描边）来自 `raw_style`，拿不到就标 `—`，**不得编造**。
+- 「资源/切图」标 URL、原始尺寸、非透明内容 bounds（`alphaBounds`）；「原生组件映射」初拟一个候选组件并留待计划阶段定。
+- 「待确认」列收所有当下定不了的点（父归属存疑、样式缺失、是否滚动容器等），不留到写码才发现。
+
+### 3. 目标实现计划
+
 ### 3. 目标实现计划
 
 输出 `ui-implementation-plan.json`，至少包含目标模式、参考 viewport、组件边界、坐标系、布局策略、资源映射、可访问性标识、交互候选和 `unsupported` 项。布局策略分两段：`layoutProportions`（尺寸轴 + 位置轴）与 `adaptiveLayout`（宽度轴）。
@@ -293,6 +320,42 @@ python3 scripts/check_adaptive_layout.py --plan <run>/ui-implementation-plan.jso
 按目标模式使用 Xcode 或 Gradle 编译。iOS 与 Android 必须分别验证，不能用一个平台的通过推断另一个平台通过。
 **编译通过是本验证阶段的唯一动态硬门槛。** 编译 0 error 后，验收进入交付闸门。
 
+#### 5.1 最终页面分析表（强制产物）
+
+编译通过后、进入交付闸门前，Agent 必须**采样自核**关键元素的实际渲染几何，与设计稿
+`bounds` 对照，落成 `<run>/最终页面分析表.md`。这是半人工视觉验收的追踪表：把
+「我在探针设备/各宽度档上量到的位置尺寸」与「设计稿说的位置尺寸」摆到同一行，标出
+偏差与状态。**它不替代门 2 的编译门槛，也不替代 `delivery-gate.json` 与
+`check_layout_proportions.py` 的机器判据**——它是给人看的一张对照，补足「编译通过但
+位置偏了」这类机器判不了的问题。
+
+**「实测」由 Agent 采样自核**：读 `actual/` 编译日志、运行时几何证据
+（`runtime-device.json`、声明 `adaptiveLayout` 时的 `adaptive-targets.json` 各采样
+`actual/geometry-*.json`）以及截图，对每个关键元素采样 `y/x` 与 `width/height`；
+不明写死来源，一律在「备注」列注明证据出处。
+
+表头（横向已拓全：位置、尺寸、比例值、偏差、状态、宽度档、证据来源）；参考样例见注释：
+
+| 元素 | 实测 y/x | 实测尺寸(w/h) | 设计稿比例值 y/x | 设计稿尺寸 | 偏差 | 状态 | 宽度档 | 备注/证据 |
+
+填表要求（参考下面样例的记法）：
+
+- 「实测」记 `y a-b (h)`、`x c-d (w)` 这种区间 + 括号尺寸的写法（如 `y 525-553 (28)`）；
+  「设计稿比例值」记 `y a-b`、`x c-d`。
+- 「偏差」写轴向，如 `y ✓，x 略偏右 15pt`；「状态」用 `✓` / `基本准` / `✗` 配一句定性说明。
+- 声明了 `adaptiveLayout` 时，「宽度档」列要覆盖各采样档（`phone-compact` /
+  `tablet-regular-portrait` 等），逐档各记一行或合并标注。
+- 「备注/证据」注明实测来自哪份证据（哪份 `geometry-*.json`、哪张截图、哪行日志）。
+
+样例（格式参考，非固定值）：
+
+| 元素 | 实测 y/x | 实测尺寸 | 设计稿比例值 y/x | 设计稿尺寸 | 偏差 | 状态 | 宽度档 | 备注/证据 |
+|---|---|---|---|---|---|---|---|---|
+| Best Value 标签 | y 525-553 (28)，x 267-365 | 98×28 | y 525-554，x 252-354 | 98×28 | y ✓，x 略偏右 15pt | 基本准 | phone-compact | actual/geometry-phone-compact.json |
+| CTA | y 705-773 (68)，x 28-373 | 345×68 | y 710-780，x 24-369 | 349×70 | 基本准 | ✓ | phone-compact | 截图 xxxx.png |
+| Weekly 卡 | y 447-515 (68)，x 28-373 | 345×68 | y 445-513 | 345×68 | ✓ | ✓ | phone-compact | — |
+| Yearly 卡 | y 539-607 (68)，x 28-373 | 345×68 | y 540-608 | 345×68 | ✓ | ✓ | phone-compact | — |
+
 ### 6. 交付闸门
 
 只有在所选目标模式的编译、资源接入（切图归位见「资源归位硬约束」）都通过时才标记
@@ -312,6 +375,7 @@ python3 scripts/check_adaptive_layout.py --plan <run>/ui-implementation-plan.jso
 - `ui-implementation-plan.json`、`resource-policy.json`
 - `runtime-device.json`；iOS 目标另需 `ios-environment.json`
 - `reference/dds-schema.json`（bounds 几何事实）、`reference/approved.json`
+- `过程中页面分析表.md`（第 2 步元素梳理摊平表）、`最终页面分析表.md`（第 5 步验证对照表）
 - `actual/`：编译日志
 
 每次写完 run 必须用 `scripts/validate_run.py --run <run-dir>` 自检；`deliveryReady` 只由闸门脚本推导，不得手写覆盖。

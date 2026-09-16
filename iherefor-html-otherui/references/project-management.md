@@ -31,6 +31,8 @@
 │       │       ├── delivery-gate.json
 │       │       ├── ui-implementation-plan.json
 │       │       ├── resource-policy.json
+│       │       ├── 过程中页面分析表.md    # 第 2 步元素梳理摊平表
+│       │       ├── 最终页面分析表.md      # 第 5 步验证对照表
 │       │       ├── runtime-device.json
 │       │       ├── ios-environment.json   # 仅 iOS 目标模式
 │       │       └── actual/       # 编译日志

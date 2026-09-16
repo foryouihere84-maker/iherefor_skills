@@ -35,6 +35,8 @@ BASE_REQUIRED = (
     'ui-implementation-plan.json',
     'resource-policy.json',
     'runtime-device.json',
+    '过程中页面分析表.md',
+    '最终页面分析表.md',
 )
 GATE_KEYS = ('source', 'sourceAssets', 'implementation', 'build', 'tests')
 # 第八项闸门**条件必需**：只有计划声明了宽度轴（``adaptiveLayout``）时才要求。
