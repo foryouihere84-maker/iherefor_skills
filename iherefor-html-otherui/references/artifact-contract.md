@@ -61,11 +61,12 @@ pages/<page-id>/
 几何基准（`dds-schema.json`）属于**基准**，因此放在页面级而不是 run 级：只有显式批准才
 写入 `approved.json`。
 
-### `design-facts.json`（可选，由 `scripts/lanhu_design_facts.py` 产出）
+### `design-facts.json`（已废弃，由已经下架的 `lanhu_get_design_document` + `scripts/lanhu_design_facts.py` 产出，当前 MCP 不再生成）
 
-`design-facts.json` 是 `lanhu_get_design_document` 返回体的**降噪摘要**，回答「设计稿说
+`design-facts.json` 是已下架工具 `lanhu_get_design_document` 返回体的**降噪摘要**，回答「设计稿说
 应该什么样」。它是**可选交叉佐证**，只可靠地覆盖**图层几何（`rect`）与描边/纯色填充**这一小半；
 字号、渐变、文本语义存在系统性失真（`canvas.scale` 折半字号、`metadata.parentId` 全 null）。
+当前 MCP 已无此工具，如须回看 Sketch 帧请改用 `lanhu_inspect_design_region`。
 
 **几何的权威来源是 `dds-schema.json` 的 `bounds`（主链路），渲染 DOM 的 `page-facts.json` 是备用链路**
 ——凡是 bounds 或 page-facts 已给出、计划却写成 `kindSource: "agent-decided"` 或
@@ -378,7 +379,9 @@ legacy 的官方 HTML/CSS 或渲染 DOM 的 `page-facts`（备用）。** `typeF
 
 #### `ui-implementation-plan.json` 的 `layoutProportions`
 
-由 `scripts/layout_proportions.py` 从 `bounds`（`dds-schema.json` 几何事实）生成。**字段以实际产物为准**，下面是
+由 `scripts/layout_proportions.py` 从 `bounds`（`dds-schema.json` 几何事实）**辅助生成声明片段**，
+Agent 负责合并进 plan 并逐条核对 `kind`/`basis`/`of`（脚本是辅助、不是「脚本生成 = 计划完成」）。
+**字段以实际产物为准**，下面是
 真实结构（数值取自 402×874 探针设备上的 Special Offer 页；原始素材在评测套件里，
 路径 `evals/fixtures/device-derived-layout/` —— 那个目录不会装到被测工程上，
 所以这里只写路径不做链接）：

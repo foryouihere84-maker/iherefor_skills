@@ -113,8 +113,8 @@ skill 目录迁移过、或注册仍指向其他 checkout 时，运行时启动�
 2. 每个页面 `lanhu_get_design_overview({url, design_id})`：取 `snapshot_id`（**后续 inspect/export 的入参**）、
    `canvas`（画布尺寸权威）、`nodes[]`（`bounds` 几何 + `asset_ids`）。**注意 `limit` 默认 30 且分层分页**：
    顶层 `nodes[]` 只含 ~30 个顶层节点，导航/按钮/进度条等深层元素**不在里面**，是「元素找不到」的头号来源。
-3. 用 `nodes[].bounds` 生成布局契约并落 `reference/dds-schema.json`：`bounds.x/y`=位置、`width/height`=尺寸、
-   `parent_id`=父视图归属。能拿到 `bounds` 就直接用，别退回 DOM 反推。
+3. 把 overview 返回体**原样落盘** `reference/dds-schema.json`；用 `nodes[].bounds` 生成 `layoutProportions`：
+   `bounds.x/y`=位置、`width/height`=尺寸、`parent_id`=父视图归属。能拿到 `bounds` 就直接用，别退回 DOM 反推。
 4. 深层元素（导航/按钮/进度条等）用 `lanhu_inspect_design_region({snapshot_id, region})`：它返回**完整 nested
    nodes + raw_style**（`font.size/color/lineHeight`、`fills`、`radius`、描边），是拿被编组折叠元素的唯一可靠途径。
 5. 样式恒量以 `inspect_design_region` 的 `raw_style` 为准；需要整页参考时再调 legacy 的
@@ -125,7 +125,7 @@ skill 目录迁移过、或注册仍指向其他 checkout 时，运行时启动�
    解包，再归位 `Assets.xcassets`。
 7. 成功读取/下载的资源执行 cache hook，落到 `.ihereforUI/cache/<project-id>/`；禁止缓存 Cookie/Authorization/原始 MCP envelope。
 8. 校验资源非空，文件清单/sha256/image_id/版本/来源 URL 记到 `source/manifest.json`。
-9. 主链路（bounds 已拿到）：`dds-schema.json` 生成布局契约 → 进目标平台 Agent loop。样式恒量以
+9. 主链路（bounds 已拿到）：用 `dds-schema.json` 里的 `bounds` 生成 `layoutProportions`（布局契约）→ 进目标平台 Agent loop。样式恒量以
    `inspect_design_region.raw_style` 或 `ai_analyze_design_result` CSS 为准。
 
 ## 页面命名与链接映射
