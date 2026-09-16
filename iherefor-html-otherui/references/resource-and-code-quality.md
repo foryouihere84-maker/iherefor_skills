@@ -45,7 +45,7 @@ MCP（`lanhu-mcp`）**拿不到无损的 1x/2x/3x 三套切图**，它只有「�
 3. 需要真 3x 时优先拿 SVG；只有必须用栅格 3x 且蓝湖确已按 3x 导出时，才用栅格。**不要用 MCP 或本地工具对 2x 做放大来伪造 3x。**
 4. 若只有一张原图、无 SVG、也无 3x 原图，则 imageset 里只放 `@2x` 一张（`Contents.json` 仅声明 `2x`），并把「缺 3x」写入 `unsupported` 说明原因，**不得**用假 3x 冒充。
 
-资源接入还必须验证显示 frame 来自页面 `canvasTransform.coordinateMapper`。图片 frame、`contentMode`/`scaleType`/`ContentScale` 与 alpha 内容 bounds 的硬约束以 `SKILL.md` 的「图片缩放硬约束」一节为准，本文件不再重复；每张图片仍必须在 `resource-policy.json` 中记录 Lanhu frame、目标 mapped frame、scaleX/scaleY 与最终截图 frame。
+资源接入还必须验证显示 frame 的坐标换算**内化于布局契约的 `fit` 闭合**（`canvasTransform` 已随渲染链撤裁，见 artifact-contract 附录「字段迁移表」）。图片 frame、`contentMode`/`scaleType`/`ContentScale` 与 alpha 内容 bounds 的硬约束以 `SKILL.md` 的「尺寸与定位契约」为准，本文件不再重复；每张图片仍必须在 `resource-policy.json` 中记录 Lanhu frame、目标 mapped frame、scaleX/scaleY 与最终截图 frame。
 
 ## 生产文件命名（强制）
 
