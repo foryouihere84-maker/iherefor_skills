@@ -1,0 +1,40 @@
+{
+  "_comment": "功能分级（tier）定义。依据需求「第一眼可判」的信号，在阶段 0 把功能划入 full（标准）或 lite（轻量）两档，决定闸门数量与产物清单。原则：默认 full、按需 lite，宁可从 full 升级降级一次，也不在判据模糊时硬分。",
+  "default_tier": "full",
+  "decision_point": "阶段 0（前置依赖检查）末尾，尚未进入阶段 1 之前。判据用入口处即可取得的信号；如需走完 Spec 才能定，则按 full 处理，不提前省事。",
+  "escalate_rule": "阶段 1（Spec）结束时允许升/降级一次：若发现 lite 判据误判（实为跨端共享层/架构方向不明/涉及迁移），升级为 full；反之 full 可降为 lite。变更须在 run-log.jsonl 记录 tier_change 事件。",
+  "tiers": {
+    "full": {
+      "label": "标准档",
+      "triggers": [
+        "新领域 / 缺既有参照",
+        "跨端（iOS+Android 都要）且需定共享层",
+        "架构方向不明、存在多套可选技术路线",
+        "涉及持久化、状态管理重构或 schema 迁移",
+        "需要新增/替换第三方依赖"
+      ],
+      "gates": ["a", "b", "c1", "c2", "d", "delivery"],
+      "note": "所有产物照 templates/ 全套产出，无跳过。"
+    },
+    "lite": {
+      "label": "轻量档",
+      "triggers": [
+        "单一改动点 / 纯增量（如加一个列表分页、换登录方式、改页面状态管理）",
+        "有现成同级参照可循（工程内已有类似实现）",
+        "不新增第三方依赖",
+        "不涉及跨端共享层或 schema 迁移"
+      ],
+      "gates": ["a", "b", "d", "delivery"],
+      "merge_rule": "闸门 c1（变更清单）与 c2（tasks 拆分）合并进闸门 b：proposal-draft.md 内同时覆盖「变更清单」与「执行步骤」，只做一次合并确认，不再单独拆 tickets.md。",
+      "skip_artifacts": [
+        "01-需求/shared-requirements.md",
+        "02-架构/design-options.md",
+        "02-架构/comparison.md",
+        "02-架构/shared-layer.md",
+        "03-落地计划/architecture-audit.md",
+        "03-落地计划/tickets.md"
+      ],
+      "note": "阶段 2 不做 DESIGN-IT-TWICE 三案；仅当有 L1 官方参照需查证时做一次白名单搜索，否则跳过 search-questions/facts 亦可由编排器按需裁剪。其余必填产物仍照模板产出。"
+    }
+  }
+}

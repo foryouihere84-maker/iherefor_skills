@@ -47,7 +47,7 @@ SubTrackerTests:
 
 - **必测（required）**：领域层 / 用例 / ViewModel。seam 是这些模块的**公开接口**。
 - **视情况（conditional）**：Repository（有真实数据源或映射逻辑时）。
-- **默认不测**：UI 层。SWiftUI 的 View 层默认不写快照/UI test，除非需求明确要求视觉回归。
+- **默认不测**：UI 层。SwiftUI 的 View 层默认不写快照/UI test，除非需求明确要求视觉回归。
 
 ## 关键实践
 
