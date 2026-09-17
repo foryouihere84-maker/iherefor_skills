@@ -1,0 +1,42 @@
+{
+  "_comment": "web 可信源白名单。搜索优先级：官方文档 L1 > 教学文档 L2 > 社区佐证 L3。L3 仅用于查 bug 反例，禁止作为架构决策依据。",
+  "priority_order": ["L1", "L2", "L3"],
+  "L1_official_docs": {
+    "note": "一级权威，只读事实来源。架构/API/版本时效性以此为准。",
+    "ios": [
+      "https://developer.apple.com/documentation/",
+      "https://developer.apple.com/swift/",
+      "https://www.swift.org/documentation/",
+      "https://developer.apple.com/tutorials/swiftui/",
+      "https://developer.apple.com/tutorials/app-dev-training/"
+    ],
+    "android": [
+      "https://developer.android.com/",
+      "https://developer.android.com/jetpack/compose",
+      "https://developer.android.com/jetpack/guide",
+      "https://kotlinlang.org/docs/",
+      "https://kotlinlang.org/api/",
+      "https://developer.android.com/codelabs"
+    ]
+  },
+  "L2_teaching": {
+    "note": "一级偏教程，高质量一手教学站。用于补充实现范式与惯用法，仍在 L1 版本约束框架内。",
+    "ios": [
+      "https://www.hackingwithswift.com/",
+      "https://www.swiftbysundell.com/",
+      "https://www.kodeco.com/"
+    ],
+    "android": [
+      "https://antonioleiva.com/",
+      "https://www.philipplackner.com/",
+      "https://developer.android.com/jetpack/compose/tutorial"
+    ]
+  },
+  "L3_community_reference": {
+    "note": "仅交叉佐证 / 查 bug 反例，禁止作为架构决策依据。",
+    "sites": [
+      "https://stackoverflow.com/",
+      "https://github.com/"
+    ]
+  }
+}

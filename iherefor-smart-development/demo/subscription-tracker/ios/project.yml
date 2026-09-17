@@ -1,0 +1,30 @@
+name: SubTracker
+options:
+  bundleIdPrefix: com.iherefor
+  deploymentTarget:
+    iOS: "15.0"
+targets:
+  SubTracker:
+    type: application
+    platform: iOS
+    sources:
+      - SubTracker
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.iherefor.subtracker
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGNING_ALLOWED: NO
+  SubTrackerTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - SubTrackerTests
+      - SubTracker/Domain
+    dependencies:
+      - target: SubTracker
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGNING_ALLOWED: NO

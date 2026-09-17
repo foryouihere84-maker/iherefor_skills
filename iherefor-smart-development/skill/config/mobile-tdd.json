@@ -1,0 +1,32 @@
+{
+  "_comment": "移动端 TDD 默认约定。所有值可覆盖；团队自有测试规范可整体替换本文件。",
+  "test_strategy": {
+    "seam_principle": "只测外部行为，不测实现细节；seam 必须在写测试前与用户确认。",
+    "loop": "red 先于 green；垂直切片，一次一条 tracer bullet，不水平铺开所有测试。",
+    "refactor": "重构不属于 red→green 循环，归入 code-review 阶段。"
+  },
+  "layer_depth": {
+    "domain_use_case_viewmodel": "required",
+    "repository_data_mapping": "conditional",
+    "ui_layer": "off_by_default"
+  },
+  "ios_defaults": {
+    "framework": "XCTest（Swift Testing 优先，视工程部署目标）",
+    "target_layers": ["领域层", "ViewModel / 用例层"],
+    "mock_approach": "协议注入 / 依赖注入，不在被测对象内 new 依赖",
+    "run_command": "xcodebuild test -workspace <workspace> -scheme <scheme> -destination <destination>"
+  },
+  "android_defaults": {
+    "framework": "JUnit + MockK + Turbine（Flow 测试）",
+    "target_layers": ["ViewModel", "Repository（有逻辑时）"],
+    "mock_approach": "接口 mock，suspend/Flow 用 runTest",
+    "run_command": "./gradlew test"
+  },
+  "cross_platform": {
+    "unit_test_absolutely_required": [
+      "跨端共享的领域规则与数据契约的纯函数",
+      "两端各自的核心业务逻辑（ViewModel/用例）"
+    ],
+    "ui_test_default_off": "UI 快照/UI test 默认不写，除非需求明确要求视觉/交互回归。"
+  }
+}

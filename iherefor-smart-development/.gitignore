@@ -1,0 +1,12 @@
+# macOS
+.DS_Store
+
+# Android 构建产物
+demo/subscription-tracker/android/.gradle/
+demo/subscription-tracker/android/build/
+demo/subscription-tracker/android/app/build/
+demo/subscription-tracker/android/local.properties
+
+# iOS 构建产物
+demo/subscription-tracker/ios/**/xcuserdata/
+demo/subscription-tracker/ios/**/*.xcuserstate

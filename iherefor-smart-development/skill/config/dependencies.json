@@ -1,0 +1,92 @@
+{
+  "_comment": "被点名 skill 依赖清单。required=缺失即阻塞该阶段，须先安装；optional=缺失时该环节降级/跳过并明确告知。作者以 Matt Pocock 那套工程 skills 为主（同作者仓库批量安装）。",
+  "install_hint": "安装走 Skill 工具点名 install-local-skill（含作者核对、安全审计、批量安装、端到端验证）；默认装用户级 ~/.workbuddy-ai/skills/。Matt Pocock 整套可一次批量装齐，再跑 setup-matt-pocock-skills 生成 docs/agents/*.md、CONTEXT.md、docs/adr/。",
+  "required": [
+    {
+      "name": "grilling",
+      "stage": "阶段 1 需求理清",
+      "author_hint": "Matt Pocock 工程 skills 之一",
+      "purpose": "追问需求到共享理解"
+    },
+    {
+      "name": "to-questionnaire",
+      "stage": "阶段 1 需求理清",
+      "author_hint": "Matt Pocock 工程 skills 之一",
+      "purpose": "跨角色拉缺口知识"
+    },
+    {
+      "name": "domain-modeling",
+      "stage": "阶段 1 需求理清",
+      "author_hint": "Matt Pocock 工程 skills 之一",
+      "purpose": "固化领域术语进 CONTEXT.md"
+    },
+    {
+      "name": "research",
+      "stage": "阶段 2 架构设计",
+      "author_hint": "Matt Pocock 工程 skills 之一",
+      "purpose": "web 白名单搜索最佳实践（事实层）"
+    },
+    {
+      "name": "codebase-design",
+      "stage": "阶段 2 架构设计",
+      "author_hint": "Matt Pocock 工程 skills 之一",
+      "purpose": "DESIGN-IT-TWICE 并行多方案择优"
+    },
+    {
+      "name": "improve-codebase-architecture",
+      "stage": "阶段 3 工程落地计划",
+      "author_hint": "Matt Pocock 工程 skills 之一",
+      "purpose": "审计既有架构摩擦"
+    },
+    {
+      "name": "tdd",
+      "stage": "阶段 4 TDD 落地",
+      "author_hint": "Matt Pocock 工程 skills 之一",
+      "purpose": "red→green 循环的规则源"
+    },
+    {
+      "name": "implement",
+      "stage": "阶段 4 TDD 落地",
+      "author_hint": "Matt Pocock 工程 skills 之一",
+      "purpose": "按 spec/ticket 实现"
+    },
+    {
+      "name": "code-review",
+      "stage": "阶段 5 交付",
+      "author_hint": "Matt Pocock 工程 skills 之一",
+      "purpose": "Standards × Spec 双轴审查"
+    }
+  ],
+  "optional": [
+    {
+      "name": "prototype",
+      "stage": "阶段 4 TDD 落地",
+      "purpose": "状态模型拿不准时先跑丢代码原型"
+    },
+    {
+      "name": "to-spec",
+      "stage": "阶段 1 需求理清",
+      "purpose": "把讨论合成 spec 发到 issue tracker"
+    },
+    {
+      "name": "to-tickets",
+      "stage": "阶段 3/4 之间",
+      "purpose": "把方案拆成 tracer-bullet tickets"
+    },
+    {
+      "name": "handoff",
+      "stage": "换手 / 多 session",
+      "purpose": "上下文压缩时写交接文档"
+    },
+    {
+      "name": "setup-matt-pocock-skills",
+      "stage": "阶段 0 安装后",
+      "purpose": "在目标项目生成 docs/agents/*.md、CONTEXT.md、docs/adr/，供其余技能读取"
+    },
+    {
+      "name": "install-local-skill",
+      "stage": "阶段 0 安装",
+      "purpose": "本身是安装工具，用于装齐上面所有缺失 skill"
+    }
+  ]
+}
