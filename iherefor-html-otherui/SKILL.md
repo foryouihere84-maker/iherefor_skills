@@ -36,11 +36,14 @@ description: 将 Lanhu 设计稿映射为 SwiftUI、UIKit Swift、UIKit Objectiv
 3. 不得因为某个 CSS/JS 特性无法等价映射而静默删除；必须写入 `unsupported` 并进入交付报告。
 4. 目标平台可以使用不同的组件树和布局策略；相同的是视觉目标，不是源代码形状。
 5. 生成代码必须经过目标平台**编译通过**，不能以「代码生成完成」代替完成。
-6. **约束策略不是「整页等比缩放」，而是两条独立的轴：尺寸固定、位置相对父视图。** 完整口径见下一节。
+6. **约束策略不是「整页等比缩放」，也不是「所有尺寸固定」。** 尺寸必须声明由
+   `fixed`、`intrinsic`、`bounded`、`proportional`、`equal` 或 `aspect-ratio` 闭合；位置再用
+   `pinned` / `centered` / `proportional` 表达。UIKit 优先使用 Auto Layout 的 intrinsic content size、
+   最小/最大边界、content hugging 和 compression resistance。
 
 ## 尺寸与定位契约（强制）
 
-**尺寸是常量，位置是约束。** 把整页当成一张图去缩放，等于把「设计稿恰好 393pt 宽」这个偶然事实
+**设计稿尺寸是参考事实，运行时尺寸由约束闭合。** 把整页当成一张图去缩放，等于把「设计稿恰好 393pt 宽」这个偶然事实
 提升成布局规则：每个尺寸都被乘上屏幕相关系数，44pt 的点击区在窄屏缩成 40pt，字号缩放破坏排版。
 设备之间本来就不等比（`393×852 → 402×874` 两轴比例分别是 `1.0229` 与 `1.0258`），
 「等比」不是可选策略，而是一个不存在的东西。因此 `lanhuY = 132` 换算成 `135.02pt` 再写成字面量，
@@ -49,11 +52,14 @@ description: 将 Lanhu 设计稿映射为 SwiftUI、UIKit Swift、UIKit Objectiv
 实现计划必须给出 `layoutProportions`（每个区域的 `ratios` 与逐条 `relations`），
 每条关系声明 `kind` 与位置基准 `of`。判据是**「这个值由谁闭合」**：
 
-- `fixed` —— 设计稿给出封闭值的控件尺寸，写成字面设计值。**不参与任何比例缩放。**
+- `fixed` —— 只有图标、装饰、边框、明确固定的视觉尺寸才使用。它不是默认值。
 - `pinned` —— 值由与父视图的约束闭合（贴边、占满、等分）。写成约束，不写比例系数：
   「左右各 16pt」是 `leading = parent.leading + 16`，不是 `width = parent.width * 0.9186`
   （后者在 430pt 宽的设备上给出 13.7pt 边距，而设计稿说的是 16pt）。
-- `intrinsic` —— 必须给出 `why`，说明为什么这个量由内容决定（文本撑开、自适应图片）。
+- `intrinsic` —— 必须给出 `why`，说明为什么这个量由内容决定（文本、按钮、多语言、动态字体）。
+- `bounded` —— 必须给 `min` / `max` 至少一个边界；用于内容可变但不能无限扩张的宽高。
+- `equal` —— 必须给 `with` 或 `to`；用于兄弟元素等宽、等高或等基线。
+- `aspect-ratio` —— 必须给正数 `ratio`；用于图片、媒体和视觉卡片比例。
 - `proportional` —— 只用于**确实**随父容器成比例变化的关系，必须给出理由；它不是默认项。
   必须用比例表达，且基准是**父视图**不是整页。iOS 用 `multiplier` /
   `UILayoutGuide`，SwiftUI 用 `GeometryReader`，Compose 用 `BoxWithConstraints` 派生比例或 `weight`，
@@ -64,7 +70,7 @@ description: 将 Lanhu 设计稿映射为 SwiftUI、UIKit Swift、UIKit Objectiv
 基准确认不了的要留痕待确认，不许默认填 `root`。
 
 组件之间的布局关系仍须遵循设计稿，不得写成「探针设备上换算出来的绝对值」——
-但这条约束管的是**位置与间距**，不适用于**控件尺寸**（尺寸一律取设计值）。
+但这条约束管的是**位置与间距**。**尺寸走另一条路：它由下面的闭合方式契约决定，不因为「设计稿写了一个宽高」就自动取该值。**
 
 **第一层子视图（直接父视图 = 页面/page）的位置按页面比例重排，这是设备尺寸 ≠ 设计稿尺寸时**
 **的自适应核心：**
@@ -72,7 +78,8 @@ description: 将 Lanhu 设计稿映射为 SwiftUI、UIKit Swift、UIKit Objectiv
 - 第一层的**水平位置** `x = page.width × ratio`、**垂直位置** `y = page.height × ratio`，
   都写成相对 page 的比例原语（`multiplier`），标记 `forced: "first-level"`；
   **不得**写成探针设备上的绝对坐标（如 `x = 83`、`y = 132`）—— 那在换台设备时就错。
-- 第一层的**尺寸仍是 `fixed`**（组件尺寸恒等于设计稿，绝不缩放）；自适应的是**位置**，不是尺寸。
+- 第一层的尺寸不能默认写成 `fixed`。容器、文本和按钮应优先使用 `intrinsic` / `bounded` / `pinned`；
+  只有设计意图确实要求固定的元素才使用 `fixed`。自适应的是由 Auto Layout 闭合的尺寸和位置。
 - 第一层 → 第二层（及更深）的**相对关系固定**：第二层的位置基准是它的直接父视图（某个第一层元素），
   不是页面。只有第一层这一档按页面比例，往下不再套。
 - **两条轴不共享同一个收口**：水平位置受**宽度档**收口（宽档改由 `widthPolicy` 重排，见下一节），
@@ -112,8 +119,8 @@ description: 将 Lanhu 设计稿映射为 SwiftUI、UIKit Swift、UIKit Objectiv
 
 三条交界规则：
 
-1. **宽度轴只改「容器宽度」与「第一层位置」，不改任何尺寸。** 字号、行高、圆角、描边宽度、
-   最小点击区（≥44pt / 48dp）在**同一平台的各个宽度档之间**逐字相同。
+1. **宽度轴可以改变容器尺寸，但不得任意缩放视觉常量。** 字号、行高、圆角、描边宽度、
+   最小点击区（≥44pt / 48dp）保持不变；容器可按 pinned/bounded/intrinsic 规则伸缩。
    **只有一套稿时**，「平板上字大一点更好看」是错的 —— 设计稿只有一套排版。
    **双稿时**，`xx` 与 `xx-iPad` 是两套并列的独立参考，跨稿尺寸照稿各自取值；
    出现差异必须逐档声明在 `adaptiveLayout.sizeVariants[]`（带 `basis`/`why`）。
@@ -193,6 +200,20 @@ python3 scripts/check_adaptive_layout.py --plan <run>/ui-implementation-plan.jso
 
 如果目标工程不是空项目，或用户要求二次开发/新增页面，必须先读取 [references/existing-project-integration.md](references/existing-project-integration.md)，完成工程审计并生成 `.ihereforUI/integration/project-audit.json`、`.ihereforUI/integration/integration-plan.json` 及页面级接入计划。计划批准前不得写入生产代码；文件名、模块、导航、依赖、资源、状态、测试和回滚方式都必须先列明。
 
+## UIKit Auto Layout 尺寸契约
+
+涉及 iOS 目标时必须读取 [references/ios-autolayout-practice.md](references/ios-autolayout-practice.md)。
+Lanhu 的 `bounds.width/height` 是参考事实，**不自动转换成固定宽高约束**。实现计划必须为每个尺寸关系选择
+`fixed`、`intrinsic`、`bounded`、`pinned`、`proportional`、`equal` 或 `aspect-ratio`，并记录原因。
+文本、按钮、内容列和卡片默认优先 `intrinsic` / `bounded`；固定值只用于有明确视觉语义的尺寸。
+可变文本必须支持 Dynamic Type，交互控件用 `>= 44` 表达触控下限而不是写死 44。
+交付前必须验证 Dynamic Type、长文本、窄窗口、横竖屏和 iPad 宽屏，并检查 Auto Layout 冲突与 ambiguous layout。
+
+**保真底线（防止自适应退化成「随便自适应」）**：自适应不等于放弃设计稿。设计稿在**它自己的宽度档**上仍是最强参考——
+所有尺寸闭合方式的选择，必须能在设计稿宽度上复现出设计稿的排版；换宽度档后允许重排，但重排后元素的
+层级、主次和视觉关系不得改变。若某个元素在任意宽度档下都无法接近设计稿，属于 §「尺寸与定位契约」的
+`ambiguousLiterals` 待确认项，必须显式记录而不是静默放过。
+
 ## 持续视觉事实（强制约束）
 
 以下事实必须贯穿发现、计划、编码全过程，不能只在首次分析时阅读后凭记忆实现：
@@ -263,12 +284,12 @@ Agent 可据此快速定位、防遗漏，但**落码仍以 `dds-schema.json`（
 填表要求：
 
 - 「元素」用语义名（而非 `img_0`/`矩形` 这类来源名）；「层级」写 `parent_id` 链，能区分「直接父是否为页面」。
-- 「bounds」照抄原值；「语义尺寸」是 `width`/`height` 的解读（控件尺寸一律 `fixed`，见尺寸与定位契约）。
+- 「bounds」照抄原值；「语义尺寸」是 `width`/`height` 的**解读**——写清这条尺寸由什么闭合
+  （`fixed` / `intrinsic` / `bounded` / `pinned` / `proportional` / `equal` / `aspect-ratio`），
+  **不得**默认写成 `fixed`。设计稿的原始 `width`/`height` 是参考事实，不等于生产约束。
 - 「样式」五列（字号/字重/颜色/圆角/描边）来自 `raw_style`，拿不到就标 `—`，**不得编造**。
 - 「资源/切图」标 URL、原始尺寸、非透明内容 bounds（`alphaBounds`）；「原生组件映射」初拟一个候选组件并留待计划阶段定。
 - 「待确认」列收所有当下定不了的点（父归属存疑、样式缺失、是否滚动容器等），不留到写码才发现。
-
-### 3. 目标实现计划
 
 ### 3. 目标实现计划
 
@@ -394,13 +415,20 @@ python3 scripts/check_adaptive_layout.py --plan <run>/ui-implementation-plan.jso
 
 三个容易混的点：
 
-- **`kind` 五档**：`fixed` / `pinned` / `proportional` / `intrinsic` / `centered`。
+- **`kind` 八类，分两轴**：尺寸轴 `fixed` / `intrinsic` / `bounded` / `aspect-ratio`；
+  关系轴 `pinned` / `proportional` / `equal` / `centered`。
+  **一条关系只声明一个 `kind`** —— 它描述「这个量由谁闭合」，没有内嵌 `relations`
+  这种写法（写了不会被读取，校验器也不报错，只会静默丢掉）。像「宽度贴父两侧、
+  且不能超过 560」这种需求是**两个机制**：贴边是 `pinned` 关系（`edges` + `insets`），
+  上限是 `adaptiveLayout.regions[].maxContentWidth`。**`fixed` 不是默认值**——它是「有明确视觉语义的固定量」
+  才用的特例（图标、装饰、边框、明确固定高度的视觉控件）。
 - **`basis` 与 `of` 不是两个概念**：region 级的位置基准字段叫 `basis`，relation 级叫 `of`，两者都指向**直接父视图**。
 - **三轴不是三套字段**：尺寸轴与位置轴都在 `layoutProportions` 里，宽度轴在 `adaptiveLayout` 里。
 
 ## 参考资料
 
 - 尺寸与位置两条轴的完整规范：`references/sizing-and-positioning.md`
+- iOS Auto Layout 尺寸闭合与自适应实践（含 Dynamic Type / 优先级 / 冲突约束）：`references/ios-autolayout-practice.md`
 - 平板与宽屏自适应的完整规范：`references/adaptive-layout.md`
 - 六种输出模式的技术边界：`references/target-modes.md`
 - 页面事实表、实现计划和交付证据 schema：`references/artifact-contract.md`

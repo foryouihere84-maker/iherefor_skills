@@ -36,8 +36,10 @@ run "validate_run 产物契约校验"           "$PY" scripts/tests/test_validat
 run "init_ui_workspace 目录与索引"        "$PY" scripts/tests/test_init_ui_workspace.py
 run "decide_next_step 停止判定"           "$PY" scripts/tests/test_decide_next_step.py
 run "文档与脚本参数漂移"                  "$PY" scripts/tests/test_doc_commands.py
+run "类别表守卫（两轴八类单一真相源）"      "$PY" scripts/tests/test_kind_taxonomy.py
 # 变异探针会临时改写被测源码，因此**不进本套件**（跑法见 evals/README.md）；
 # 它证明的是「上面这些断言不是空的」，改完校验器后应手动跑一次。
+# 判分器侧同理：.runtime/venv/bin/python3 evals/harness/probe_layout_judge.py
 # 评测判分器自检：零凭据、零 LLM，保证每个用例的判分器都有「必须过／必须挂」两份样本。
 run "评测判分器自检（无需引擎凭据）"       "$PY" evals/harness/selfcheck.py
 

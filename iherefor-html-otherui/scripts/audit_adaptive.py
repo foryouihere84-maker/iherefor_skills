@@ -219,6 +219,18 @@ def resolve_kind(element, plan_kinds):
     return plan_kinds.get(element_id(element))
 
 
+# 回退映射的挑选顺序。**顺序有意义**：几何审计只拿它比对两类 —— 尺寸不变性看
+# ``fixed``、内边距与连续性看 ``pinned``，所以这两类必须排在前面；其余类别只为
+# 「让区域有个类别」，先后无关。前五类的相对顺序保持原样（不改动既有判定的行为），
+# 缺的 ``bounded`` / ``equal`` / ``aspect-ratio`` 补在后面。
+#
+# 这个清单**不能比 ``RELATION_KINDS`` 短**：短了就会让只声明了缺的那几类的区域
+# 拿不到类别，下游按类别分派的判据静默跳过 —— 脚本照跑、测试全绿，只有真拿这样的
+# 计划跑一遍才会发现没判。scripts/tests/test_kind_taxonomy.py 会拦住这次漂移。
+KIND_FALLBACK_ORDER = ("fixed", "pinned", "intrinsic", "proportional", "centered",
+                       "bounded", "equal", "aspect-ratio")
+
+
 def plan_region_kinds(plan):
     """从计划取「区域 → 关系类型」的映射，供几何转储省略 ``kind`` 时回退。"""
     kinds = {}
@@ -235,7 +247,7 @@ def plan_region_kinds(plan):
             continue
         declared = {relation.get('kind') for relation in (region.get('relations') or [])
                     if isinstance(relation, dict)}
-        for candidate in ('fixed', 'pinned', 'intrinsic', 'proportional', 'centered'):
+        for candidate in KIND_FALLBACK_ORDER:
             if candidate in declared:
                 kinds.setdefault(name, candidate)
                 break
@@ -386,7 +398,10 @@ def check_size_invariance(samples, kinds, size_variants, tolerance):
             'size-not-invariant',
             f'{name} 是 fixed 元素，但尺寸在各采样间不一致：'
             f'宽 {widths}（差 {spread_w:.2f}pt）、高 {heights}（差 {spread_h:.2f}pt）。'
-            '尺寸是常量，不得随窗口缩放。若这是「多设备稿照稿还原」的合法跨平台分档，'
+            'fixed 是「视觉常量」的闭合方式（图标、圆角、描边、触控下限），'
+            '其点值在同一个平台内不得随窗口缩放。注意本条**只审 fixed**：'
+            'intrinsic / bounded / pinned 的尺寸在各采样间本来就应当变化，不在审计范围。'
+            '若这是「多设备稿照稿还原」的合法跨平台分档，'
             '必须在 adaptiveLayout.sizeVariants 里逐档声明尺寸并附 basis 与 why',
             element=name, widths=widths, heights=heights,
             maxSpreadPt=round(max(spread_w, spread_h), 4)))

@@ -1,20 +1,28 @@
 #!/usr/bin/env python3
-"""回归：尺寸是常量、位置相对直接父视图。
+"""回归：尺寸按闭合方式声明、位置相对直接父视图。
 
-这条约束有两个可执行的部分，两边都要有「必须过 / 必须挂」：
+这条契约有两个可执行的部分，两边都要有「必须过 / 必须挂」：
 
-1. ``layout_proportions.py`` 把事实表里的几何转成**两轴规格**。两条轴各自有一套类别：
-   尺寸轴 ``fixed`` / ``pinned`` / ``intrinsic`` / ``proportional``，位置轴
-   ``pinned`` / ``centered`` / ``proportional``；位置基准是**直接父视图**，
-   父容器本身就是整屏画布时才是 ``root``。
-2. ``check_layout_proportions.py`` 拿那份规格去核源码。**这个测试的核心是变异探针**：
-   先把一份合规源码判为通过，只把其中一条比例换成它的设备推导值，再要求它被判为违规。
-   没有这一步，测试只是「脚本跑得动」，而不是「脚本认得错」。
+1. ``layout_proportions.py`` 把事实表里的几何转成**闭合契约规格**。两轴八类：
+   ``fixed`` / ``intrinsic`` / ``bounded`` / ``pinned`` / ``proportional`` / ``equal`` /
+   ``centered`` / ``aspect-ratio``（尺寸轴 ``fixed`` / ``intrinsic`` / ``bounded`` /
+   ``aspect-ratio``，关系轴 ``pinned`` / ``proportional`` / ``equal`` / ``centered``）；
+   位置基准是**直接父视图**，父容器本身就是整屏画布时才是 ``root``。**``fixed`` 不是默认值**
+   —— 它是「固定性本身是设计意图」的特例
+   （图标、装饰、边框、明确固定高度的视觉控件）。生成端判不出这一层，所以它产出的每条
+   ``fixed`` 都带 ``why``（推据）与 ``needsReview``，由 Agent 逐条复核。
+2. ``check_layout_proportions.py`` 拿那份规格去核源码，**计划层与源码层都要判**。
+   源码侧除了比例原语，还要逐类核对 ``intrinsic``（不得写等值常量）、``bounded``
+   （必须有 >=/<= 原语）、``equal``、``aspect-ratio`` —— 否则「计划说 intrinsic、
+   代码写死 widthAnchor」这个新契约要拦的头号问题就成了没人查的口头约定。
+   **这个测试的核心是变异探针**：先把一份合规源码判为通过，只把其中一条比例换成它的
+   设备推导值，再要求它被判为违规。没有这一步，测试只是「脚本跑得动」，而不是
+   「脚本认得错」。
 
 测试里每一条断言都对应一个**已经踩过的误判**，注释写在断言旁边：
 
-* 控件尺寸（图标 24、头像 48、按钮高 68）必须判 ``fixed``，不能因为「它随父容器排布」
-  就判成比例；
+* 视觉常量（图标 24、头像 48）必须判 ``fixed`` 并给出 why，不能因为「它随父容器排布」
+  就判成比例；反过来，按钮宽度、卡片高度、文字区宽度也**不能**默认判成 fixed；
 * 「贴父边」不是「比例」：左右各 16pt 要写约束闭合，写成 ``parent.width * 0.9186``
   在探针设备上同样对得上，换台设备就给不出 16；
 * 纵向不照搬横向：24pt 图标装在 68pt 卡片里「上 16 下 28」，那个 28 是
@@ -304,10 +312,16 @@ def main():
               f"用例1：rect 坐标空间判定为 {diag['rectSpace']}，应为 device")
         check(props["basisSize"] == {"width": 402.0, "height": 874.0},
               f"用例1：基准应为探针视口 402x874，得到 {props['basisSize']}")
-        check(props["model"] == "fixed-size-parent-relative-position",
-              f"用例1：模型名应写明「尺寸固定 + 位置相对父视图」，得到 {props['model']}")
+        # 模型名从 v3 的 "fixed-size-parent-relative-position" 改为闭合契约的
+        # "closure-declared-parent-relative-position"：旧名把「尺寸固定」写进口径里，
+        # 而新契约下尺寸是**声明闭合方式**，fixed 只是其中一种（非默认）。
+        check(props["model"] == "closure-declared-parent-relative-position",
+              f"用例1：模型名应写明「尺寸按闭合方式声明 + 位置相对父视图」，得到 {props['model']}")
+        check(diag["schemaVersion"] >= 4,
+              f"用例1：闭合契约起 schemaVersion 应为 4，得到 {diag['schemaVersion']}"
+              "（v3 的 fixed 是「尺寸是常量」的老结论，不能与 v4 混读）")
         check(props["axisPolicy"] == "per-axis" and props["basis"] == "viewport",
-              f"用例1：两轴口径与基准字段不对：{props['axisPolicy']}/{props['basis']}")
+              f"用例1：逐轴口径与基准字段不对：{props['axisPolicy']}/{props['basis']}")
         check(diag["hierarchyAvailable"] is True,
               "用例1：事实表带 parentIndex，层级应判为可用")
 
@@ -378,9 +392,22 @@ def main():
                   for rel in region["relations"] if rel["kind"] == "pinned"),
               "用例4：pinned 关系不得带比例系数 —— 贴父边的正确写法是约束闭合")
 
+        # 用例 4c：生成端产出的 fixed 一律是**候选** —— 必须带 why 说明推据、带 needsReview
+        # 提示复核。闭合契约下 fixed 只留给视觉常量，而按钮宽度/卡片高度/文字区宽度
+        # 都得由内容或边界闭合，生成端判不出来，所以它只能给候选、不能给结论。
+        fixed_rels = [(region["region"], rel)
+                      for region in props["regions"] for rel in region["relations"]
+                      if rel.get("kind") == "fixed"]
+        check(fixed_rels, "用例4c：这份事实表里应当有被判为 fixed 的控件量级尺寸")
+        for region_name, rel in fixed_rels:
+            check(bool((rel.get("why") or "").strip()),
+                  f"用例4c：{rel['id']} 判为 fixed 必须带 why（推据），得到 {rel.get('why')!r}")
+            check(rel.get("needsReview") is True,
+                  f"用例4c：{rel['id']} 判为 fixed 必须标记 needsReview，"
+                  "否则「生成端默认给 fixed」就等于把旧契约的默认值捡回来了")
+
         # 用例 4b：第一层子视图（直接父视图 = 页面/page）的位置按父容器比例重排，
-        # 随设备尺寸自适应；尺寸轴仍是 fixed（组件尺寸恒等于设计稿，绝不缩放）。
-        # 这是「设备尺寸 ≠ 设计稿尺寸」时自适应适配的核心分层规则。
+        # 随设备尺寸自适应。**位置按比例，尺寸不按比例** —— 两条轴不共享同一个收口。
         first_level = ["NavBar", "Card", "Avatar", "Button", "Slot", "Rail"]
         for name in first_level:
             rel = relations_of(plan, name)
@@ -390,10 +417,13 @@ def main():
                   f"用例4b：{name}.x 是第一层，位置应强制 proportional，得到 {x_rel}")
             check(y_rel["kind"] == "proportional" and y_rel.get("forced") == "first-level",
                   f"用例4b：{name}.y 是第一层，位置应强制 proportional，得到 {y_rel}")
-        # 第一层组件尺寸仍是 fixed（不缩放）：以 NavBar 高 64、Button 高 44 为例。
-        check(relations_of(plan, "NavBar")["NavBar.height"]["kind"] == "fixed"
-              and relations_of(plan, "NavBar")["NavBar.height"].get("value") == 64,
-              "用例4b：第一层组件尺寸仍是 fixed，绝不缩放")
+        # 第一层的**尺寸**独立判定：以 NavBar 高 64 为例，它是控件量级的候选 fixed，
+        # 也就是「待 Agent 确认的视觉常量」—— 不是「组件尺寸恒等于设计稿」。
+        nav_height = relations_of(plan, "NavBar")["NavBar.height"]
+        check(nav_height["kind"] == "fixed" and nav_height.get("value") == 64
+              and nav_height.get("needsReview") is True,
+              f"用例4b：第一层尺寸是独立判定的候选（fixed 候选必须带 needsReview），"
+              f"得到 {nav_height}")
         # 第二层（Card 的子元素 Icon/Label）位置**不**被强制比例 —— 相对关系固定。
         icon_rel = relations_of(plan, "Icon")
         check(icon_rel["Icon.x"]["of"] == "Card"
@@ -589,7 +619,7 @@ def main():
         check(data and data["relationKindCounts"]["fixed"] > 0
               and data["relationKindCounts"]["centered"] > 0
               and data["relationKindCounts"]["pinned"] > 0,
-              f"用例16：结果应报告五类关系的计数，得到 {data and data['relationKindCounts']}")
+              f"用例16：结果应逐类报告关系计数（两轴八类），得到 {data and data['relationKindCounts']}")
         check(data and data["forbiddenLiteralCount"] == len(props["forbiddenLiterals"]),
               "用例16：结果里的禁止项条数应与计划一致")
 
@@ -785,6 +815,8 @@ def main():
              lambda p: find_relation(p, "Icon.width").pop("value")),
             ("fixed-with-ratio", "用例24e：fixed 带比例系数必须被指出",
              lambda p: find_relation(p, "Icon.width").update({"ratio": 0.5})),
+            ("fixed-missing-why", "用例24e2：fixed 缺 why 必须被指出",
+             lambda p: find_relation(p, "Icon.width").pop("why")),
             ("proportional-missing-basis", "用例24f：比例关系缺基准必须被指出",
              lambda p: find_relation(p, "Card.y").pop("of")),
             ("centered-with-ratio", "用例24g：居中关系带比例系数必须被指出",
@@ -850,6 +882,82 @@ def main():
               f"用例26：0 值禁止项不应产生待判噪音，得到 "
               f"{data and [(a['literal'], a['relation']) for a in data['ambiguousLiterals'][:3]]}")
 
+        # 用例 26.5：**闭合契约在源码侧的判据**。
+        # 旧契约改成新契约后最大的漏洞是「计划说 intrinsic、代码写死宽高」这一条在源码侧
+        # 完全没有判据 —— 声明只活在计划里，实现层没人查。这里逐个把四类漏洞钉死，
+        # 同时要求「正确写法一个都不许误报」（>= 边界、比例约束、优先级原语都要放行）。
+        closure_root = tmp / "closure"
+        closure_root.mkdir()
+
+        def closure_case(name, relations, source):
+            d = closure_root / name
+            d.mkdir()
+            payload = {"layoutProportions": {
+                "model": "closure-declared-parent-relative-position",
+                "regions": [{"region": "card", "index": 1, "parentIndex": 0,
+                             "parent": "page", "basis": "parent",
+                             "relations": relations}]}}
+            plan_path = write_json(d / "plan.json", payload)
+            (d / "Card.m").write_text(source)
+            proc, data = run_check(d, plan_path, d, output_name=f"{name}.json")
+            return proc, data, {v["kind"] for v in (data or {}).get("violations", [])}
+
+        # 26.5a：声明 intrinsic，源码却写 == 常量 —— 这是旧契约的直接残留，必须违规。
+        proc, data, found = closure_case(
+            "intrinsic-constant",
+            [{"id": "card.height", "axis": "height", "of": "page", "ofIndex": 0,
+              "kind": "intrinsic", "minimum": 68.0, "why": "含文本，随动态字体增高"}],
+            "[_card.heightAnchor constraintEqualToConstant:68];\n")
+        check(proc.returncode == 1 and "intrinsic-axis-pinned-to-constant" in found,
+              f"用例26.5a：计划声明 intrinsic、源码写死高度必须被判违规，得到 {sorted(found)}")
+
+        # 26.5b：`>=` 是 bounded 的正确写法，绝不能和 == 一起被误报。
+        proc, data, found = closure_case(
+            "bounded-ok",
+            [{"id": "card.height", "axis": "height", "of": "page", "ofIndex": 0,
+              "kind": "bounded", "min": 44.0, "why": "触控下限"}],
+            "[_card.heightAnchor constraintGreaterThanOrEqualToConstant:44];\n")
+        check(proc.returncode == 0,
+              f"用例26.5b：bounded 用 >= 表达是正确写法，不得误报，得到退出码 "
+              f"{proc.returncode}：{data and data.get('violations')}")
+
+        # 26.5c：声明 bounded 却整份源码一个边界原语都没有 —— 边界根本没实现。
+        proc, data, found = closure_case(
+            "bounded-missing",
+            [{"id": "card.height", "axis": "height", "of": "page", "ofIndex": 0,
+              "kind": "bounded", "min": 44.0, "why": "触控下限"}],
+            "[_card.heightAnchor constraintEqualToConstant:44];\n")
+        check("bounded-axis-missing-limit" in found,
+              f"用例26.5c：声明 bounded 却没有任何 >=/<= 原语必须被指出，得到 {sorted(found)}")
+
+        # 26.5d：声明 aspect-ratio 却没有任何比例约束原语。
+        proc, data, found = closure_case(
+            "aspect-missing",
+            [{"id": "card.height", "axis": "height", "of": "page", "ofIndex": 0,
+              "kind": "aspect-ratio", "ratio": 1.7778}],
+            "card.frame = CGRectMake(0, 0, 393, 221);\n")
+        check("aspect-ratio-idiom-missing" in found,
+              f"用例26.5d：声明 aspect-ratio 却没有比例约束必须被指出，得到 {sorted(found)}")
+
+        # 26.5e：注释里的 `constraintEqualToConstant` 是在解释，不许当违规。
+        proc, data, found = closure_case(
+            "intrinsic-comment",
+            [{"id": "card.height", "axis": "height", "of": "page", "ofIndex": 0,
+              "kind": "intrinsic", "why": "含文本"}],
+            "// 以前是 [_card.heightAnchor constraintEqualToConstant:68]\n"
+            "[_card.heightAnchor constraintGreaterThanOrEqualToConstant:68];\n")
+        check("intrinsic-axis-pinned-to-constant" not in found,
+              f"用例26.5e：注释里的等值约束不得误报，得到 {sorted(found)}")
+
+        # 26.5f：区域名在源码里找不到时不得静默 —— 那意味着「声明」与「实现」对不上。
+        proc, data, found = closure_case(
+            "unlocatable",
+            [{"id": "card.height", "axis": "height", "of": "page", "ofIndex": 0,
+              "kind": "intrinsic", "why": "含文本"}],
+            "self.view.backgroundColor = [UIColor whiteColor];\n")
+        check(proc.returncode == 0 and any("区域名" in w for w in (data or {}).get("warnings", [])),
+              "用例26.5f：计划区域名在源码里找不到必须留告警，不能静默通过")
+
         # ---------------------------------------------------------------- 退出码
         proc = run(CHECK_SCRIPT, "--plan", str(tmp / "nope.json"), "--source", str(source_dir))
         check(proc.returncode == 2 and "Traceback" not in proc.stderr,
@@ -892,7 +1000,8 @@ def main():
           "位置基准是直接父视图、外框铺满、文字块 intrinsic 有 why、孤立大偏移降级并提示、"
           "禁止清单只收 proportional、合规源码通过、把比例换成设备推导值被精确拦下、"
           "注释/颜色/百分比不误报、小数值待判、豁免可复核、计划硬伤先于源码拦住、"
-          "用法错误干净退出")
+          "源码侧闭合契约逐类核对（intrinsic 写死宽高/bounded 无边界/aspect-ratio 无比例）、"
+          "fixed 必须带 why 且生成端只给候选、用法错误干净退出")
     return 0
 
 

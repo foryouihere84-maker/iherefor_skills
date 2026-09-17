@@ -1,0 +1,108 @@
+{
+  "status": "fail",
+  "deliveryReady": false,
+  "summary": {
+    "schemaVersion": 4,
+    "relationCount": 20,
+    "relationKindCounts": {
+      "fixed": 2,
+      "pinned": 7,
+      "proportional": 9,
+      "intrinsic": 2,
+      "bounded": 0,
+      "equal": 0,
+      "centered": 0,
+      "aspect-ratio": 0
+    },
+    "proportionalIdiomCount": 0,
+    "pinnedIdiomCount": 0,
+    "literalViolationCount": 5,
+    "sourceKindViolationCount": 0
+  },
+  "violations": [
+    {
+      "literal": 321.0,
+      "file": "src/SpecialOfferViewController.m",
+      "line": 26,
+      "relation": "hero.height",
+      "shouldBe": "父视图高的比例 0.376761"
+    },
+    {
+      "literal": 495.0,
+      "file": "src/SpecialOfferViewController.m",
+      "line": 32,
+      "relation": "offers.top",
+      "shouldBe": "父视图高的比例 0.580986"
+    },
+    {
+      "literal": 741.0,
+      "file": "src/SpecialOfferViewController.m",
+      "line": 39,
+      "relation": "cta.top",
+      "shouldBe": "父视图高的比例 0.869718"
+    },
+    {
+      "literal": 83.0,
+      "file": "src/SpecialOfferViewController.m",
+      "line": 48,
+      "relation": "legal.leading",
+      "shouldBe": "父视图宽的比例 0.211196"
+    },
+    {
+      "literal": 801.0,
+      "file": "src/SpecialOfferViewController.m",
+      "line": 48,
+      "relation": "legal.top",
+      "shouldBe": "父视图高的比例 0.940141"
+    }
+  ],
+  "reviewPending": [
+    {
+      "relation": "offers.height",
+      "generatorKind": "fixed",
+      "generatorValue": 68,
+      "verdict": "候选不成立，改判 intrinsic",
+      "why": "闭合契约下 fixed 只留给视觉常量（图标、装饰、边框、明确固定高度的控件）。卡片高由内容闭合：68 只是这一档字体下内容撑开的结果，写成 fixed 会在 Dynamic Type 放大时把文字截断。"
+    },
+    {
+      "relation": "cta.height",
+      "generatorKind": "fixed",
+      "generatorValue": 48,
+      "verdict": "候选不成立，改判 bounded（min 44）",
+      "why": "主按钮高度同样由内容闭合，且 44pt 是触控下限 —— 要写成 >= 44 而不是 == 44，48 只是设计稿在当前字体下的取值。"
+    }
+  ],
+  "reason": "计划声明了 20 条关系（fixed 候选 2 / pinned 7 / proportional 9 / intrinsic 2）。其中 5 条 >48pt 的 proportional 位置/尺寸被源码写成了只在 402x874 上成立的绝对坐标（321 / 495 / 741 / 83 / 801），换台设备即失效 —— 位置必须相对直接父视图按比例表达，不能照抄某一台设备上的量取值。另有 offers.height=68、cta.height=48 是生成端推的 fixed 候选，复核后应改判 intrinsic / bounded，但它们的问题是闭合方式待定而非「值不该出现」，故列在 reviewPending 而不是 violations。",
+  "notViolations": {
+    "designConstants": [
+      12,
+      1,
+      44
+    ],
+    "fixedCandidates": [
+      {
+        "literal": 68,
+        "relation": "offers.height",
+        "why": "生成端推的 fixed 候选：问题是闭合方式待复核（结论见 reviewPending），不是「这个值不该出现」"
+      },
+      {
+        "literal": 48,
+        "relation": "cta.height",
+        "why": "生成端推的 fixed 候选：同上，报成违规是误报"
+      }
+    ],
+    "ambiguous": [
+      {
+        "literal": 23,
+        "relation": "offers.x",
+        "why": "第一层子视图的水平位置，按契约该按页面宽度比例写，写死也是错 —— 但因 ≤48pt 无法与设计常量自动区分（落 ambiguousLiterals），不是硬性违规"
+      },
+      {
+        "literal": 25,
+        "relation": "cta.x",
+        "why": "第一层子视图的水平位置，同 23：≤48pt 落待判，不判硬违规"
+      }
+    ],
+    "why": "这三类都**不该进 violations**：设计常量（12/1/44）缩放才是错的；fixed 候选（68/48）是闭合方式待复核；23/25 是 ≤48pt 的待判值。把它们算成违规，等于要求实现者不要按设计稿做。注意豁免理由已经逐类说清 —— 旧口径那句「尺寸是常量」不再成立，所以不能用它当统一借口。"
+  }
+}

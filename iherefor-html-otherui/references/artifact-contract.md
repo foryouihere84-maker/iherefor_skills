@@ -229,55 +229,69 @@ pages/<page-id>/
 
 ### 布局关系与控件尺寸的约束口径（强制）
 
-**尺寸是常量，位置是约束。** 组件尺寸照设计稿的封闭值写死（按钮高 44pt 就写 44），
-不随容器缩放；位置相对**直接父视图**表达 —— 贴边写约束闭合、居中写对齐锚点，
-**确属成比例关系时才用比例**。
+**设计稿尺寸是参考事实，运行时尺寸由约束闭合。** 判据是**「这个值由谁闭合」**，不是「这个值等于设计稿的几」。
+每个尺寸必须声明它的闭合方式（尺寸轴：`fixed` / `intrinsic` / `bounded` / `aspect-ratio`；
+关系轴：`pinned` / `proportional` / `equal` / `centered`），位置相对**直接父视图**表达 ——
+贴边写约束闭合、居中写对齐锚点，**确属成比例关系时才用比例**。
+
+两个错误方向要同时挡住：
+
+1. **把整页当成一张图缩放**：等于把「设计稿恰好 393pt 宽」这个偶然事实提升成布局规则。
+2. **把设计稿的每个 width/height 逐字写成固定约束**：这是旧契约的默认行为，也是最致命的缺点。
+   `bounds.width = 220` 是「设计稿在这台设备上量到的 220」，不是「这个元素永远该是 220」。
+
+`fixed` **不是默认值**，它只用于「固定性本身就是设计意图」的视觉常量：图标、装饰、边框、
+明确固定高度的视觉控件。文本、按钮、容器和内容区域默认优先 `intrinsic` / `bounded`。
 
 反过来那句同样成立：把位置写成某一台设备上量出来的绝对坐标（`lanhuY = 132` 换算成
 `132 * 1.0229 = 135.02pt` 再敲进约束），等于把这个关系钉死在探针设备上。换一台设备，
 `135.02` 就是错的 —— 而它「有出处、算过」，比一眼可疑的魔数更难被发现。
 
-> 两轴各自的可选类别（尺寸轴：`fixed` / `pinned` / `intrinsic` / `proportional`；
-> 位置轴：`pinned` / `centered` / `proportional`）见
-> [sizing-and-positioning.md](sizing-and-positioning.md) 与
-> [`layoutProportions`](#ui-implementation-planjson-的-layoutproportions)。
+> 两轴各自的可选类别与逐类判据见 [sizing-and-positioning.md](sizing-and-positioning.md)
+> §2 与 §3；iOS 侧的逐类 UIKit 写法、优先级策略与运行期验证见
+> [ios-autolayout-practice.md](ios-autolayout-practice.md)。
 
 #### 哪些量用哪一类关系
 
-判据只有一个：**这个量的正确性是否依赖于容器尺寸？**
+判据只有一个：**这个值由谁闭合？**
 
-> **范围边界（重要）**：这条约束管的是**位置与容器的闭合关系**，**不管控件自身的尺寸**。
-> 控件尺寸（按钮、文字、图标）必须与设计稿保持固定的绝对大小，不随屏幕或容器比例缩放；
-> 位置基准是**直接父视图**而不是页面根。这两条与完整的三分类判据见
+> **范围边界（重要）**：位置与尺寸**都要**按闭合方式声明，但两者的判据不同 ——
+> 位置问「相对哪条父边/哪个兄弟」，尺寸问「由设计常量、内容、父约束还是比例决定」。
+> **不存在「控件尺寸一律取设计值」这类豁免**：控件尺寸同样要按闭合方式判，
+> 只有「视觉常量」这一小组才天然用 `fixed`。完整判据见
 > [sizing-and-positioning.md](sizing-and-positioning.md) —— 该文是本节的权威展开，
 > 下表与之冲突时以该文为准。
 
-| 类别 | 处理 | 例 |
-|---|---|---|
-| 控件尺寸（按钮高、图标、头像、字号） | **固定设计值，不缩放** | 按钮高 44pt、图标 24pt、正文 17pt |
-| 组件在主轴/次轴上的位置 | **相对直接父视图的约束**；确属成比例关系时才用比例 | 卡片内标题距卡片顶 24pt |
-| **第一层子视图的位置**（直接父 = 页面） | **按页面比例**：水平 `x = page.width × ratio`、垂直 `y = page.height × ratio`；**不得**写成绝对坐标 | 卡片挂在 page 下，`x = 0.0407`、`y = 0.1373`（相对 page） |
-| 组件之间的间距 | **设计常量**（标准边距 4/8/16/24） | 卡片间距 16pt |
-| 容器、装饰性区域、图片 frame 的尺寸 | **贴父派生**：写成对父视图的约束（贴边、占满、等分），**不带比例系数** | hero 背景四边贴 0、全宽 CTA 左右各 16pt |
-| 确随父容器成比例变化的关系 | **比例**（基准是父视图，且须给理由） | 装饰区高度 = 父容器高度 × 0.155 |
-| 文本驱动的固有尺寸 | 按内容撑开 | 标签高度由字号与行高决定 |
-| 圆角、描边宽度、阴影、最小点击区 | **设计值，不缩放** | 圆角 12pt、点击区 ≥ 44pt |
+| 类别 | `kind` | 处理 | 例 |
+|---|---|---|---|
+| 视觉常量（图标、头像、装饰、边框、分隔线、字号、圆角、描边、触控下限） | `fixed`（触控下限用 `bounded >= `） | **固定设计值，不缩放**，须给 `why` | 图标 24pt、圆角 12pt、描边 1pt、正文 17pt |
+| 文本、标签、按钮内容 | `intrinsic` | 按内容撑开，不给宽高约束，须给 `why` | 标签高度由字号与行高决定 |
+| 内容列、卡片、按钮的宽高边界 | `bounded` | 给 `min` / `max` 至少一个 | 内容列 `maxWidth = 640`、按钮 `height >= 44` |
+| 组件在主轴/次轴上的位置 | `pinned` | **相对直接父视图的约束**；确属成比例关系时才用比例 | 卡片内标题距卡片顶 24pt |
+| **第一层子视图的位置**（直接父 = 页面） | `pinned` + 比例 | **按页面比例**：水平 `x = page.width × ratio`、垂直 `y = page.height × ratio`；**不得**写成绝对坐标 | 卡片挂在 page 下，`x = 0.0407`、`y = 0.1373`（相对 page） |
+| 组件之间的间距 | `pinned` | **设计常量边距**（标准边距 4/8/16/24） | 卡片间距 16pt |
+| 容器、装饰性区域、图片 frame 的尺寸 | `pinned` / `bounded` / `aspect-ratio` | 写成对父视图的约束（贴边、占满、等分）或比例约束，**不带无理由的比例系数** | hero 背景四边贴 0、全宽 CTA 左右各 16pt、封面图 16:9 |
+| 确随父容器成比例变化的关系 | `proportional` | **比例**（基准是父视图，且须给理由） | 装饰区高度 = 父容器高度 × 0.155 |
+| 多个兄弟要等宽/等高 | `equal` | 等值锚点，须给 `with`/`to` | 两个套餐卡等宽 |
+| 居中或与兄弟对齐 | `centered` | `centerX` / `centerY` / `baseline` 相等 | 标题居中、图标与文字基线对齐 |
 
 **「贴父」不等于「比例」。** 设计稿说「左右各 16pt」，正确写法是
 `leading = parent.leading + 16` / `trailing = parent.trailing - 16`，这条关系已经闭合；
 改写成 `width = parent.width * 0.9186` 在探针设备上同样「对得上」，但 430pt 宽的设备上
 会得到 13.7pt 边距 —— 设计稿说的是 16pt。
 
-**第一层子视图是例外，位置按页面比例重排。** 当设备尺寸 ≠ 设计稿尺寸时，直接挂在页面下
+**第一层子视图的位置特殊，尺寸不特殊。** 当设备尺寸 ≠ 设计稿尺寸时，直接挂在页面下
 的第一层子视图若仍只「贴边/居中」，水平方向不会随新宽度重新分布——那不是「适配成功」的观感。
-所以第一层的位置（水平 + 垂直）按**页面比例**表达（相对 page 的 `multiplier`），写到
-`relations[].forced = "first-level"`；而第一层的**尺寸**仍是 `fixed`（组件尺寸绝不缩放）、
+所以第一层**位置**（水平 + 垂直）按**页面比例**表达（相对 page 的 `multiplier`），写到
+`relations[].forced = "first-level"`；而第一层的**尺寸**仍按 §2 的闭合判据选择
+—— 容器/文本/按钮优先 `intrinsic` / `bounded` / `pinned`，只有视觉常量用 `fixed`。
 第一层 → 第二层的**相对关系**仍固定（第二层的位置基准是它的直接父视图，不是页面）。
 判定依据是 `parentIndex == page 外框 index`，权威展开见
 [sizing-and-positioning.md](sizing-and-positioning.md) §3.1.1。
 
 **禁止用比例去缩放字号和最小点击区。** 那会让 44pt 的点击区在小屏上缩成 40pt，
-既违反平台规范，也让可访问性测试失败。
+既违反平台规范，也让可访问性测试失败。**也要禁止反过来把 44 写成固定高度**：它是下限，
+用 `>=` 表达，大字号下允许增高。
 
 #### 平台惯用法
 
@@ -409,11 +423,32 @@ Agent 负责合并进 plan 并逐条核对 `kind`/`basis`/`of`（脚本是辅助
 
 ```json
 {
-  "model": "fixed-size-parent-relative-position",
+  "model": "closure-declared-parent-relative-position",
   "basis": "viewport",
   "axisPolicy": "per-axis",
   "basisSize": {"width": 402, "height": 874},
   "regions": [
+    {
+      "region": "hero",
+      "index": 1,
+      "parentIndex": 0,
+      "parent": "page",
+      "basis": "parent",
+      "relations": [
+        {"id": "hero.width", "axis": "width", "of": "page", "ofIndex": 0,
+         "kind": "pinned", "edges": ["leading", "trailing"],
+         "insets": {"leading": 0.0, "trailing": 0.0},
+         "why": "主视觉四边铺满：宽度由父容器边距闭合，不是 393 这个字面量"},
+        {"id": "hero.height", "axis": "height", "of": "page", "ofIndex": 0,
+         "kind": "aspect-ratio", "ratio": 1.2243,
+         "why": "主视觉是位图资源，比例由资源自身决定；393:321 = 1.2243，宽度贴父后高度随之求解"}
+      ],
+      "nativeIdiom": [
+        "[hero] leadingAnchor.constraint(equalTo: page.leadingAnchor)",
+        "[hero] trailingAnchor.constraint(equalTo: page.trailingAnchor)",
+        "[hero] heightAnchor.constraint(equalTo: hero.widthAnchor, multiplier: 1.0/1.2243)"
+      ]
+    },
     {
       "region": "offers",
       "index": 2,
@@ -436,12 +471,37 @@ Agent 负责合并进 plan 并逐条核对 `kind`/`basis`/`of`（脚本是辅助
          "insets": {"leading": 23.0, "trailing": 23.0}, "inset": 23.0,
          "why": "两侧各留 23pt 内边距：值由内边距闭合，随父容器伸缩，而内边距本身是设计常量"},
         {"id": "offers.height", "axis": "height", "of": "page", "ofIndex": 0,
-         "kind": "fixed", "value": 68}
+         "kind": "intrinsic", "minimum": 68.0,
+         "why": "卡片内含标题与价格文本，支持动态字体与多语言换行：高度由内容撑开，68 只作为下限"}
       ],
       "nativeIdiom": [
         "[offers] leadingAnchor.constraint(equalTo: page.leadingAnchor, constant: 23)   // offers.x 贴边约束，不是比例",
         "[offers] centerYAnchor.constraint(equalTo: page.heightAnchor, multiplier: 0.580986)   // offers.y",
-        "[offers] heightAnchor.constraint(equalToConstant: 68)   // offers.height 设计值，不随容器缩放"
+        "[offers] heightAnchor.constraint(greaterThanOrEqualToConstant: 68)   // offers.height 是下限，不是固定高度"
+      ]
+    },
+    {
+      "region": "cta",
+      "index": 3,
+      "parentIndex": 0,
+      "parent": "page",
+      "basis": "parent",
+      "relations": [
+        {"id": "cta.x", "axis": "x", "of": "page", "ofIndex": 0,
+         "kind": "pinned", "edge": "leading", "inset": 25.0},
+        {"id": "cta.width", "axis": "width", "of": "page", "ofIndex": 0,
+         "kind": "pinned", "edges": ["leading", "trailing"],
+         "insets": {"leading": 25.0, "trailing": 25.0}, "inset": 25.0,
+         "why": "宽度由两侧各 25pt 内边距闭合。**一条关系只声明一个 kind**：「贴两侧」已经是这个宽度的闭合方式，不再另挂 bounded；「不能再宽下去」的上限是**另一件事**，写在 adaptiveLayout 的 maxContentWidth 里（见下文 `ui-implementation-plan.json` 的 adaptiveLayout）"},
+        {"id": "cta.height", "axis": "height", "of": "page", "ofIndex": 0,
+         "kind": "bounded", "min": 44.0,
+         "why": "48 是设计稿的视觉高度，44 是平台触控下限：写成 >= 44，大字号下允许增高而不是被压扁"}
+      ],
+      "nativeIdiom": [
+        "[cta] leadingAnchor.constraint(equalTo: page.leadingAnchor, constant: 25)   // cta.width 的贴边闭合",
+        "[cta] trailingAnchor.constraint(equalTo: page.trailingAnchor, constant: -25)",
+        "[cta] heightAnchor.constraint(greaterThanOrEqualToConstant: 44)   // 不是 equalToConstant: 48",
+        "[cta] widthAnchor.constraint(lessThanOrEqualToConstant: 560)   // 上限来自 adaptiveLayout.maxContentWidth，不写在 relations 里"
       ]
     },
     {
@@ -455,7 +515,10 @@ Agent 负责合并进 plan 并逐条核对 `kind`/`basis`/`of`（脚本是辅助
          "kind": "proportional", "ratio": 0.211196},
         {"id": "legal.width", "axis": "width", "of": "page", "ofIndex": 0,
          "kind": "intrinsic",
-         "why": "盒子宽度 232pt 且子树含文本，判为文字块：尺寸来自字体"}
+         "why": "盒子子树含文本，判为文字块：宽度来自字体与换行，不写 232 这个字面量"},
+        {"id": "legal.height", "axis": "height", "of": "page", "ofIndex": 0,
+         "kind": "intrinsic",
+         "why": "三行文本（Privacy / Terms / Restore），行数固定但行高随动态字体变化"}
       ]
     }
   ],
@@ -468,32 +531,43 @@ Agent 负责合并进 plan 并逐条核对 `kind`/`basis`/`of`（脚本是辅助
   ],
   "designConstantCandidates": {
     "pinnedInsets": [16.0, 23.0, 25.0],
-    "note": "贴边内边距与 fixed 尺寸都是应当写的设计值；把内边距填进 designConstants，fixed 尺寸由 kind=fixed 的 value 自带"
+    "note": "贴边内边距与视觉常量（圆角 12、发丝线 1、触控下限 44）都是应当写的设计值；把内边距填进 designConstants，视觉常量由 kind=fixed 的 value 自带"
   }
 }
 ```
 
-五条规则，每一条都对应一次踩坑：
+六条规则，每一条都对应一次踩坑：
 
-1. **`relations[].kind` 必填，而且决定判据。** 尺寸轴四类 —— `fixed`（必须给 `value`：设计稿的
-   封闭值，实现时**写字面量**）、`pinned`（必须给 `edges`：贴父边/占满/等分闭合，**不得带比例
-   系数**）、`intrinsic`（必须给 `why`，不带 `axis`）、`proportional`；位置轴三类 —— `pinned`
-   （贴边 + 固定 `inset`）、`centered`（对齐锚点）、`proportional`（必须给 `ratio` 与 `of`）。
-   `fixed` 带上 `ratio`、`pinned` 带上 `multiplier` 都是自相矛盾，校验器直接判死。
-2. **`basis` 与关系里的 `of` 必须指向直接父视图。** 事实表 v3 的 `parentIndex` 给出了层级：
+1. **`relations[].kind` 必填，而且决定判据。** 尺寸轴四类 —— `fixed`（必须给 `value` 与 `why`：
+   设计稿的封闭值，实现时**写字面量**，且理由必须是「固定性本身是设计意图」）、
+   `intrinsic`（必须给 `why`，不给宽高约束）、`bounded`（必须给 `min`/`max` 至少一个）、
+   `aspect-ratio`（必须给正数 `ratio`）；关系轴四类 —— `pinned`（必须给 `edges`：贴父边/占满/等分闭合，
+   **不得带比例系数**）、`proportional`（必须给 `ratio` 与 `of`）、`equal`（必须给 `with`/`to`）、
+   `centered`（对齐锚点）。`fixed` 带上 `ratio`、`pinned` 带上 `multiplier` 都是自相矛盾，
+   校验器直接判死。**一条关系只声明一个 kind，它描述「这个量由谁闭合」。**
+   这一点容易说反，所以写清楚：**不存在**「一条关系同时挂尺寸轴与关系轴」的嵌套写法
+   —— 关系里**没有**内嵌的 `relations` 子数组，写进去不会有代码读它，校验器也**不会报错**，
+   只会静默丢掉。宽度既要「贴父两侧」又要「不能再宽」时，前者是 `pinned` 关系
+   （`edges` + `insets`），后者是 `adaptiveLayout` 的 `maxContentWidth` ——
+   **两个机制、两处字段**，不要塞进同一条关系。
+2. **`fixed` 不是默认值，而且必须给 `why`。** 设计稿的 `bounds.width/height` 是参考事实，
+   不自动等于生产约束。`offers.height = 68`、`cta.height = 48` 在旧契约里被判成 `fixed`；
+   新契约下它们分别是 `intrinsic`（含文本、会换行）与 `bounded >= 44`（48 是视觉高度、
+   44 是触控下限）。**只有视觉常量**（图标尺寸、圆角、描边、发丝线、触控下限）才天然用 `fixed`。
+3. **`basis` 与关系里的 `of` 必须指向直接父视图。** 事实表 v3 的 `parentIndex` 给出了层级：
    有父视图时 `basis` 就该是 `"parent"`、`of` 写父区域名；只有 `parentIndex` 为 `null`
    （直接父即整屏画布）才用 `of: "root"`。两者对不上会被判 `basis-mismatch` —— 单页单设备上
    两种写法给出的坐标**完全一样**，父容器一变尺寸就分道扬镳。
-3. **`ratios` 同时给边缘与中心两套。** 实现侧两种锚点都会用到（`leading`/`top` 与
+4. **`ratios` 同时给边缘与中心两套。** 实现侧两种锚点都会用到（`leading`/`top` 与
    `centerX`/`centerY`），只给中心比例会让「按左边缘对齐」这个最常见的写法没有可用的比例。
-4. **`forbiddenLiterals` 只收 `proportional` 的关系。** `fixed` 的 `value` 与 `pinned` 的
+5. **`forbiddenLiterals` 只收 `proportional` 的关系。** `fixed` 的 `value` 与 `pinned` 的
    `inset` 都是**应当原样写进代码**的设计值，列进去等于要求实现者不要按设计稿做
    （校验器的 `forbidden-targets-non-proportional` 就是拦这个）。条目还必须**同量纲配对**：
    中心比例配中心点绝对值（`legal.centerX` → 0.506361），边缘比例配左/上边缘绝对值
    （`legal.leading` → 0.211196）。曾经把左边缘的绝对值（多为 0）配给中心比例，写成
    「0pt → 0.4888」—— 开发者照做会把元素放错半个身位，**这条「指导」本身就是错的**。
    `|pt| < 1` 的条目不入清单：`0` 在任何设备上都成立，列进去只会让每个 `0` 都报一次警。
-5. **`designConstantCandidates` 是可复核的提示，`designConstants` 才是豁免。** 前者由生成端
+6. **`designConstantCandidates` 是可复核的提示，`designConstants` 才是豁免。** 前者由生成端
    汇总贴边内边距（省得 Agent 去源码里翻），后者是计划里手写的数字数组，只能放数字
    （标准边距、圆角）。它不是「随手写个数字就放行」：豁免值会原样写进校验结果，审阅者看得到。
 
@@ -502,8 +576,10 @@ Agent 负责合并进 plan 并逐条核对 `kind`/`basis`/`of`（脚本是辅助
 空间算时用 `--rect-space lanhu` 显式指定，此时会告警提示与证据冲突。
 
 校验走 `scripts/check_layout_proportions.py`，它**是计划驱动，不是正则扫描**：每一类关系都有
-它自己的判据 —— `proportional` 要求比例原语，`fixed` 要求写字面量，`pinned` 要求贴边闭合且
-不带系数，`intrinsic` 要求给出理由。纯正则扫描做不到这件事：它会把合法的设计常量
+它自己的判据 —— `proportional` 要求比例原语，`fixed` 要求给出 `why`（说明「固定性本身是设计
+意图」）并写字面量，`pinned` 要求贴边闭合且
+不带系数，`intrinsic` 要求给出理由，`bounded` 要求出现 `>=` / `<=` 原语，
+`equal` 要求出现等值锚点，`aspect-ratio` 要求出现比例约束。纯正则扫描做不到这件事：它会把合法的设计常量
 （圆角 12、标准边距 16）一起误报，训练出「看到告警就忽略」的习惯。
 
 判定分两档，理由是**闸门要准，不是要响**：
@@ -513,14 +589,14 @@ Agent 负责合并进 plan 并逐条核对 `kind`/`basis`/`of`（脚本是辅助
 
 注意 `48pt` 这条线是**量级**判据，与 `kind` 判据是两回事：一条被声明为 `proportional` 的
 关系在探针设备上算出 25pt，那是它落进了「待判」而不是「违规」—— 因为 25pt 既可能是抄来的
-设备值，也可能是设计常量。**两轴口径下更该信 `kind`**：计划说 `pinned`，那 25pt 就是应当写的
+设备值，也可能是设计常量。**闭合契约下更该信 `kind`**：计划说 `pinned`，那 25pt 就是应当写的
 内边距；计划说 `proportional`，那个绝对值才是错的。
 
 注释里的数字、`100%`、`colorWithRed:22 / 255.0` 这类非布局数字一律跳过。
 
 #### `ui-implementation-plan.json` 的 `adaptiveLayout`
 
-`layoutProportions` 管的是**两轴**（尺寸是常量、位置相对直接父视图），它只保证
+`layoutProportions` 管的是**两轴**（尺寸按闭合方式声明、位置相对直接父视图），它只保证
 「换设备不崩」。它回答不了第三个问题：**父视图宽到 1024pt 时，内容怎么收敛？**
 这一段就是那个缺失的宽度轴。完整规范见 [adaptive-layout.md](adaptive-layout.md)。
 
@@ -574,14 +650,17 @@ Agent 负责合并进 plan 并逐条核对 `kind`/`basis`/`of`（脚本是辅助
 
 **`firstLevelWidthClass` 是必需的收口，不是可选开关。** 第一层位置比例规则在
 `393×852 → 402×874` 上成立（差 2.3%），推到 1024pt 就出事：位置按比例 ×2.6、
-而尺寸按契约 ×1，于是卡片左起 33pt 变 86pt、宽度仍是 327pt、右侧空出 611pt、
+而尺寸由各自的闭合方式决定（视觉常量不变、`bounded` 在边界内触顶即停），
+于是卡片左起 33pt 变 86pt、宽度仍被封在 `max` 内、右侧空出大片空白、
 卡片间距从 13pt 被拉成 285pt。所以该规则必须被显式限定在 `compact` 档；
 regular / medium / expanded 档下第一层位置改由 `widthPolicy` 重排。
 
-**`sizeVariants` 是几何尺寸分档的唯一合法出口（可选，不用就不声明）。** 「尺寸不缩放」
-是默认，且它的作用域是**设备平台**：`audit_adaptive.py` 的 `sizeInvariance` 要求未声明分档的
-同一 `fixed` 元素在**同一设备**（phone / tablet）的全部采样上点值逐字相等，**这条连
-`sizeVariants` 也不能豁免**——同设备的两个宽度档之间尺寸变了，判 `size-not-invariant-within-device`。
+**`sizeVariants` 是几何尺寸分档的唯一合法出口（可选，不用就不声明）。** 视觉常量（`kind: fixed`）
+的**点值不缩放**是默认，且它的作用域是**设备平台**：`audit_adaptive.py` 的 `sizeInvariance`
+要求未声明分档的同一 `fixed` 元素在**同一设备**（phone / tablet）的全部采样上点值逐字相等，
+**这条连 `sizeVariants` 也不能豁免**——同设备的两个宽度档之间尺寸变了，判 `size-not-invariant-within-device`。
+注意 `sizeInvariance` 只审计 `fixed` 元素：`intrinsic` / `bounded` / `pinned` 的尺寸本来就
+应当在采样间变化（这正是新契约的要求），它们的变化不是违规。
 只有当同一设计在 Lanhu 里同时有 `xx` 与 `xx-iPad` 两份稿、跨设备（phone vs tablet）的宽高照
 各自稿取值时，才走 `sizeVariants` 分档：这两份稿是**两套并列的独立参考**，iPad 组件的宽、高
 照 `xx-iPad` 稿自身取值，与 `xx` 稿**没有派生关系**，因此不存在「把手机稿等比放大到 iPad」
@@ -596,7 +675,7 @@ regular / medium / expanded 档下第一层位置改由 `widthPolicy` 重排。
 
 三项缺一（尤其 `basis`/`why`）的项，`sizeInvariance` 不当它进白名单 —— 尺寸跨采样变化
 仍判 `size-not-invariant`。**`sizeVariants` 只对几何尺寸（宽/高）分档**——`sizeInvariance` 只审计
-几何尺寸。**字号、圆角、描边不经 `sizeVariants` / `sizeInvariance`**：它们是样式恒量（`typeFacts`），
+`fixed` 元素的几何尺寸。**字号、圆角、描边不经 `sizeVariants` / `sizeInvariance`**：它们是样式恒量（`typeFacts`），
 各自照稿溯源；**iPhone 与 iPad 的字号可以相同，也可以不同**，二者没有强关联。唯一不随稿动的
 是**平台硬下限**（最小点击区 ≥44pt / 48dp），那是可访问性规范，不是设计值。
 

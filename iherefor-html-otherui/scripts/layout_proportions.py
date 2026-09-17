@@ -257,9 +257,11 @@ def detect_rect_space(page_facts: dict) -> dict:
 def native_idiom(target_mode: str, region: str, relations, parent_name: str) -> list:
     """按目标模式给出该区域的写法（提示，不代替 Agent 的工程判断）。
 
-    ``fixed`` / ``pinned`` / ``intrinsic`` 三类**不带比例系数** —— 它们的正确写法是
-    常量或约束，用比例原语反而是错的。这里按类别分派，就是为了让「什么该用比例」
-    在生成建议的那一刻就是清楚的。
+    **两轴八类里只有 ``proportional`` 与 ``aspect-ratio`` 带比例系数**，其余六类
+    的正确写法都是常量或约束，用比例原语反而是错的。这里按类别分派，就是为了让
+    「什么该用比例」在生成建议的那一刻就是清楚的。
+    （不写成「哪三类不带系数」—— 那种列一半的写法正是漂移的入口：本文件与
+    ``check_layout_proportions.py`` 曾各自列了一半且第三项都不一致。）
     """
     lines = []
     for rel in relations:
@@ -414,7 +416,12 @@ def insets_close_size(lead: float, trail: float) -> bool:
 def classify_size(lo: float, hi: float, parent_lo: float, parent_hi: float,
                   text_driven: bool, axis: str = "width",
                   outer_frame: bool = False) -> dict:
-    """尺寸轴归类：``fixed`` / ``pinned`` / ``intrinsic`` / ``proportional``。
+    """给**某一个几何维度**（``width`` / ``height``）归类，产出它的闭合方式 ``kind``。
+
+    产出的 kind 取自两轴词表：``intrinsic`` / ``fixed`` 属尺寸轴，``pinned`` /
+    ``proportional`` 属关系轴（「贴住父边所以这个宽度定了」本身就是一种闭合方式，
+    ``pinned`` 就是它的类别）。注意这里的「维度」是几何维度；关系里的 ``axis``
+    字段记的也是这个，不是分类学上的轴。
 
     判据是**这个值由谁闭合**，按证据强度依次判：
 
@@ -497,22 +504,45 @@ def classify_size(lo: float, hi: float, parent_lo: float, parent_hi: float,
 
     # ---- 横向：设计值优先于内容撑开 ----
     #
-    # 顺序在这里是有讲究的。规范 §6 把「给按钮宽度也用比例」列为反例：按钮是控件，
-    # 宽度是设计值。而一个按钮的宽度往往是**整数**（160 / 232 / 116），并且落在控件量级。
+    # 顺序在这里是有讲究的。「给按钮宽度也用比例」是反例：按钮是控件，宽度是设计值。
+    # 而一个按钮的宽度往往是**整数**（160 / 232 / 116），并且落在控件量级。
     # 反之，真正贴合文字的量出来几乎总是小数（实测 ``text-group_13`` 宽 53.9219）——
-    # 字形的 advance width 不会凑巧是整数。所以「整数 + 控件量级」判 ``fixed``。
+    # 字形的 advance width 不会凑巧是整数。所以「整数 + 控件量级」是一个**候选**判据。
     #
     # 纵向不套这条：文字块的高度由字号与行高决定，而行高会被浏览器取整，
     # 于是「整数」在纵向证明不了任何事（实测文字块高度 16/27/31/32/39 大多是整数）。
+    #
+    # **注意这是候选，不是结论。** 闭合契约下 ``fixed`` 只留给视觉常量（图标、装饰、边框、
+    # 明确固定高度的视觉控件）；按钮宽度、卡片高度、文字区宽度应当由内容或边界闭合。
+    # 生成端无法区分这两者，所以每一条 ``fixed`` 都带 ``why``（说明它凭什么被推成 fixed）
+    # 与 ``needsReview``，由 Agent 逐条复核后改判或确认 —— 「脚本生成 = 计划完成」不成立。
     if axis == "width" and round_value and size <= CONTROL_MAX_PT:
-        return {"kind": "fixed", "value": round(size, 4)}
+        return _fixed_candidate(size, "宽度是整数且落在控件量级")
     if text_driven:
         return {"kind": "intrinsic"}
     if size <= CONTROL_MAX_PT:
-        return {"kind": "fixed", "value": round(size, 4)}
+        return _fixed_candidate(size, "尺寸落在控件量级")
     if span <= 0:
         return {"kind": "proportional", "ratio": 0.0}
     return {"kind": "proportional", "ratio": round(size / span, 6), "needsReview": True}
+
+
+def _fixed_candidate(size: float, evidence: str) -> dict:
+    """``fixed`` 的**候选**：带 ``why`` 说明它凭什么被推成 fixed，并标记必须人工复核。
+
+    ``check_layout_proportions.py`` 要求每条 ``fixed`` 都带 ``why`` —— 但「有 why」不等于
+    「判对了」：这里的 why 是**生成端的推据**，Agent 必须逐条确认它是否真的属于视觉常量。
+    只有图标、装饰、边框、明确固定高度的视觉控件才留下 ``fixed``；
+    按钮宽度、卡片高度、文字区宽度一律改判 ``intrinsic`` / ``bounded`` / ``pinned``。
+    """
+    return {
+        "kind": "fixed",
+        "value": round(size, 4),
+        "why": f"按设计稿原值 {size:g}pt（{evidence}），推为固定尺寸的**候选**",
+        "needsReview": True,
+        "reviewHint": "闭合契约下只有视觉常量（图标/装饰/边框/明确固定高度的控件）才用 fixed；"
+                      "若这是按钮宽度、卡片高度或文字区宽度，请改判 intrinsic / bounded / pinned",
+    }
 
 
 def classify_position(lo: float, hi: float, parent_lo: float, parent_hi: float,
@@ -791,7 +821,9 @@ def analyse(page_facts: dict, transform, rect_space: str, target_mode: str,
         # 第一层子视图：直接父视图就是页面外框（page）。这一层的位置按**页面比例**重排，
         # 随设备尺寸自适应（水平 + 垂直都用比例）；更深层（第一层 → 第二层）的相对关系
         # 必须固定，所以只有这一层强制比例。这是「设备尺寸 ≠ 设计稿尺寸」时的适配核心。
-        # 尺寸轴不受影响：组件尺寸恒等于设计稿，绝不缩放。
+        # 尺寸轴独立判定：由**闭合方式**决定（fixed/intrinsic/bounded/aspect-ratio…），
+        # 不是「恒等于设计稿」。设计稿的 width/height 只是参考事实，脚本给出的是待 Agent
+        # 逐条核对的候选 —— 「脚本生成 = 计划完成」不成立，见 references/sizing-and-positioning.md §2。
         is_first_level = (
             has_hierarchy
             and parent_index == outer_frame_index
@@ -838,7 +870,10 @@ def analyse(page_facts: dict, transform, rect_space: str, target_mode: str,
                                 "请改成 pinned。"})
             relations.append(relation)
 
-        # ---- 尺寸轴：pinned / intrinsic / fixed / proportional ----
+        # ---- 逐维度（width / height）归类闭合方式 ----
+        # 产出的 kind 横跨两轴：pinned / proportional 属关系轴，intrinsic / fixed 属尺寸轴。
+        # 这里不写「尺寸轴：pinned / intrinsic / fixed / proportional」那种四类清单 ——
+        # 它是两轴八类的半截枚举，看起来像全集，改口径时最容易漏。
         #
         # ``axis_text_driven`` 传的是**整个元素的文字属性**，不是「这个轴的文字属性」：
         # classify_size 内部靠它决定纵向偏移算不算设计内边距（文字块的上下留白是
@@ -881,13 +916,19 @@ def analyse(page_facts: dict, transform, rect_space: str, target_mode: str,
                     # 汇总出来是为了让「允许写的字面量」有一份可复核的清单。
                     pinned_insets.update(sized["insets"].values())
             elif sized["kind"] == "fixed":
-                relation.update({"value": sized["value"]})
-                if sized["value"] > TEXT_BLOCK_MAX_HEIGHT_PT:
-                    review_hints.append({
-                        "region": region, "index": element.get("index"),
-                        "hint": f"{key} {sized['value']:g}pt 被判为固定设计值（控件量级，"
-                                f"≤{CONTROL_MAX_PT:g}pt）。如果它其实是个随容器伸缩的区域，"
-                                "请改成 pinned 或 proportional。"})
+                # fixed 是**候选**：why 与 needsReview 一起进关系，让「必须复核」成为
+                # 计划里看得见的义务，而不是一句写在前言里的提醒。
+                #
+                # 这三个字段全部取自 _fixed_candidate，这里**不重复设置**。同一个标记有
+                # 两处来源时，改坏其中一处测试照样绿 —— 那条断言就成了永远为真的摆设
+                # （变异探针在 needsReview 上正是这么抓到空断言的）。
+                relation.update({key: sized[key]
+                                 for key in ("value", "why", "needsReview") if key in sized})
+                review_hints.append({
+                    "region": region, "index": element.get("index"),
+                    "hint": f"{key} 被推为 fixed（设计稿原值 {sized['value']:g}pt）。"
+                            "闭合契约下只有图标/装饰/边框/明确固定高度的视觉控件才用 fixed；"
+                            "按钮宽度、卡片高度、文字区宽度请改判 intrinsic / bounded / pinned。"})
             else:
                 relation.update({"ratio": sized["ratio"],
                                  "note": "确属随父容器成比例变化的尺寸关系"})
@@ -974,8 +1015,12 @@ def analyse(page_facts: dict, transform, rect_space: str, target_mode: str,
         "tool": "layout_proportions.py",
         # 3 = 两轴口径：model 由 "proportional" 改为 "fixed-size-parent-relative-position"，
         # region 多了 basis/parentIndex/parent，relations 多了 fixed/pinned/intrinsic 三类。
-        # 按 model 或 kind 取值的老读者在 v2 产物上会静默按旧语义解释，所以要能区分开。
-        "schemaVersion": 3,
+        # 4 = 闭合契约：model 改为 "closure-declared-parent-relative-position"，
+        # 尺寸不再默认 fixed —— 生成端给出的 fixed 一律带 why/needsReview，只是**候选**，
+        # relations 的 kind 从「五档」扩到「两轴八类」（尺寸轴 + 关系轴）。
+        # 按 model 或 kind 取值的老读者在 v2/v3 产物上会静默按旧语义解释，所以要能区分开：
+        # 看到 v3 产物就必须知道它的 fixed 是「尺寸是常量」的老结论，不能照信。
+        "schemaVersion": 4,
         "targetMode": target_mode,
         "rectSpace": rect_space,
         "basis": basis,
@@ -1008,7 +1053,7 @@ def analyse(page_facts: dict, transform, rect_space: str, target_mode: str,
 
     return {
         "layoutProportions": {
-            "model": "fixed-size-parent-relative-position",
+            "model": "closure-declared-parent-relative-position",
             "basis": "viewport" if rect_space == "device" else "canvas",
             "axisPolicy": "per-axis",
             "basisSize": basis,
@@ -1019,8 +1064,10 @@ def analyse(page_facts: dict, transform, rect_space: str, target_mode: str,
             # 让 Agent 自己猜哪些数字算设计常量。
             "designConstantCandidates": {
                 "pinnedInsets": sorted(v for v in pinned_insets if v),
-                "note": "贴边内边距与 fixed 尺寸都是应当写的设计值；把内边距填进 "
-                        "designConstants，fixed 尺寸由 kind=fixed 的 value 自带",
+                "note": "只有贴边内边距是本清单认定的设计常量（进 designConstants）。"
+                        "fixed 尺寸**不在其中**：闭合契约下 fixed 只是生成端给的候选，"
+                        "它自带 why/needsReview，要由 Agent 逐条复核 —— 复核通过就写进 "
+                        "kind=fixed 的 value，复核不通过就改判 intrinsic/bounded。",
             },
         },
         "diagnostics": diagnostics,
@@ -1118,8 +1165,21 @@ def main() -> int:
                 counts[rel["kind"]] = counts.get(rel["kind"], 0) + 1
         print(f"\n{diag['regionCount']} 个区域，关系类别分布：" +
               "  ".join(f"{k}={v}" for k, v in sorted(counts.items())))
-        print("（fixed=设计值不缩放 / pinned=贴边约束 / intrinsic=内容撑开 / "
-              "proportional=比例 / centered=对齐父视图中心）")
+        print("（闭合方式：fixed=视觉常量 / intrinsic=内容撑开 / bounded=边界 / "
+              "pinned=贴父边约束 / proportional=确实成比例 / equal=兄弟相等 / "
+              "centered=对齐锚点 / aspect-ratio=比例约束）")
+        needs_review = [(region["region"], rel["id"])
+                        for region in props["regions"] for rel in region["relations"]
+                        if rel.get("needsReview")]
+        if needs_review:
+            print(f"\n⚠ {len(needs_review)} 条关系标记 needsReview（生成端只给候选，"
+                  "Agent 必须逐条复核 kind）：")
+            for region_name, rel_id in needs_review[:12]:
+                print(f"  - {rel_id}（{region_name}）")
+            if len(needs_review) > 12:
+                print(f"  ...另有 {len(needs_review) - 12} 条，完整清单见 --output 的 JSON")
+            print("  判据是「这个值由谁闭合」，不是「设计稿写了多少」："
+                  "文本/按钮/容器默认 intrinsic 或 bounded；fixed 只留给视觉常量。")
         for region in props["regions"]:
             parts = []
             for rel in region["relations"]:

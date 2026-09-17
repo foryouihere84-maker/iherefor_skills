@@ -11,7 +11,11 @@
   改动根本没落到源码里，而被读成「断言有效」；
 * 还有一次是「红了，但红得不对」：探针删掉守卫后被测函数在空对象上取下标直接 KeyError
   掉栈，退出码非 0 被读成「断言有效」—— 其实要守的那条断言一次都没执行。所以崩栈单独判
-  无效，并要求探针复刻**历史上真实的那段实现**，而不是删几行代码凑一个红。
+  无效，并要求探针复刻**历史上真实的那段实现**，而不是删几行代码凑一个红；
+* 第五种最隐蔽：**探针崩在中途**。`audit_fonts.py` 被裁撤后，指向它的探针仍留在列表里，
+  读文件时 FileNotFoundError 掉栈 —— 排在它后面的探针（fixture 可移植性、文档锚点）
+  从此一条都没跑过，而 README 里还写着「这两条就是这样验过的」。所以现在**目标不存在
+  单列为一类「探针无效」**，会继续往下跑，而不是让崩点静默截断整个列表。
 
 所以本脚本做两件必须一起做的事：
 
@@ -37,16 +41,22 @@ ROOT = Path(__file__).resolve().parents[2]
 CHECK = ROOT / "scripts" / "check_layout_proportions.py"
 PLAN = ROOT / "scripts" / "layout_proportions.py"
 VALIDATE = ROOT / "scripts" / "validate_run.py"
-FONTS = ROOT / "scripts" / "audit_fonts.py"
 LAYOUT_TEST = ROOT / "scripts" / "tests" / "test_layout_proportions.py"
 VALIDATE_TEST = ROOT / "scripts" / "tests" / "test_validate_run.py"
-FONTS_TEST = ROOT / "scripts" / "tests" / "test_audit_fonts.py"
+AUDIT = ROOT / "scripts" / "audit_adaptive.py"
+KIND_TEST = ROOT / "scripts" / "tests" / "test_kind_taxonomy.py"
 SELFCHECK = ROOT / "evals" / "harness" / "selfcheck.py"
 # 变异的目标不一定是被测源码，也可以是**素材**（fixture 本身就是要被检查的对象）。
-GOLDEN_COMPARISON = (ROOT / "evals" / "fixtures" / "golden"
-                     / "same-size-needs-region-evidence" / "pass" / "diff" / "comparison.json")
+# 目标文件必须存在 —— 脚本被裁撤后留着悬空引用，会让探针**崩在中途**，
+# 而崩点之后的所有探针一条都不会跑（曾经如此：audit_fonts.py 被删后，排在它后面的
+# fixture 可移植性与文档锚点两条探针再没执行过，README 里却还写着它们验过）。
+GOLDEN_LAYOUT_REPORT = (ROOT / "evals" / "fixtures" / "golden"
+                        / "layout-no-device-derived-coordinates" / "pass"
+                        / "diff" / "layout-proportions.json")
 # 文档也是被检查的对象：标题是锚点的来源，改标题不改引用就会产生断链。
 CONTRACT_DOC = ROOT / "references" / "artifact-contract.md"
+# 另一份被检查的文档：它承载两轴八类的正文表与关系示例。
+SIZING_DOC = ROOT / "references" / "sizing-and-positioning.md"
 
 # 测试要用带 Pillow 的解释器（test_validate_run 会造 PNG）。
 #
@@ -90,11 +100,13 @@ PROBES = [
     ("合规也算失败（恒挂）", CHECK, LAYOUT_TEST,
      '    proportional = [r for r in relations if r.get("kind") == "proportional"]',
      '    proportional = []'),
-    # ---- 两轴模型的**新判据**：每一条都是「生成端与检查端必须一起改」的那种 ----
+    # ---- 闭合契约的**新判据**：每一条都是「生成端与检查端必须一起改」的那种 ----
     #
     # 这一组探针是这一轮的重点。契约从「布局关系必须用比例表达」改成
-    # 「尺寸是常量、位置相对直接父视图」之后，新增了五类关系、两条计划自洽判据
-    # （check_bases / check_forbidden_targets）和三条分类判据。这些代码全都**新写**，
+    # 「尺寸按闭合方式声明、位置相对直接父视图」，再把 `fixed` 从默认值降级为特例
+    # 之后，新增了八类关系、两条计划自洽判据（check_bases / check_forbidden_targets）、
+    # 三条分类判据，以及**源码侧的逐类核对**（intrinsic 不得写等值常量 / bounded 必须有
+    # >= <= 原语 / aspect-ratio 必须有比例约束 / fixed 必须带 why）。这些代码全都**新写**，
     # 而新写的代码最容易变成「跑得动但没人验过」：实测里 `unanchoredInset` 那条分支
     # 因为把自己算作「兄弟共享」而成了死代码，17 条 reviewHint 里它一条都没出过。
     # 所以每一条新判据都必须有一条探针证明它真的在判。
@@ -166,45 +178,51 @@ PROBES = [
     ("跳过计划质量层（--plan-only）", VALIDATE, VALIDATE_TEST,
      "        proc = _run_checker(script, plan_path, [], scratch_report, plan_only=True)",
      "        proc = None"),
-    # ---- 字体链（audit_fonts + validate_run 的字体层）----
-    ("字体族名不做归一化", FONTS, FONTS_TEST,
-     "    text = re.sub(r'[\\s_\\-]+', ' ', text).strip().lower()",
-     "    return text"),
-    ("系统/generic 关键字不按归一化形式匹配", FONTS, FONTS_TEST,
-     "SYSTEM_KEYWORDS = {norm_family(name) for name in (",
-     "SYSTEM_KEYWORDS = {name for name in ("),
-    ("测量链路失败时不再硬拦（照样下结论）", FONTS, FONTS_TEST,
-     "    if probe['measurementOk'] is False:\n        blocked = 'font-measurement-failed'",
-     "    if False:\n        blocked = 'font-measurement-failed'"),
-    ("未做字体测量时不再判证据不足", FONTS, FONTS_TEST,
-     "    elif not judged:\n        result['reason'] = 'no-runtime-font'",
-     "    elif False:\n        result['reason'] = 'no-runtime-font'"),
-    ("完全不核对基准字体链", VALIDATE, VALIDATE_TEST,
-     "    violations.extend(check_font_chain(run_dir, gate_status, warnings))",
-     "    pass"),
-    ("legacy run 顺带跳过字体链", VALIDATE, VALIDATE_TEST,
-     "        check_font_chain(run_dir, {}, warnings, warn_only=True)",
-     "        pass"),
+    # ---- 闭合契约的新判据：源码侧逐类核对 + fixed 必须给出 why ----
+    #
+    # 这一组是本轮（v3 两轴口径 → v4 闭合契约）新增的代码。按 repo 的规矩：
+    # **新写的判据每一条都要有探针证明它真的在判**，因为新代码最容易变成
+    # 「跑得动但没人验过」。下面三条各自盯住新契约最容易退化的三个点：
+    ("fixed 不再要求给出 why（退回「设计稿写了就照抄」）", CHECK, LAYOUT_TEST,
+     '            # fixed 是**特例**，不是默认值：它必须带 why，说明「固定性本身是设计意图」。\n'
+     '            # 闭合契约下这条判据是必须的 —— 设计稿给了 bounds.width/height 是**事实**，\n'
+     '            # 把它写成固定约束是**决策**。没有 why，两者在产物里长得一模一样，\n'
+     '            # 于是「照抄设计稿尺寸」这个新契约要拦的头号问题就没有任何可核对的痕迹。\n'
+     '            if not (rel.get("why") or "").strip():',
+     '            # 探针：短路掉 why 守卫。锚点带上上下文，\n'
+     '            # 否则会误改 intrinsic 分支里那条字面相同的守卫（replace 只换第一处）。\n'
+     '            if False:'),
+    ("生成端不再把 fixed 标成「候选」（去掉 needsReview）", PLAN, LAYOUT_TEST,
+     '        "why": f"按设计稿原值 {size:g}pt（{evidence}），推为固定尺寸的**候选**",\n'
+     '        "needsReview": True,',
+     '        "why": f"按设计稿原值 {size:g}pt（{evidence}），推为固定尺寸的**候选**",'),
+    ("源码侧不再核对 intrinsic/bounded 的轴被写成 == 常量", CHECK, LAYOUT_TEST,
+     "                hits = size_constant_hits(text, axis)",
+     "                hits = []"),
     # ---- deliveryReady 的三态推导 ----
     # 这里必须复刻**历史上真实的那段函数体**（`or {}` + `.get(...) == .get(...)`），
     # 而不是随手把守卫删掉：删守卫会让 `unsupported['count']` 在 `{}` 上取下标直接
     # KeyError 掉栈，测试同样变红 —— 但那是崩栈红，要守的断言一次都没执行。
     ("缺 unsupported 对象时又按「复核完毕」算（旧写法）", VALIDATE, VALIDATE_TEST,
+     "    unsupported = gate.get('unsupported')\n"
+     "    if not isinstance(unsupported, dict):\n"
+     "        return None\n"
      "    if any(not isinstance(unsupported.get(key), int) for key in ('count', 'reviewedCount')):\n"
      "        return None\n"
-     "    if any(statuses.get(key) != 'pass' for key in GATE_KEYS):\n"
+     "    if any(statuses.get(key) != 'pass' for key in gate_keys):\n"
      "        return False\n"
      "    return unsupported['count'] == unsupported['reviewedCount']",
-     "    if any(statuses.get(key) != 'pass' for key in GATE_KEYS):\n"
+     "    unsupported = gate.get('unsupported') or {}\n"
+     "    if any(statuses.get(key) != 'pass' for key in gate_keys):\n"
      "        return False\n"
      "    return unsupported.get('count') == unsupported.get('reviewedCount')"),
     ("推不出来时不留痕（静默跳过一致性核对）", VALIDATE, VALIDATE_TEST,
      "            if expected is None:",
      "            if False:"),
     # ---- fixture 的可移植性检查（被检查的对象是素材，所以变异改的是素材）----
-    ("fixture 里又出现钉死机器的绝对路径", GOLDEN_COMPARISON, SELFCHECK,
-     '  "reference": "images/reference.png",',
-     '  "reference": "/Users/probe/Desktop/somewhere/images/reference.png",'),
+    ("fixture 里又出现钉死机器的绝对路径", GOLDEN_LAYOUT_REPORT, SELFCHECK,
+     '  "plan": "diff/layout-proportions-plan.json",',
+     '  "plan": "/Users/probe/Desktop/somewhere/diff/layout-proportions-plan.json",'),
     # ---- 文档链接与锚点检查（变异改的是标题，被检查的是别处对它的引用）----
     #
     # 这条探针模拟的是**最容易被当成安全操作的那个动作**：改一个章节标题的用词。
@@ -213,6 +231,34 @@ PROBES = [
     ("章节改名后引用锚点不跟着改", CONTRACT_DOC, SELFCHECK,
      "### 布局关系与控件尺寸的约束口径（强制）",
      "### 布局关系与控件尺寸的约束口径（原则）"),
+    # ---- 类别表守卫本身（被检查的对象是守卫，所以变异改的是清单与文档）----
+    #
+    # 为什么守卫也要探针：`audit_adaptive.KIND_FALLBACK_ORDER` 在改到两轴八类时
+    # 只补到五类，漏掉的三类（bounded / equal / aspect-ratio）会让只声明了那几类的
+    # 区域拿不到类别、下游按类别分派的判据**静默跳过** —— 而 15 组回归全绿、闸门照过。
+    # 这类缺陷没有任何现存测试能发现，全是靠人肉扫出来的；守卫若不配探针，
+    # 它自己也会在下次改口径时悄悄退化。
+    ("回退清单缩回修复前的五类（漏三类）", AUDIT, KIND_TEST,
+     'KIND_FALLBACK_ORDER = ("fixed", "pinned", "intrinsic", "proportional", "centered",\n'
+     '                       "bounded", "equal", "aspect-ratio")',
+     'KIND_FALLBACK_ORDER = ("fixed", "pinned", "intrinsic", "proportional", "centered")'),
+    ("真相源被缩回旧五类", CHECK, KIND_TEST,
+     'RELATION_KINDS = ("fixed", "pinned", "proportional", "intrinsic", "bounded",\n'
+     '                  "equal", "centered", "aspect-ratio")',
+     'RELATION_KINDS = ("fixed", "pinned", "proportional", "intrinsic", "centered")'),
+    # 这条模拟的是最容易发生的一种回退：改口径时只改了代码与正文，
+    # 顺手在别处（注释/文档）又写下旧计数词，于是每次 grep 都在重新教旧口径。
+    ("文档里又出现废弃的类别计数说法", CONTRACT_DOC, KIND_TEST,
+     "2. **`fixed` 不是默认值，而且必须给 `why`。**",
+     "2. **`fixed` 不是默认值。** 五类 kind 各自带齐必需字段。"),
+    # 文档示例写成实现不认的形状，是本轮最贵的一处：示例用嵌套 relations + 不存在的
+    # constant 字段，喂给校验器**判 pass** —— Agent 照抄会以为已经声明了内边距，
+    # 而产物里什么都没有。所以「示例合规」这条断言必须自己也被验过。
+    ("文档示例又写成嵌套 relations（实现根本不读）", SIZING_DOC, KIND_TEST,
+     ' "kind": "pinned", "edges": ["leading", "trailing"],\n'
+     ' "insets": {"leading": 16, "trailing": 16},',
+     ' "kind": "bounded", "min": 280, "max": 600,\n'
+     ' "relations": [{"kind": "pinned", "edge": "leading", "constant": 16}],'),
 ]
 
 
@@ -240,6 +286,16 @@ def main() -> int:
     failures = []
     originals = {}          # 每个被改动文件的基线内容，用于收尾的逐文件复原校验
     for name, target, test, old, new in PROBES:
+        # 悬空引用必须先拦住：脚本被裁撤、探针没跟着删，读文件会直接 FileNotFoundError
+        # 掉栈 —— 而崩点**之后**的探针一条都不会跑，它们的名字却还留在 PROBES 里，
+        # 让人以为验过了。这是「探针本身也会骗人」的第五种形态（前四种见模块 docstring）。
+        missing = [path for path in (target, test) if not path.exists()]
+        if missing:
+            failures.append(
+                f"  ✗「{name}」目标不存在："
+                f"{[str(path.relative_to(ROOT)) for path in missing]} —— 探针无效"
+                "（脚本已裁撤？删掉这条探针，别让它把排在后面的探针一起藏掉）")
+            continue
         original = target.read_text(encoding="utf-8")
         originals.setdefault(target, original)
         if old not in original:

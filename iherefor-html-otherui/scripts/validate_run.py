@@ -9,7 +9,7 @@
 用法：
     python3 scripts/validate_run.py --run <run-dir> [--source <源码根>] [--json <out-path>]
 
-``--source`` 会额外核对「计划声明的布局约束有没有被照做」——**尺寸是常量、位置相对直接
+``--source`` 会额外核对「计划声明的布局约束有没有被照做」——**尺寸闭合方式必须声明、位置相对直接
 父视图**，那是本 skill 的硬约束。但它看的是原生源码，而源码在 run 目录之外，所以 run
 目录本身答不了这个问题。给了 ``--source`` 就硬判；没给就只告警，不假装已经验证过。
 
@@ -91,7 +91,7 @@ def check_layout_proportions(run_dir, source_roots, gate_status, warnings):
     三层，各自的证据强度不同，不能混：
 
     1. **计划质量**：计划声明了 ``layoutProportions.regions`` 时，它必须结构完好
-       （五类 kind 各自带齐必需的字段、区域基准与父视图一致、禁止清单只指向
+       （两轴八类 kind 各自带齐必需的字段、区域基准与父视图一致、禁止清单只指向
        ``proportional``）。这一步只读计划，判起来最硬 —— 而且复用校验器本身，
        不在这里重写一份判定逻辑。
     2. **源码合规**：只有给了 ``--source`` 才谈得上。给了就扫源码并把结论落成
@@ -99,7 +99,7 @@ def check_layout_proportions(run_dir, source_roots, gate_status, warnings):
     3. **与闸门交叉**：已落盘的 ``diff/layout-proportions.json`` 若判 fail，
        而 ``delivery-gate.status.implementation`` 是 pass，那就是自相矛盾。
 
-    **这里的口径是两轴的**：尺寸是常量（设计稿的封闭值，写成字面量）、
+    **这里的口径是两轴的**：尺寸必须声明 fixed/intrinsic/bounded 等闭合方式，
     位置相对直接父视图（贴边写约束闭合、居中写对齐锚点）。所以衡量合规与否不是
     「有没有比例原语」这一条，而是「计划怎么声明、源码有没有照它声明的方式实现」。
     """
@@ -115,7 +115,7 @@ def check_layout_proportions(run_dir, source_roots, gate_status, warnings):
     if not declared:
         warnings.append(
             'ui-implementation-plan.json 未声明 layoutProportions：组件之间的布局关系必须'
-            '逐条声明（尺寸是常量、位置相对直接父视图），否则无从核对「有没有照抄探针'
+            '逐条声明（每个尺寸声明闭合方式、位置相对直接父视图），否则无从核对「有没有照抄探针'
             '设备上的绝对值」。用 scripts/layout_proportions.py 生成后并入计划')
         return []
 

@@ -1,19 +1,23 @@
 #!/usr/bin/env python3
-"""核对原生源码是否按 ``layoutProportions`` 声明的**两轴口径**实现布局。
+"""核对原生源码是否按 ``layoutProportions`` 声明的**闭合契约**实现布局。
 
 **这是计划驱动，不是正则扫描。** 判据是「计划声明了什么类别」：
 
 * ``proportional`` —— 要求比例表达，源码里没有比例原语就是违规；
 * ``fixed`` —— 要求**写字面量**（设计值不缩放）。所以它的值**不得**出现在
-  禁止清单里：把「按钮高 44」当成违规，等于让正确写法被判错；
+  禁止清单里：把「图标 24」当成违规，等于让正确写法被判错；
 * ``pinned`` —— 要求贴边约束（+ 固定间距），**不得**带比例系数；
-* ``intrinsic`` —— 不要求尺寸约束，但必须说明为什么；
-* ``centered`` —— 用对齐锚点表达，不得带比例系数。
+* ``intrinsic`` —— 不要求尺寸约束，但必须说明为什么；**源码里该轴不得出现等值常量约束**
+  （那正是「声明了内容撑开、代码却写死宽高」这个头号漏洞）；
+* ``bounded`` —— 必须给上下界，且源码里该轴要出现 ``>=`` / ``<=`` 原语；
+* ``equal`` —— 用兄弟等值锚点表达；
+* ``centered`` —— 用对齐锚点表达，不得带比例系数；
+* ``aspect-ratio`` —— 必须给正数比例，且源码里要出现比例约束原语。
 
 纯正则扫描会把合法的设计常量（圆角 12、标准边距 16）一起误报，训练出「看到告警就
 忽略」的习惯，那样这条红线就废了。所以每一类都有它自己的、可解释的判据。
 
-四类违规，各自对应一种真实的错法：
+五类违规，各自对应一种真实的错法：
 
 1. ``forbidden-literal-used`` —— 源码里出现了 ``forbiddenLiterals`` 记录的
    「探针设备推导值」。这是最典型的一种：把 ``lanhuY * 1.0229 = 135.02`` 算出来，
@@ -28,6 +32,10 @@
 4. ``forbidden-targets-non-proportional`` —— 禁止清单指向了一条 ``fixed``/``pinned``
    关系。这等于要求实现者**不要写**设计稿给的常量，正是「契约没改完」的形态：
    生成端改了、检查端没跟上，两边自相矛盾。
+5. ``intrinsic-axis-pinned-to-constant`` —— 计划把某区域某轴声明为 ``intrinsic`` 或
+   ``bounded``，源码里该区域的该轴却出现了**等值常量**约束。这是旧契约的直接残留：
+   设计稿给了一个宽高，实现照抄成固定约束。``>=`` / ``<=`` 不算违规（那是 bounded
+   的正确写法），只有 ``==`` 常量才是。
 
 **关于精度。** 在真实工程上第一次跑，421 条字面量命中里：145 条是裸 ``0``、17 条在注释里
 （``// (393 x 852, index.css .page)``、``// an iOS 26 scene``）、若干条是颜色的
@@ -43,7 +51,7 @@
 * 计划可用 ``designConstants`` 声明设计常量（标准边距、圆角），或用 ``--allow-values``
   临时豁免 —— 豁免会被写进 JSON 结果，仍可复核。
 
-本脚本做的是**行级**扫描，不做语法解析：它认的是各平台的比例原语与数字字面量。
+本脚本做的是**行级**扫描，不做语法解析：它认的是各平台的布局原语与数字字面量。
 因此结论的措辞是「找到了这些证据 / 这些违规」，而不是「代码是对的」—— 布局是否
 真的正确仍由截图与对齐审计回答。
 
@@ -95,10 +103,87 @@ PINNED_IDIOMS = (
 )
 PINNED_RE = re.compile("|".join(f"(?:{p})" for p, _ in PINNED_IDIOMS))
 
-# 计划里合法的关系类别（两轴模型）。见 references/sizing-and-positioning.md。
-RELATION_KINDS = ("fixed", "pinned", "proportional", "intrinsic", "centered")
-# 带「比例系数」的字段名。fixed/pinned/centered 出现这些字段就是自相矛盾 ——
-# 它们的意思分别是「写死设计值」「贴父边」「对齐父视图中心」，都不需要系数。
+# 「边界」原语：表达 >= / <= 或 min/max。声明了 bounded 的计划必须能在源码里找到它们 ——
+# 找不到说明实现者仍按旧契约把尺寸写成了等值常量（或压根没有边界）。
+BOUNDED_IDIOMS = (
+    (r"greaterThanOrEqual(?:ToConstant|ToAnchor|To)?\b", "iOS >= 约束"),
+    (r"lessThanOrEqual(?:ToConstant|ToAnchor|To)?\b", "iOS <= 约束"),
+    (r"constraintGreaterThanOrEqualToConstant|constraintLessThanOrEqualToConstant", "iOS 边界约束"),
+    (r"layout_constraint(?:Width|Height)_(?:min|max)", "ConstraintLayout min/max"),
+    (r"\bmin(?:Width|Height)\b|\bmax(?:Width|Height)\b", "min/max 属性"),
+    (r"widthIn\s*\(|heightIn\s*\(|sizeIn\s*\(", "Compose widthIn/heightIn"),
+    (r"greaterThanOrEqualToConstant|lessThanOrEqualToConstant", "边界常量"),
+)
+BOUNDED_RE = re.compile("|".join(f"(?:{p})" for p, _ in BOUNDED_IDIOMS))
+
+# 「兄弟等值 / 等分」原语：声明了 equal 的计划应当能在源码里找到它们。
+# 只作**告警**：等宽等高可以用很多方式表达（UIStackView 的 fillEqually、
+# HStack + maxWidth: .infinity、IntrinsicSize、layout_weight），清单不可能穷尽。
+EQUAL_IDIOMS = (
+    (r"fillEqually", "UIStackView fillEqually"),
+    (r"distribution\s*[:=]\s*\.fillEqually", "分布等分"),
+    (r"equalTo\w*Anchor|constraintEqualToAnchor", "iOS 等值锚点"),
+    (r"layout_weight|layout_constraintHorizontal_weight|layout_constraintVertical_weight", "权重等分"),
+    (r"IntrinsicSize", "Compose IntrinsicSize"),
+    (r"\.weight\s*\(", "Compose weight"),
+)
+EQUAL_RE = re.compile("|".join(f"(?:{p})" for p, _ in EQUAL_IDIOMS))
+
+# 「比例约束」原语：声明了 aspect-ratio 的计划应当能找到它们。
+ASPECT_IDIOMS = (
+    (r"aspectRatio\s*\(", "SwiftUI aspectRatio"),
+    (r"layout_constraintDimensionRatio", "ConstraintLayout dimensionRatio"),
+    (r"widthAnchor[\s\S]{0,80}?multiplier|heightAnchor[\s\S]{0,80}?multiplier", "iOS 比例约束"),
+    (r"aspect_ratio|aspectRatio", "比例约束"),
+)
+ASPECT_RE = re.compile("|".join(f"(?:{p})" for p, _ in ASPECT_IDIOMS))
+
+# 「内容自适应」支撑原语：Dynamic Type 与优先级。声明了 intrinsic/bounded 的计划
+# 说明页面里有内容驱动的尺寸，那就应当看到这些原语。缺失只作**告警**：
+# 有些页面确实没有文字（纯图形页），没有它们不算错。
+CONTENT_ADAPTIVITY_IDIOMS = (
+    (r"UIFontMetrics|preferredFont|scaledFont|adjustsFontForContentSizeCategory",
+     "Dynamic Type 字号缩放"),
+    (r"setContentHuggingPriority|contentHuggingPriority|huggingPriority",
+     "content hugging 优先级"),
+    (r"setContentCompressionResistancePriority|contentCompressionResistancePriority|compressionResistancePriority",
+     "compression resistance 优先级"),
+    (r"DynamicTypeSize|relativeTo\s*:|\.font\s*\(\s*\.(body|title|caption|headline|footnote|callout|subheadline|largeTitle)",
+     "Dynamic Type 文本样式"),
+)
+CONTENT_ADAPTIVITY_RE = re.compile("|".join(f"(?:{p})" for p, _ in CONTENT_ADAPTIVITY_IDIOMS))
+
+# 「等值常量」的尺寸原语，**按轴分开**。只认 ``==`` 常量，不认 ``>=`` / ``<=`` ——
+# 后者是 bounded 的正确写法。命中即说明「计划说内容撑开、代码写死了」。
+SIZE_CONSTANT_PATTERNS = {
+    "width": (
+        (r"widthAnchor\s*\]?\s*constraintEqualToConstant", "iOS 定宽约束"),
+        (r"widthAnchor\s*\.\s*constraint\s*\(\s*equalToConstant", "Swift 定宽约束"),
+        (r"\.frame\s*\([^)]*?\bwidth\s*:\s*[\d.]", "SwiftUI 定宽"),
+        (r"\.width\s*\(\s*[\d.]+\s*(?:\.dp|\.pt)?\s*\)", "Compose 定宽"),
+        (r"android:layout_width\s*=\s*\"[\d.]+", "XML 定宽"),
+        (r"android:width\s*=\s*\"[\d.]+", "XML 定宽属性"),
+    ),
+    "height": (
+        (r"heightAnchor\s*\]?\s*constraintEqualToConstant", "iOS 定高约束"),
+        (r"heightAnchor\s*\.\s*constraint\s*\(\s*equalToConstant", "Swift 定高约束"),
+        (r"\.frame\s*\([^)]*?\bheight\s*:\s*[\d.]", "SwiftUI 定高"),
+        (r"\.height\s*\(\s*[\d.]+\s*(?:\.dp|\.pt)?\s*\)", "Compose 定高"),
+        (r"android:layout_height\s*=\s*\"[\d.]+", "XML 定高"),
+        (r"android:height\s*=\s*\"[\d.]+", "XML 定高属性"),
+    ),
+}
+SIZE_CONSTANT_RES = {axis: [(re.compile(p, re.IGNORECASE), name) for p, name in table]
+                     for axis, table in SIZE_CONSTANT_PATTERNS.items()}
+
+# 计划里合法的关系类别（闭合契约，两轴八类）。见 references/sizing-and-positioning.md。
+RELATION_KINDS = ("fixed", "pinned", "proportional", "intrinsic", "bounded",
+                  "equal", "centered", "aspect-ratio")
+# 带「比例系数」的字段名。两轴八类里**只有 proportional 与 aspect-ratio 带系数**，
+# 其余六类带这些字段就是自相矛盾 —— 它们的意思分别是「写死设计值」「贴父边」
+# 「对齐父视图中心」「内容撑开」「边界约束」「与同类相等」，都不需要系数。
+# （不写成「fixed/pinned/centered 三类不带系数」：列一半的写法本文件与
+# layout_proportions.py 各写过一份，第三项还对不上，正是漂移的入口。）
 RATIO_FIELDS = ("ratio", "multiplier", "ratioInstead")
 # fixed 是「设计稿给的封闭值」，量级上不可能是几百 pt —— 那更像漏了约束的容器。
 FIXED_VALUE_MAX_PT = 1000.0
@@ -311,8 +396,8 @@ def check_relations(relations) -> list:
                 "kind": "unknown-relation-kind",
                 "relation": rid,
                 "detail": f'kind={kind!r}，只能是 {", ".join(RELATION_KINDS)} 之一'
-                          "（两轴模型：尺寸 fixed/pinned/intrinsic/proportional，"
-                          "位置 pinned/centered/proportional）",
+                          "（闭合契约：尺寸轴 fixed/intrinsic/bounded/aspect-ratio，"
+                          "关系轴 pinned/proportional/equal/centered。fixed 不是默认值）",
             })
             continue
 
@@ -325,8 +410,50 @@ def check_relations(relations) -> list:
                 })
             continue
 
+        if kind == "bounded":
+            minimum = rel.get("min")
+            maximum = rel.get("max")
+            if minimum is None and maximum is None:
+                problems.append({"kind": "bounded-missing-limit", "relation": rid,
+                                 "detail": "kind=bounded 至少需要 min 或 max"})
+            for label, value in (("min", minimum), ("max", maximum)):
+                if value is not None and (isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0):
+                    problems.append({"kind": "bounded-invalid-limit", "relation": rid,
+                                     "detail": f"bounded 的 {label} 必须是 ≥ 0 的数字"})
+            if minimum is not None and maximum is not None and minimum > maximum:
+                problems.append({"kind": "bounded-inverted-limits", "relation": rid,
+                                 "detail": "bounded 的 min 不能大于 max"})
+            continue
+
+        if kind == "equal":
+            if not (rel.get("with") or rel.get("to")):
+                problems.append({"kind": "equal-missing-peer", "relation": rid,
+                                 "detail": "kind=equal 必须给 with 或 to，声明等宽/等高对象"})
+            continue
+
+        if kind == "aspect-ratio":
+            ratio = rel.get("ratio")
+            if isinstance(ratio, bool) or not isinstance(ratio, (int, float)) or ratio <= 0:
+                problems.append({"kind": "aspect-ratio-invalid", "relation": rid,
+                                 "detail": "kind=aspect-ratio 必须给正数 ratio"})
+            continue
+
         if kind == "fixed":
             value = rel.get("value")
+            # fixed 是**特例**，不是默认值：它必须带 why，说明「固定性本身是设计意图」。
+            # 闭合契约下这条判据是必须的 —— 设计稿给了 bounds.width/height 是**事实**，
+            # 把它写成固定约束是**决策**。没有 why，两者在产物里长得一模一样，
+            # 于是「照抄设计稿尺寸」这个新契约要拦的头号问题就没有任何可核对的痕迹。
+            if not (rel.get("why") or "").strip():
+                problems.append({
+                    "kind": "fixed-missing-why",
+                    "relation": rid,
+                    "detail": "kind=fixed 必须写明 why：为什么这个尺寸的**固定性本身是设计意图**"
+                              "（图标、装饰、边框、明确固定高度的视觉控件）。"
+                              "理由不能是「设计稿就写了这个数」——那是参考事实，不是决策依据。"
+                              "文本、按钮、容器和内容区域默认优先 intrinsic / bounded；"
+                              "生成端产出的 fixed 都是候选（带 needsReview），必须逐条复核。",
+                })
             if isinstance(value, bool) or not isinstance(value, (int, float)):
                 problems.append({
                     "kind": "fixed-missing-value",
@@ -459,9 +586,14 @@ def check_forbidden_targets(plan) -> list:
     """禁止清单必须**只**指向 ``proportional`` 的关系。
 
     这条是「契约级变更必须一次改完」的可执行版本。旧版生成器对非文字元素的尺寸一律
-    收录禁止项，于是「按钮高 44」这类**应当写的设计值**被列为禁止 —— 实现者照契约做
+    收录禁止项，于是「按钮高 44」这类**内容驱动的尺寸**被列为禁止 —— 实现者照契约做
     反而被判违规。生成端改了、检查端没跟上时，两边就是这样自相矛盾的，
     而症状是「照文档做却过不了闸门」，最难排查。
+
+    注意口径的第二次变化：旧口径下这条是「fixed 尺寸不该被禁，因为尺寸是常量」；
+    闭合契约下 fixed 不再是默认值，所以这条的正当性不再来自「它一定是设计常量」，
+    而是来自**分工**：尺寸轴该不该用 fixed，由 ``check_relations`` 的 ``why`` 与
+    下面的 ``sourceKindViolation`` 判据负责；禁止清单只管位置/尺寸里确实成比例的那些。
 
     顺带要求每条禁止项给出 ``ratioInstead``（应当改用的比例）：只说「这个数不行」
     而不说「该用什么」，等于把问题原样丢回给实现者。
@@ -615,6 +747,186 @@ def check_type_facts(plan, page_facts) -> list:
     return problems
 
 
+def _region_tokens(region_name: str) -> list:
+    """把 region 名派生成可能出现在源码里的标识符片段。
+
+    计划里的 region 是 ``offers`` / ``cta`` / ``hero`` 这种语义名，源码里可能是
+    ``_offers`` / ``offersView`` / ``offersContainer`` / ``offers_card``。这里只做
+    **保守**的派生：原始名、snake_case、以及连字符/空格替换 —— 宁可少认几个，
+    也不要把无关行误认成该区域的实现（误报比漏报更伤这条红线）。
+    """
+    name = (region_name or "").strip()
+    if not name:
+        return []
+    tokens = {name}
+    # camelCase / PascalCase -> snake_case
+    tokens.add(re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "_", name).lower())
+    tokens.add(re.sub(r"[\s\-]+", "_", name))
+    return sorted(t for t in tokens if t)
+
+
+def _line_mentions_region(text: str, tokens) -> str:
+    """这一行是否提到了该区域。返回命中的 token（没命中返回空串）。"""
+    for token in tokens:
+        if re.search(rf"(?<![A-Za-z0-9])_?{re.escape(token)}(?![A-Za-z0-9])",
+                     text, re.IGNORECASE):
+            return token
+    return ""
+
+
+def size_constant_hits(text: str, axis: str) -> list:
+    """这一行在该轴上是否出现了**等值常量**（``==``）尺寸约束。
+
+    只认 ``==``：``>=`` / ``<=`` 是 ``bounded`` 的正确写法，绝不能一起报。
+    """
+    return [name for pattern, name in SIZE_CONSTANT_RES.get(axis, ())
+            if pattern.search(text)]
+
+
+def check_source_kinds(relations, files, lines_by_file) -> tuple:
+    """**源码侧**逐类核对闭合契约是否照计划实现。
+
+    这是门 1 在闭合契约下的核心补丁。在此之前，源码侧只认三类原语
+    （``proportional`` / ``pinned`` / ``fixed`` 的禁止字面量），
+    ``intrinsic`` / ``bounded`` / ``equal`` / ``aspect-ratio`` 声明在源码里**没有任何判据** ——
+    计划写了 ``intrinsic``、代码却写 ``widthAnchor constraintEqualToConstant`` 不会被拦。
+    于是「把设计稿的 width/height 逐字写成固定约束」这个新契约要拦的头号问题，
+    变成了一个只有计划层说、没有实现层查的口头约定。
+
+    判据分两档（与全文一致：闸门要准，不是要响）：
+
+    **违规** —— 计划与源码**直接矛盾**，且可静态判定：
+
+    * ``intrinsic-axis-pinned-to-constant``：计划把 ``{region}.{axis}`` 声明为
+      ``intrinsic``，源码里该区域的该轴出现了 ``==`` 常量约束。这是旧契约的直接残留。
+    * ``bounded-axis-missing-limit``：声明了 ``bounded``，但整份源码里**一个边界原语都没有**。
+    * ``aspect-ratio-idiom-missing``：声明了 ``aspect-ratio``，源码里没有任何比例约束原语。
+
+    **告警** —— 可能是别的写法，也可能是真的漏了：
+
+    * ``equal-idiom-missing``：声明了 ``equal``，但没找到等值/等分原语
+      （等宽等高有多种表达方式，清单不可能穷尽，所以只告警）。
+    * ``content-adaptivity-idioms-missing``：声明了 ``intrinsic`` / ``bounded``
+      （说明页面有内容驱动的尺寸），却没找到 Dynamic Type 或优先级原语。
+    * ``relation-not-locatable``：计划里的区域名在源码里一个都没出现，
+      意味着这些声明无法与实现对应上（可能是命名不一致，也可能压根没按计划写）。
+    """
+    violations, warnings = [], []
+    if not relations or not files:
+        return violations, warnings
+
+    # 注释先去掉：注释里写「// heightAnchor constraintEqualToConstant」是在解释，不是违规。
+    code_by_file = {path: strip_comments(lines) for path, lines in lines_by_file.items()}
+
+    by_axis = {}
+    for rel in relations:
+        by_axis.setdefault(rel.get("kind"), []).append(rel)
+
+    # ---- 1. intrinsic / bounded 的区域轴被写成了 == 常量（最硬的漏洞） ----
+    checkable = [r for r in relations
+                 if r.get("kind") in ("intrinsic", "bounded") and r.get("axis")]
+    unlocatable = []
+    for rel in checkable:
+        region = rel.get("id", "").rsplit(".", 1)[0]
+        axis = rel.get("axis")
+        tokens = _region_tokens(region)
+        if not tokens:
+            continue
+        located = False
+        for path in files:
+            for number, text in enumerate(code_by_file.get(path, []), start=1):
+                if not _line_mentions_region(text, tokens):
+                    continue
+                located = True
+                hits = size_constant_hits(text, axis)
+                if hits:
+                    violations.append({
+                        "kind": "intrinsic-axis-pinned-to-constant",
+                        "relation": rel.get("id"),
+                        "declaredKind": rel.get("kind"),
+                        "axis": axis,
+                        "file": str(path),
+                        "line": number,
+                        "detail": f"计划把 {rel.get('id')} 声明为 {rel.get('kind')}"
+                                  f"（{'内容撑开' if rel.get('kind') == 'intrinsic' else '边界约束'}），"
+                                  f"源码里该区域的 {axis} 轴却是**等值常量**约束（{hits[0]}）。"
+                                  f"设计稿给的宽高只是参考事实：文本/按钮/容器应当由内容或边界闭合，"
+                                  f"写成 == 常量会在窄屏、动态字体、长本地化文本下失守。"
+                                  f"要么改成 {'不给该轴约束（intrinsic）' if rel.get('kind') == 'intrinsic' else '>= / <= 边界'}，"
+                                  f"要么把计划改成 fixed 并给出 why。",
+                        "text": text.strip()[:120],
+                    })
+        if not located:
+            unlocatable.append(rel.get("id"))
+
+    # ---- 2. bounded 必须在同一区域实现，不能用别处一条 >= 伪装 ----
+    all_text = [line for path in files for line in code_by_file.get(path, [])]
+    for rel in by_axis.get("bounded", []):
+        region = rel.get("id", "").rsplit(".", 1)[0]
+        axis = rel.get("axis")
+        tokens = _region_tokens(region)
+        matched = False
+        for path in files:
+            for number, text in enumerate(code_by_file.get(path, []), start=1):
+                if tokens and _line_mentions_region(text, tokens) and BOUNDED_RE.search(text):
+                    matched = True
+                    break
+            if matched:
+                break
+        if not matched:
+            violations.append({
+                "kind": "bounded-axis-missing-limit",
+                "relation": rel.get("id", "?"),
+                "axis": axis,
+                "detail": f"计划声明了 {rel.get('id')} 为 bounded，但对应区域源码没有找到 >= / <= 或 min/max 原语；"
+                          "不能用其他区域的边界约束代替本关系。",
+            })
+
+    # ---- 3. aspect-ratio 必须在同一区域实现，不能用别处一条比例伪装 ----
+    for rel in by_axis.get("aspect-ratio", []):
+        region = rel.get("id", "").rsplit(".", 1)[0]
+        tokens = _region_tokens(region)
+        matched = any(tokens and _line_mentions_region(text, tokens) and ASPECT_RE.search(text)
+                      for path in files for text in code_by_file.get(path, []))
+        if not matched:
+            violations.append({
+                "kind": "aspect-ratio-idiom-missing",
+                "relation": rel.get("id", "?"),
+                "detail": f"计划声明了 {rel.get('id')} 为 aspect-ratio，但对应区域源码没有找到比例约束原语；"
+                          "不能用其他区域的比例约束代替本关系。",
+            })
+
+    # ---- 4. equal：只告警 ----
+    if by_axis.get("equal") and not any(EQUAL_RE.search(l) for l in all_text):
+        warnings.append(
+            f"计划声明了 {len(by_axis['equal'])} 条 equal（兄弟等宽/等高/等基线），"
+            f"但 {len(files)} 个源码文件里没找到等值锚点或等分原语。若确实是用 "
+            "UIStackView 的 fillEqually、HStack + maxWidth: .infinity、IntrinsicSize "
+            "这类方式表达的，忽略本条；否则这些关系很可能没有落实。")
+
+    # ---- 5. 内容自适应支撑原语：只告警 ----
+    content_driven = len(by_axis.get("intrinsic", [])) + len(by_axis.get("bounded", []))
+    if content_driven:
+        missing = [name for pattern, name in CONTENT_ADAPTIVITY_IDIOMS
+                   if not any(re.search(pattern, l) for l in all_text)]
+        if len(missing) == len(CONTENT_ADAPTIVITY_IDIOMS):
+            warnings.append(
+                f"计划声明了 {content_driven} 条 intrinsic/bounded（说明页面有内容驱动的尺寸），"
+                f"但 {len(files)} 个源码文件里既没有 Dynamic Type 字号缩放，"
+                "也没有 content hugging / compression resistance 优先级。"
+                "内容驱动的布局必须同时声明「谁扩张、谁被压缩」，否则宽度不足时的截断行为是随机的。"
+                "若本页确实没有文字（纯图形页），忽略本条。")
+
+    # ---- 6. 区域名在源码里找不到 ----
+    if unlocatable and len(unlocatable) == len(checkable):
+        warnings.append(
+            f"计划里 {len(checkable)} 条 intrinsic/bounded 关系的区域名在源码里一个都没出现，"
+            "无法与实现对应上：请确认源码里的命名与计划的 region 名一致，"
+            "否则「计划声明了什么」与「代码实现了什么」之间没有可核对的联系。")
+
+    return violations, warnings
+
+
 def decide_typefacts_required(regions, plan, page_facts) -> list:
     """给了 page-facts 时，计划里存在文本/描边区域却一条 typeFacts 都没有，判违规。
 
@@ -678,7 +990,7 @@ def main() -> int:
         violations.append({
             "kind": "missing-layout-proportions",
             "detail": "实现计划里没有 layoutProportions.regions：组件之间的布局关系必须"
-                      "逐条声明（尺寸是常量、位置相对父视图），否则无从核对。"
+                      "逐条声明（每个尺寸声明闭合方式、位置相对父视图），否则无从核对。"
                       "用 scripts/layout_proportions.py 生成。",
         })
 
@@ -741,12 +1053,14 @@ def main() -> int:
         return 2
 
     all_idioms, pinned_idioms, ambiguous = [], [], []
+    lines_by_file = {}
     for path in files:
         try:
             lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
         except OSError as error:
             warnings.append(f"读取源码失败 {path}：{error}")
             continue
+        lines_by_file[path] = lines
         for hit in idiom_hits(lines):
             all_idioms.append({**hit, "file": str(path)})
         for hit in idiom_hits(lines, PINNED_IDIOMS, PINNED_RE):
@@ -757,12 +1071,21 @@ def main() -> int:
         for hit in unclear:
             ambiguous.append({**hit, "file": str(path)})
 
+    # 闭合契约在**源码侧**的逐类核对：intrinsic / bounded / equal / aspect-ratio。
+    # 声明在计划里、实现却没跟上，是旧契约残留的主要形态，必须能在门 1 拦下。
+    kind_violations, kind_warnings = check_source_kinds(relations, files, lines_by_file)
+    violations.extend(kind_violations)
+    warnings.extend(kind_warnings)
+
     proportional = [r for r in relations if r.get("kind") == "proportional"]
     pinned = [r for r in relations if r.get("kind") == "pinned"]
     fixed = [r for r in relations if r.get("kind") == "fixed"]
     centered = [r for r in relations if r.get("kind") == "centered"]
     kind_counts = {kind: len([r for r in relations if r.get("kind") == kind])
                    for kind in RELATION_KINDS}
+    bounded = [r for r in relations if r.get("kind") == "bounded"]
+    equal = [r for r in relations if r.get("kind") == "equal"]
+    aspect = [r for r in relations if r.get("kind") == "aspect-ratio"]
     # plan-only 模式没有源码，谈不上「一个比例原语都没有」，不能报这一条。
     if not args.plan_only and proportional and not all_idioms:
         violations.append({
@@ -788,10 +1111,13 @@ def main() -> int:
                               if v["kind"] == "forbidden-literal-used"})
     result = {
         "tool": "check_layout_proportions.py",
-        # 3 = 两轴口径。旧读者按「一处比例原语都没有 ⇒ 整页有问题」来读 v2 的结论，
-        # 而两轴口径下 proportional 只占五类之一、贴边与固定值都是**正确写法** ——
-        # 同一份 violations 数组在两边含义不同，必须能区分开。
-        "schemaVersion": 3,
+        # 4 = 闭合契约口径。三个版本的含义各不相同，读者必须能区分：
+        # v2（一轴）：非文字元素一律 proportional，一处比例原语都没有就判整页有问题；
+        # v3（两轴）：proportional 只占五类之一，贴边与固定值都是**正确写法**；
+        # v4（闭合契约）：fixed 降级为特例，尺寸必须声明闭合方式，且源码侧开始逐类核对
+        #     intrinsic / bounded / equal / aspect-ratio —— v3 的 violations 只覆盖了
+        #     计划层是否有声明，v4 还会覆盖「声明了但没实现」。
+        "schemaVersion": 4,
         "status": "fail" if violations else "pass",
         "planOnly": bool(args.plan_only),
         "targetMode": args.target_mode,
@@ -805,6 +1131,14 @@ def main() -> int:
         "fixedRelationCount": len(fixed),
         "centeredRelationCount": len(centered),
         "intrinsicRelationCount": kind_counts.get("intrinsic", 0),
+        "boundedRelationCount": len(bounded),
+        "equalRelationCount": len(equal),
+        "aspectRatioRelationCount": len(aspect),
+        "boundedIdiomCount": len([1 for l in
+                                  (line for path in files for line in lines_by_file.get(path, []))
+                                  if BOUNDED_RE.search(l)]),
+        "sourceKindViolationCount": len(kind_violations),
+        "sourceKindWarnings": kind_warnings,
         "proportionalIdiomCount": len(all_idioms),
         "proportionalIdioms": all_idioms[:40],
         "pinnedIdiomCount": len(pinned_idioms),
@@ -824,8 +1158,11 @@ def main() -> int:
                       "不等于「布局是正确的」——那由截图与对齐审计回答。"
                       f"另外，≤{DESIGN_SCALE_MAX_PT:g}pt 的数值与设计常量无法区分，"
                       "只列在 ambiguousLiterals 里待人工判断，不计入违规。"
-                      "禁止清单只应指向 proportional 的关系：fixed 的字面量与 "
-                      "pinned 的内边距都是应当写的设计常量。"),
+                      "禁止清单只应指向 proportional 的关系：pinned 的内边距本就是设计常量，"
+                      "fixed 候选的字面量在复核完成前也不该自动进清单（复核后若改判 "
+                      "intrinsic/bounded，则改由 sourceKind 那条判据把关）。"
+                      "sourceKindViolationCount 是「计划声明了 intrinsic/bounded/equal/"
+                      "aspect-ratio，源码却没照做」的计数（见 ios-autolayout-practice.md）。"),
     }
 
     if args.output:
@@ -879,7 +1216,7 @@ def main() -> int:
         for line in warnings:
             print(f"\n[warn] {line}")
         if not violations:
-            print("布局约束校验通过（尺寸是常量、位置相对父视图）"
+            print("布局约束校验通过（尺寸按闭合方式声明、位置相对父视图）"
                   + (f"（另有 {len(ambiguous)} 处待判，见上）" if ambiguous else ""))
 
     return 1 if violations else 0

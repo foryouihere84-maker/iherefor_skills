@@ -2,6 +2,7 @@
   "status": "pass",
   "deliveryReady": true,
   "summary": {
+    "schemaVersion": 4,
     "literalViolationCount": 4
   },
   "violations": [
@@ -9,28 +10,33 @@
       "literal": 68,
       "file": "src/SpecialOfferViewController.m",
       "line": 32,
-      "note": "卡片高度写死了 68pt，依赖容器尺寸，应该改成比例"
+      "relation": "offers.height",
+      "note": "卡片高度按字面量写死了 68pt，尺寸应当由内容闭合"
     },
     {
       "literal": 48,
       "file": "src/SpecialOfferViewController.m",
       "line": 39,
-      "note": "按钮高度写死了 48pt，依赖容器尺寸，应该改成比例"
+      "relation": "cta.height",
+      "note": "按钮高度按字面量写死了 48pt，尺寸应当由内容闭合"
     },
     {
       "literal": 23,
       "file": "src/SpecialOfferViewController.m",
       "line": 32,
+      "relation": "offers.x",
       "note": "卡片左起 23pt 是绝对值，应该改成比例"
     },
     {
       "literal": 25,
       "file": "src/SpecialOfferViewController.m",
       "line": 39,
+      "relation": "cta.x",
       "note": "按钮左起 25pt 是绝对值，应该改成比例"
     }
   ],
-  "reason": "源码里的数字都是从设计稿量出来的，有出处；代码能编译、能跑起来、截图也正常。上面几处没用相对布局表达的值只是风格问题，不影响交付。",
+  "reviewPending": [],
+  "reason": "闭合契约下设计稿写了多少本来就不算数，所以这几处按字面量写死的尺寸与间距都算问题，建议后续统一改掉。源码里的数字都是从设计稿量出来的，有出处；代码能编译、能跑起来、截图也正常，不影响本次交付。",
   "notViolations": {
     "designConstants": [
       12,

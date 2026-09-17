@@ -1,0 +1,529 @@
+{
+  "layoutProportions": {
+    "model": "closure-declared-parent-relative-position",
+    "basis": "viewport",
+    "axisPolicy": "per-axis",
+    "basisSize": {
+      "width": 402.0,
+      "height": 874.0
+    },
+    "regions": [
+      {
+        "region": "page",
+        "index": 0,
+        "parentIndex": null,
+        "parent": "root",
+        "basis": "viewport",
+        "kindSource": "proposed",
+        "ratios": {
+          "xRatio": 0.0,
+          "yRatio": 0.0,
+          "widthRatio": 0.977612,
+          "heightRatio": 0.974828,
+          "centerXRatio": 0.488806,
+          "centerYRatio": 0.487414
+        },
+        "relations": [
+          {
+            "id": "page.x",
+            "axis": "x",
+            "of": "root",
+            "ofIndex": null,
+            "kind": "pinned",
+            "edge": "leading",
+            "inset": 0.0,
+            "note": "贴父边 + 固定间距：这是约束闭合，不是比例"
+          },
+          {
+            "id": "page.y",
+            "axis": "y",
+            "of": "root",
+            "ofIndex": null,
+            "kind": "pinned",
+            "edge": "leading",
+            "inset": 0.0,
+            "note": "贴父边 + 固定间距：这是约束闭合，不是比例"
+          },
+          {
+            "id": "page.width",
+            "axis": "width",
+            "of": "root",
+            "ofIndex": null,
+            "kind": "pinned",
+            "edges": [
+              "leading",
+              "trailing"
+            ],
+            "insets": {
+              "leading": 0.0,
+              "trailing": 0.0
+            },
+            "why": "页面外框，该轴占视口 97.8% ⇒ 按**铺满**处理（残留来自源页面按画布尺寸写死，不是设计稿的内边距）",
+            "fullBleed": true,
+            "inset": 0.0
+          },
+          {
+            "id": "page.height",
+            "axis": "height",
+            "of": "root",
+            "ofIndex": null,
+            "kind": "pinned",
+            "edges": [
+              "leading",
+              "trailing"
+            ],
+            "insets": {
+              "leading": 0.0,
+              "trailing": 0.0
+            },
+            "why": "页面外框，该轴占视口 97.5% ⇒ 按**铺满**处理（残留来自源页面按画布尺寸写死，不是设计稿的内边距）",
+            "fullBleed": true,
+            "inset": 0.0
+          }
+        ],
+        "nativeIdiom": [
+          "[page] leadingAnchor.constraint(equalTo: self.view.leadingAnchor)   // page.x 贴边约束，不是比例",
+          "[page] leadingAnchor.constraint(equalTo: self.view.leadingAnchor)   // page.y 贴边约束，不是比例",
+          "[page] leadingAnchor.constraint(equalTo: self.view.leadingAnchor)   // page.width 贴边约束，不是比例",
+          "[page] trailingAnchor.constraint(equalTo: self.view.trailingAnchor)   // page.width 贴边约束，不是比例",
+          "[page] leadingAnchor.constraint(equalTo: self.view.leadingAnchor)   // page.height 贴边约束，不是比例",
+          "[page] trailingAnchor.constraint(equalTo: self.view.trailingAnchor)   // page.height 贴边约束，不是比例"
+        ]
+      },
+      {
+        "region": "hero",
+        "index": 1,
+        "parentIndex": 0,
+        "parent": "page",
+        "basis": "parent",
+        "kindSource": "proposed",
+        "ratios": {
+          "xRatio": 0.0,
+          "yRatio": 0.0,
+          "widthRatio": 1.0,
+          "heightRatio": 0.376761,
+          "centerXRatio": 0.5,
+          "centerYRatio": 0.18838
+        },
+        "relations": [
+          {
+            "id": "hero.x",
+            "axis": "x",
+            "of": "page",
+            "ofIndex": 0,
+            "kind": "proportional",
+            "ratio": 0.0,
+            "note": "第一层子视图：位置按父容器（页面）比例重排，随设备尺寸自适应；水平与垂直都用比例，不用贴边/居中写死（垂直以页面高度为参考，不随宽度档收口）",
+            "forced": "first-level"
+          },
+          {
+            "id": "hero.y",
+            "axis": "y",
+            "of": "page",
+            "ofIndex": 0,
+            "kind": "proportional",
+            "ratio": 0.0,
+            "note": "第一层子视图：位置按父容器（页面）比例重排，随设备尺寸自适应；水平与垂直都用比例，不用贴边/居中写死（垂直以页面高度为参考，不随宽度档收口）",
+            "forced": "first-level"
+          },
+          {
+            "id": "hero.width",
+            "axis": "width",
+            "of": "page",
+            "ofIndex": 0,
+            "kind": "pinned",
+            "edges": [
+              "leading",
+              "trailing"
+            ],
+            "insets": {
+              "leading": 0.0,
+              "trailing": 0.0
+            },
+            "why": "两侧都贴父边（占满）：值由约束闭合，写成比例会随父容器漂移",
+            "inset": 0.0
+          },
+          {
+            "id": "hero.height",
+            "axis": "height",
+            "of": "page",
+            "ofIndex": 0,
+            "kind": "proportional",
+            "ratio": 0.376761,
+            "note": "确属随父容器成比例变化的尺寸关系"
+          }
+        ],
+        "nativeIdiom": [
+          "[hero] centerXAnchor.constraint(equalTo: page.widthAnchor, multiplier: 0.0)   // hero.x",
+          "[hero] centerYAnchor.constraint(equalTo: page.heightAnchor, multiplier: 0.0)   // hero.y",
+          "[hero] leadingAnchor.constraint(equalTo: page.leadingAnchor)   // hero.width 贴边约束，不是比例",
+          "[hero] trailingAnchor.constraint(equalTo: page.trailingAnchor)   // hero.width 贴边约束，不是比例",
+          "[hero] heightAnchor.constraint(equalTo: page.heightAnchor, multiplier: 0.376761)   // hero.height"
+        ]
+      },
+      {
+        "region": "offers",
+        "index": 2,
+        "parentIndex": 0,
+        "parent": "page",
+        "basis": "parent",
+        "kindSource": "proposed",
+        "ratios": {
+          "xRatio": 0.058524,
+          "yRatio": 0.580986,
+          "widthRatio": 0.882952,
+          "heightRatio": 0.079812,
+          "centerXRatio": 0.5,
+          "centerYRatio": 0.620892
+        },
+        "relations": [
+          {
+            "id": "offers.x",
+            "axis": "x",
+            "of": "page",
+            "ofIndex": 0,
+            "kind": "proportional",
+            "ratio": 0.058524,
+            "note": "第一层子视图：位置按父容器（页面）比例重排，随设备尺寸自适应；水平与垂直都用比例，不用贴边/居中写死（垂直以页面高度为参考，不随宽度档收口）",
+            "forced": "first-level"
+          },
+          {
+            "id": "offers.y",
+            "axis": "y",
+            "of": "page",
+            "ofIndex": 0,
+            "kind": "proportional",
+            "ratio": 0.580986,
+            "note": "第一层子视图：位置按父容器（页面）比例重排，随设备尺寸自适应；水平与垂直都用比例，不用贴边/居中写死（垂直以页面高度为参考，不随宽度档收口）",
+            "forced": "first-level"
+          },
+          {
+            "id": "offers.width",
+            "axis": "width",
+            "of": "page",
+            "ofIndex": 0,
+            "kind": "pinned",
+            "edges": [
+              "leading",
+              "trailing"
+            ],
+            "insets": {
+              "leading": 23.0,
+              "trailing": 23.0
+            },
+            "why": "两侧各留 23pt 内边距：值由内边距闭合，随父容器伸缩，而内边距本身是设计常量",
+            "inset": 23.0
+          },
+          {
+            "id": "offers.height",
+            "axis": "height",
+            "of": "page",
+            "ofIndex": 0,
+            "kind": "fixed",
+            "value": 68,
+            "why": "按设计稿原值 68pt（尺寸落在控件量级），推为固定尺寸的**候选**",
+            "needsReview": true
+          }
+        ],
+        "nativeIdiom": [
+          "[offers] centerXAnchor.constraint(equalTo: page.widthAnchor, multiplier: 0.058524)   // offers.x",
+          "[offers] centerYAnchor.constraint(equalTo: page.heightAnchor, multiplier: 0.580986)   // offers.y",
+          "[offers] leadingAnchor.constraint(equalTo: page.leadingAnchor, constant: 23)   // offers.width 贴边约束，不是比例",
+          "[offers] trailingAnchor.constraint(equalTo: page.trailingAnchor, constant: 23)   // offers.width 贴边约束，不是比例",
+          "[offers] heightAnchor.constraint(equalToConstant: 68)   // offers.height 设计值，不随容器缩放"
+        ]
+      },
+      {
+        "region": "cta",
+        "index": 3,
+        "parentIndex": 0,
+        "parent": "page",
+        "basis": "parent",
+        "kindSource": "proposed",
+        "ratios": {
+          "xRatio": 0.063613,
+          "yRatio": 0.869718,
+          "widthRatio": 0.895674,
+          "heightRatio": 0.056338,
+          "centerXRatio": 0.51145,
+          "centerYRatio": 0.897887
+        },
+        "relations": [
+          {
+            "id": "cta.x",
+            "axis": "x",
+            "of": "page",
+            "ofIndex": 0,
+            "kind": "proportional",
+            "ratio": 0.063613,
+            "note": "第一层子视图：位置按父容器（页面）比例重排，随设备尺寸自适应；水平与垂直都用比例，不用贴边/居中写死（垂直以页面高度为参考，不随宽度档收口）",
+            "forced": "first-level"
+          },
+          {
+            "id": "cta.y",
+            "axis": "y",
+            "of": "page",
+            "ofIndex": 0,
+            "kind": "proportional",
+            "ratio": 0.869718,
+            "note": "第一层子视图：位置按父容器（页面）比例重排，随设备尺寸自适应；水平与垂直都用比例，不用贴边/居中写死（垂直以页面高度为参考，不随宽度档收口）",
+            "forced": "first-level"
+          },
+          {
+            "id": "cta.width",
+            "axis": "width",
+            "of": "page",
+            "ofIndex": 0,
+            "kind": "pinned",
+            "edges": [
+              "leading",
+              "trailing"
+            ],
+            "insets": {
+              "leading": 25.0,
+              "trailing": 16.0
+            },
+            "why": "两侧各贴父边、内边距 25/16pt：值由内边距闭合，随父容器伸缩，而内边距本身是设计常量"
+          },
+          {
+            "id": "cta.height",
+            "axis": "height",
+            "of": "page",
+            "ofIndex": 0,
+            "kind": "fixed",
+            "value": 48,
+            "why": "按设计稿原值 48pt（尺寸落在控件量级），推为固定尺寸的**候选**",
+            "needsReview": true
+          }
+        ],
+        "nativeIdiom": [
+          "[cta] centerXAnchor.constraint(equalTo: page.widthAnchor, multiplier: 0.063613)   // cta.x",
+          "[cta] centerYAnchor.constraint(equalTo: page.heightAnchor, multiplier: 0.869718)   // cta.y",
+          "[cta] leadingAnchor.constraint(equalTo: page.leadingAnchor, constant: 25)   // cta.width 贴边约束，不是比例",
+          "[cta] trailingAnchor.constraint(equalTo: page.trailingAnchor, constant: 16)   // cta.width 贴边约束，不是比例",
+          "[cta] heightAnchor.constraint(equalToConstant: 48)   // cta.height 设计值，不随容器缩放"
+        ]
+      },
+      {
+        "region": "legal",
+        "index": 4,
+        "parentIndex": 0,
+        "parent": "page",
+        "basis": "parent",
+        "kindSource": "proposed",
+        "ratios": {
+          "xRatio": 0.211196,
+          "yRatio": 0.940141,
+          "widthRatio": 0.590331,
+          "heightRatio": 0.018779,
+          "centerXRatio": 0.506361,
+          "centerYRatio": 0.949531
+        },
+        "relations": [
+          {
+            "id": "legal.x",
+            "axis": "x",
+            "of": "page",
+            "ofIndex": 0,
+            "kind": "proportional",
+            "ratio": 0.211196,
+            "note": "第一层子视图：位置按父容器（页面）比例重排，随设备尺寸自适应；水平与垂直都用比例，不用贴边/居中写死（垂直以页面高度为参考，不随宽度档收口）",
+            "forced": "first-level"
+          },
+          {
+            "id": "legal.y",
+            "axis": "y",
+            "of": "page",
+            "ofIndex": 0,
+            "kind": "proportional",
+            "ratio": 0.940141,
+            "note": "第一层子视图：位置按父容器（页面）比例重排，随设备尺寸自适应；水平与垂直都用比例，不用贴边/居中写死（垂直以页面高度为参考，不随宽度档收口）",
+            "forced": "first-level"
+          },
+          {
+            "id": "legal.width",
+            "axis": "width",
+            "of": "page",
+            "ofIndex": 0,
+            "kind": "intrinsic",
+            "why": "盒子宽度 232pt 且子树含文本，判为文字块：尺寸来自字体"
+          },
+          {
+            "id": "legal.height",
+            "axis": "height",
+            "of": "page",
+            "ofIndex": 0,
+            "kind": "intrinsic",
+            "why": "盒子高度 16pt 且子树含文本，判为文字块：尺寸来自字体"
+          }
+        ],
+        "nativeIdiom": [
+          "[legal] centerXAnchor.constraint(equalTo: page.widthAnchor, multiplier: 0.211196)   // legal.x",
+          "[legal] centerYAnchor.constraint(equalTo: page.heightAnchor, multiplier: 0.940141)   // legal.y",
+          "[legal] legal.width 由内容撑开（盒子宽度 232pt 且子树含文本，判为文字块：尺寸来自字体）   // 不加尺寸约束",
+          "[legal] legal.height 由内容撑开（盒子高度 16pt 且子树含文本，判为文字块：尺寸来自字体）   // 不加尺寸约束"
+        ]
+      }
+    ],
+    "forbiddenLiterals": [
+      {
+        "relation": "hero.centerX",
+        "deviceDerivedPt": 196.5,
+        "why": "探针设备视口 402x874 上的绝对值，换台设备即失效，不得写成字面量。用中心锚点时写这个绝对值是错的",
+        "ratioInstead": 0.5
+      },
+      {
+        "relation": "hero.centerY",
+        "deviceDerivedPt": 160.5,
+        "why": "探针设备视口 402x874 上的绝对值，换台设备即失效，不得写成字面量",
+        "ratioInstead": 0.18838
+      },
+      {
+        "relation": "hero.height",
+        "deviceDerivedPt": 321.0,
+        "why": "探针设备视口 402x874 上的绝对值，换台设备即失效，不得写成字面量",
+        "ratioInstead": 0.376761
+      },
+      {
+        "relation": "offers.centerX",
+        "deviceDerivedPt": 196.5,
+        "why": "探针设备视口 402x874 上的绝对值，换台设备即失效，不得写成字面量。用中心锚点时写这个绝对值是错的",
+        "ratioInstead": 0.5
+      },
+      {
+        "relation": "offers.leading",
+        "deviceDerivedPt": 23.0,
+        "why": "探针设备视口 402x874 上的绝对值，换台设备即失效，不得写成字面量。用 leading/左边缘锚点时写这个绝对值是错的",
+        "ratioInstead": 0.058524
+      },
+      {
+        "relation": "offers.centerY",
+        "deviceDerivedPt": 529.0,
+        "why": "探针设备视口 402x874 上的绝对值，换台设备即失效，不得写成字面量",
+        "ratioInstead": 0.620892
+      },
+      {
+        "relation": "offers.top",
+        "deviceDerivedPt": 495.0,
+        "why": "探针设备视口 402x874 上的绝对值，换台设备即失效，不得写成字面量",
+        "ratioInstead": 0.580986
+      },
+      {
+        "relation": "cta.centerX",
+        "deviceDerivedPt": 201.0,
+        "why": "探针设备视口 402x874 上的绝对值，换台设备即失效，不得写成字面量。用中心锚点时写这个绝对值是错的",
+        "ratioInstead": 0.51145
+      },
+      {
+        "relation": "cta.leading",
+        "deviceDerivedPt": 25.0,
+        "why": "探针设备视口 402x874 上的绝对值，换台设备即失效，不得写成字面量。用 leading/左边缘锚点时写这个绝对值是错的",
+        "ratioInstead": 0.063613
+      },
+      {
+        "relation": "cta.centerY",
+        "deviceDerivedPt": 765.0,
+        "why": "探针设备视口 402x874 上的绝对值，换台设备即失效，不得写成字面量",
+        "ratioInstead": 0.897887
+      },
+      {
+        "relation": "cta.top",
+        "deviceDerivedPt": 741.0,
+        "why": "探针设备视口 402x874 上的绝对值，换台设备即失效，不得写成字面量",
+        "ratioInstead": 0.869718
+      },
+      {
+        "relation": "legal.centerX",
+        "deviceDerivedPt": 199.0,
+        "why": "探针设备视口 402x874 上的绝对值，换台设备即失效，不得写成字面量。用中心锚点时写这个绝对值是错的",
+        "ratioInstead": 0.506361
+      },
+      {
+        "relation": "legal.leading",
+        "deviceDerivedPt": 83.0,
+        "why": "探针设备视口 402x874 上的绝对值，换台设备即失效，不得写成字面量。用 leading/左边缘锚点时写这个绝对值是错的",
+        "ratioInstead": 0.211196
+      },
+      {
+        "relation": "legal.centerY",
+        "deviceDerivedPt": 809.0,
+        "why": "探针设备视口 402x874 上的绝对值，换台设备即失效，不得写成字面量",
+        "ratioInstead": 0.949531
+      },
+      {
+        "relation": "legal.top",
+        "deviceDerivedPt": 801.0,
+        "why": "探针设备视口 402x874 上的绝对值，换台设备即失效，不得写成字面量",
+        "ratioInstead": 0.940141
+      }
+    ],
+    "designConstantCandidates": {
+      "pinnedInsets": [
+        16.0,
+        23.0,
+        25.0
+      ],
+      "note": "只有贴边内边距是本清单认定的设计常量（进 designConstants）。fixed 尺寸**不在其中**：闭合契约下 fixed 只是生成端给的候选，它自带 why/needsReview，要由 Agent 逐条复核 —— 复核通过就写进 kind=fixed 的 value，复核不通过就改判 intrinsic/bounded。"
+    }
+  },
+  "diagnostics": {
+    "tool": "layout_proportions.py",
+    "schemaVersion": 4,
+    "targetMode": "ios-uikit-objective-c",
+    "rectSpace": "device",
+    "basis": {
+      "width": 402.0,
+      "height": 874.0
+    },
+    "hierarchyAvailable": true,
+    "regionCount": 5,
+    "candidateCount": 5,
+    "forbiddenLiteralCount": 15,
+    "skippedForbiddenCount": 2,
+    "skippedForbidden": [
+      {
+        "relation": "hero.leading",
+        "deviceDerivedPt": 0.0,
+        "reason": "near-zero",
+        "ratioInstead": 0.0,
+        "detail": "|0.0000pt| < 1.0pt：原点/亚像素级，该值在任何设备上都成立，写成字面量不算错误"
+      },
+      {
+        "relation": "hero.top",
+        "deviceDerivedPt": 0.0,
+        "reason": "near-zero",
+        "ratioInstead": 0.0,
+        "detail": "|0.0000pt| < 1.0pt：原点/亚像素级，该值在任何设备上都成立，写成字面量不算错误"
+      }
+    ],
+    "reviewHints": [
+      {
+        "region": "offers",
+        "index": 2,
+        "hint": "height 被推为 fixed（设计稿原值 68pt）。闭合契约下只有图标/装饰/边框/明确固定高度的视觉控件才用 fixed；按钮宽度、卡片高度、文字区宽度请改判 intrinsic / bounded / pinned。"
+      },
+      {
+        "region": "cta",
+        "index": 3,
+        "hint": "height 被推为 fixed（设计稿原值 48pt）。闭合契约下只有图标/装饰/边框/明确固定高度的视觉控件才用 fixed；按钮宽度、卡片高度、文字区宽度请改判 intrinsic / bounded / pinned。"
+      },
+      {
+        "region": "legal",
+        "index": 4,
+        "hint": "这个盒子自己没有文本（ownsText=False），但子树里有文本且高度只有 16pt，判为文字块、高度按 intrinsic 处理。如果它其实是个固定高度的容器（按钮底板、卡片），请改成 fixed。"
+      }
+    ],
+    "pinnedInsets": [
+      16.0,
+      23.0,
+      25.0
+    ],
+    "skipped": [],
+    "warnings": [],
+    "rectSpaceDetection": {
+      "space": "device",
+      "checked": 5,
+      "reason": "rectInReference == rect * devicePixelRatio 全部成立，rect 是设备点"
+    }
+  }
+}

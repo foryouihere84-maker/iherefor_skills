@@ -29,7 +29,7 @@ cases:
     - evals/cases/click-handler-naming.yaml
     - evals/cases/resource-semantic-naming.yaml
     - evals/cases/scripts-must-not-generate-source.yaml
-    - evals/cases/layout-sizes-constant-positions-parent-relative.yaml
+    - evals/cases/layout-no-device-derived-coordinates.yaml
     - evals/cases/adaptive-ipad-requires-width-axis.yaml
   # 所有用例继承的默认约束。
   defaults:

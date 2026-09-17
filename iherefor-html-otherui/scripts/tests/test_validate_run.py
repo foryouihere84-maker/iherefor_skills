@@ -46,6 +46,10 @@ def make_run(tmp, run_id, target_mode="ios-uikit-objective-c", gate_status=None,
     })
     write_json(run_dir / "ui-implementation-plan.json", {"schemaVersion": 1})
     write_json(run_dir / "resource-policy.json", {"schemaVersion": 1})
+    # 两张页面分析表是**强制产物**（缺一即判不合规），合规基线必须带上，
+    # 否则每个用例都会因为「缺少必需产物」而失败，把真正的判据淹没。
+    (run_dir / "过程中页面分析表.md").write_text("# 过程中页面分析表\n\n| 元素 | bounds |\n|---|---|\n")
+    (run_dir / "最终页面分析表.md").write_text("# 最终页面分析表\n\n| 元素 | 实测 |\n|---|---|\n")
     write_json(run_dir / "runtime-device.json", {
         "schemaVersion": 1,
         "screenBoundsPoints": {"width": 402, "height": 874},
@@ -65,7 +69,12 @@ def run_validator(run_dir, source=None):
 
 
 def layout_proportions_plan(relation_overrides=None):
-    """一份声明了 layoutProportions 的实现计划（合规基线，两轴口径）。"""
+    """一份声明了 layoutProportions 的实现计划（合规基线，闭合契约口径）。
+
+    ``fixed`` 必须带 ``why``：闭合契约下它是特例（视觉常量），不是默认值 ——
+    设计稿给了 bounds 是**事实**，写成固定约束是**决策**，没有 why 两者在产物里
+    长得一模一样，于是「照抄设计稿尺寸」这个要拦的头号问题就没痕迹可查。
+    """
     relations = [
         {"id": "Card.x", "kind": "pinned", "axis": "x", "of": "root",
          "edges": ["leading"], "inset": 16.0},
@@ -73,9 +82,11 @@ def layout_proportions_plan(relation_overrides=None):
          "ratio": 0.839817},
         {"id": "Card.width", "kind": "pinned", "axis": "width", "of": "root",
          "edges": ["leading", "trailing"],
-         "insets": {"leading": 16.0, "trailing": 16.0}},
+         "insets": {"leading": 16.0, "trailing": 16.0},
+         "why": "两侧各留 16pt 内边距：值由内边距闭合，随父容器伸缩"},
         {"id": "Card.height", "kind": "fixed", "axis": "height", "of": "root",
-         "value": 68.0},
+         "value": 68.0,
+         "why": "卡片底板是明确固定高度的视觉控件，高度不随容器变化"},
     ]
     if relation_overrides:
         relations = relation_overrides(relations)
@@ -198,7 +209,7 @@ def main():
         if code != 0:
             problems.append(f"用例5：Android run 被错误要求 iOS 产物：{data['violations']}")
 
-        # ---- 布局约束契约：尺寸是常量、位置相对直接父视图 ----
+        # ---- 布局约束契约：尺寸按闭合方式声明、位置相对直接父视图 ----
         plan_payload = layout_proportions_plan()
         ok_source = compliant_source(plan_payload)
 
