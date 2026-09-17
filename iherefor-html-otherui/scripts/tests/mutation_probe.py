@@ -197,8 +197,26 @@ PROBES = [
      '        "needsReview": True,',
      '        "why": f"按设计稿原值 {size:g}pt（{evidence}），推为固定尺寸的**候选**",'),
     ("源码侧不再核对 intrinsic/bounded 的轴被写成 == 常量", CHECK, LAYOUT_TEST,
-     "                hits = size_constant_hits(text, axis)",
-     "                hits = []"),
+     "            hits = size_constant_hits(text, axis)",
+     "            hits = []"),
+    # ---- 源码侧「定位不到」与「没实现」必须分开 ----
+    #
+    # `check_source_kinds` 里有一道定位守卫：区域名在源码里找不到时只留告警、
+    # 不做判定。踩过的坑是**没有这道守卫**的版本 —— 「这一行没同时提到区域名和原语」
+    # 被当成「这个区域没实现」，于是源码写 `offersContainer.heightAnchor …GreaterThanOrEqualToConstant`
+    # 而计划 region 叫 `offers` 时，正确实现被判违规、闸门拦下正确代码。
+    # 所以下面两条探针复刻的是**那道守卫被拿掉**的形态，各自对应 §2/§3 一侧。
+    ("bounded 判据又把「定位不到」读成「没实现」", CHECK, LAYOUT_TEST,
+     '        if rel.get("kind") != "bounded" or not lines:',
+     '        if rel.get("kind") != "bounded":'),
+    ("aspect-ratio 判据又把「定位不到」读成「没实现」", CHECK, LAYOUT_TEST,
+     '        if rel.get("kind") != "aspect-ratio" or not lines:',
+     '        if rel.get("kind") != "aspect-ratio":'),
+    # 上面那条假阳性的**偷懒修法**是把「同区域」放松成「整份源码里有一条就算」——
+    # 那会让「别处一条 >= 就能把 bounded 声明糊过去」重新开门。这条探针守的就是它。
+    ("bounded 放松成「整份源码里有一条 >= 就算实现」", CHECK, LAYOUT_TEST,
+     "        if not any(BOUNDED_RE.search(text) for _, _, text in lines):",
+     "        if not any(BOUNDED_RE.search(text) for text in all_text):"),
     # ---- deliveryReady 的三态推导 ----
     # 这里必须复刻**历史上真实的那段函数体**（`or {}` + `.get(...) == .get(...)`），
     # 而不是随手把守卫删掉：删守卫会让 `unsupported['count']` 在 `{}` 上取下标直接

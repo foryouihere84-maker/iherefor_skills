@@ -958,6 +958,78 @@ def main():
         check(proc.returncode == 0 and any("区域名" in w for w in (data or {}).get("warnings", [])),
               "用例26.5f：计划区域名在源码里找不到必须留告警，不能静默通过")
 
+        # 26.5g–26.5j：**「定位不到」与「没实现」是两件事**，不能混成一条判据。
+        #
+        # 前一版的 §2/§3 拿「这一行是否**同时**提到区域名和原语」直接当判据，于是
+        # 「区域名没命中」被读成「这个区域没有边界原语」：源码按习惯写成
+        # `offersContainer.heightAnchor constraintGreaterThanOrEqualToConstant:44`
+        # （**正确实现**）而计划 region 叫 `offers` 时，会被判 bounded-axis-missing-limit、
+        # 退出码 1 —— 闸门拦下了正确代码，而同一次运行的告警里还写着「区域名一个都没出现」，
+        # 自相矛盾。对外的代价是「按本仓契约写对了却过不了门」。
+        #
+        # 所以这四条一起钉死：**命名不一致 ⇒ 不判违规、但必须留告警并写明没判**；
+        # **定位到了却没有 ⇒ 照旧判违规**（否则「别处一条 >= 就能糊过去」这个洞又开了）。
+
+        # 26.5g：本区域名在源码里定位不到（边界被写在了别的区域）—— 这是命名不一致，
+        # 不是「没实现」，不得判硬违规。
+        proc, data, found = closure_case(
+            "unlocatable-bounded",
+            [{"id": "card.height", "axis": "height", "of": "page", "ofIndex": 0,
+              "kind": "bounded", "min": 44.0, "why": "触控下限"}],
+            "[footer.heightAnchor constraintGreaterThanOrEqualToConstant:44];\n")
+        check(proc.returncode == 0 and "bounded-axis-missing-limit" not in found,
+              f"用例26.5g：区域名定位不到时不得读成「没实现边界」，得到退出码 "
+              f"{proc.returncode}：{sorted(found)}")
+        check(any("区域名" in w and "没有判定" in w for w in (data or {}).get("warnings", [])),
+              "用例26.5g：定位不到必须逐条点名并写明这几条没判，不能静默跳过")
+
+        # 26.5h：区域**定位到了**（`card` 出现在别处），但边界原语在别的区域 ——
+        # 这才是真的「用别处一条 >= 伪装」，必须判违规。
+        # 注意 26.5c 证明不了这一条：它整份源码一个 >= 都没有，因此同时会命中 §1，
+        # 从结果集里读不出 §2 到底在不在判。（本用例的源码里没有 == 常量约束，
+        # 所以 found 只会是 §2 的那一条 —— 隔离是干净的。）
+        proc, data, found = closure_case(
+            "cross-region-bounded",
+            [{"id": "card.height", "axis": "height", "of": "page", "ofIndex": 0,
+              "kind": "bounded", "min": 44.0, "why": "触控下限"}],
+            "card.backgroundColor = [UIColor whiteColor];\n"
+            "[footer.heightAnchor constraintGreaterThanOrEqualToConstant:44];\n")
+        check("bounded-axis-missing-limit" in found,
+              f"用例26.5h：边界原语写在别的区域必须判违规，得到 {sorted(found)}")
+
+        # 26.5i：aspect-ratio 在**本区域**的正确写法。既有用例只测过「缺」（26.5d），
+        # 没测过「写对了不得误报」—— 少了这一半，误报就会一路绿着放出去。
+        proc, data, found = closure_case(
+            "aspect-ok",
+            [{"id": "card.height", "axis": "height", "of": "page", "ofIndex": 0,
+              "kind": "aspect-ratio", "ratio": 1.7778}],
+            "card.heightAnchor constraintEqualToAnchor:card.widthAnchor multiplier:0.5625;\n")
+        check(proc.returncode == 0 and "aspect-ratio-idiom-missing" not in found,
+              f"用例26.5i：本区域有比例约束是正确写法，不得报缺失，得到退出码 "
+              f"{proc.returncode}：{sorted(found)}")
+
+        # 26.5j：比例原语写在别的区域，本区域只有一句无关代码 —— 必须判违规。
+        proc, data, found = closure_case(
+            "cross-region-aspect",
+            [{"id": "card.height", "axis": "height", "of": "page", "ofIndex": 0,
+              "kind": "aspect-ratio", "ratio": 1.7778}],
+            "card.backgroundColor = [UIColor whiteColor];\n"
+            "icon.widthAnchor constraintEqualToAnchor:icon.heightAnchor multiplier:1;\n")
+        check("aspect-ratio-idiom-missing" in found,
+              f"用例26.5j：比例原语写在别的区域必须判违规，得到 {sorted(found)}")
+
+        # 26.5k：aspect-ratio 的区域名定位不到 —— 与 26.5g 同款，不得判硬违规。
+        # 这条是 §3 定位守卫的**唯一**红点：少了它，「定位不到 ⇒ 没实现」的回归
+        # 在 aspect-ratio 一侧没有任何用例会变红（26.5i/26.5j 的区域都定位得到）。
+        proc, data, found = closure_case(
+            "unlocatable-aspect",
+            [{"id": "card.height", "axis": "height", "of": "page", "ofIndex": 0,
+              "kind": "aspect-ratio", "ratio": 1.7778}],
+            "icon.widthAnchor constraintEqualToAnchor:icon.heightAnchor multiplier:1;\n")
+        check(proc.returncode == 0 and "aspect-ratio-idiom-missing" not in found,
+              f"用例26.5k：区域名定位不到时不得读成「没实现比例」，得到退出码 "
+              f"{proc.returncode}：{sorted(found)}")
+
         # ---------------------------------------------------------------- 退出码
         proc = run(CHECK_SCRIPT, "--plan", str(tmp / "nope.json"), "--source", str(source_dir))
         check(proc.returncode == 2 and "Traceback" not in proc.stderr,
@@ -1000,7 +1072,8 @@ def main():
           "位置基准是直接父视图、外框铺满、文字块 intrinsic 有 why、孤立大偏移降级并提示、"
           "禁止清单只收 proportional、合规源码通过、把比例换成设备推导值被精确拦下、"
           "注释/颜色/百分比不误报、小数值待判、豁免可复核、计划硬伤先于源码拦住、"
-          "源码侧闭合契约逐类核对（intrinsic 写死宽高/bounded 无边界/aspect-ratio 无比例）、"
+          "源码侧闭合契约逐类核对（intrinsic 写死宽高/bounded 无边界/aspect-ratio 无比例/"
+          "定位不到只告警不误判）、"
           "fixed 必须带 why 且生成端只给候选、用法错误干净退出")
     return 0
 

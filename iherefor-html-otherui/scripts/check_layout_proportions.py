@@ -179,6 +179,15 @@ SIZE_CONSTANT_RES = {axis: [(re.compile(p, re.IGNORECASE), name) for p, name in 
 # 计划里合法的关系类别（闭合契约，两轴八类）。见 references/sizing-and-positioning.md。
 RELATION_KINDS = ("fixed", "pinned", "proportional", "intrinsic", "bounded",
                   "equal", "centered", "aspect-ratio")
+# 需要「源码里出现**本区域**的原语」才谈得上核对的类别。**这是过滤器，不是穷举清单** ——
+# 只有这三类要求源码里找到同区域的原语；``fixed`` 的判据是设计值与 ``why``、
+# ``pinned`` 看贴边、``proportional`` 看比例系数，各有各的判据；``equal``/``centered`` 只告警。
+# 因此**故意不**登记进 ``test_kind_taxonomy.EXHAUSTIVE_LISTS``：部分正是它的本意，
+# 那张表只收「给关系挑类别」的穷举用途（登记进去反而会因为不是八类的排列而报错）。
+LOCATED_KINDS = ("intrinsic", "bounded", "aspect-ratio")
+# 其中「轴被写成 == 常量」这条只适用于 intrinsic / bounded。``aspect-ratio`` 被写成
+# 等值常量时另有「比例原语缺失」的判据与措辞，两处一起报会把「声明的是什么」说错。
+AXIS_CONSTANT_KINDS = ("intrinsic", "bounded")
 # 带「比例系数」的字段名。两轴八类里**只有 proportional 与 aspect-ratio 带系数**，
 # 其余六类带这些字段就是自相矛盾 —— 它们的意思分别是「写死设计值」「贴父边」
 # 「对齐父视图中心」「内容撑开」「边界约束」「与同类相等」，都不需要系数。
@@ -799,8 +808,16 @@ def check_source_kinds(relations, files, lines_by_file) -> tuple:
 
     * ``intrinsic-axis-pinned-to-constant``：计划把 ``{region}.{axis}`` 声明为
       ``intrinsic``，源码里该区域的该轴出现了 ``==`` 常量约束。这是旧契约的直接残留。
-    * ``bounded-axis-missing-limit``：声明了 ``bounded``，但整份源码里**一个边界原语都没有**。
-    * ``aspect-ratio-idiom-missing``：声明了 ``aspect-ratio``，源码里没有任何比例约束原语。
+    * ``bounded-axis-missing-limit``：声明了 ``bounded``，但**提到该区域的那些行**里
+      一个边界原语（``>=`` / ``<=`` / ``min`` / ``max``）都没有。别处的一条 ``>=``
+      不能顶替 —— 那说明边界加在了别的视图上，本关系并没有实现。
+    * ``aspect-ratio-idiom-missing``：声明了 ``aspect-ratio``，但**提到该区域的那些行**
+      里没有任何比例约束原语。同上，别处一条比例约束不能顶替本关系。
+
+    这三条「缺失/矛盾」判据都有一个**共同前提**：该区域名必须先能在源码里定位到。
+    定位不到时不算「没实现」，只走下面的 ``relation-not-locatable`` 告警 ——
+    否则源码按习惯把 region 写成 ``offersContainer`` 而计划里叫 ``offers``，
+    **正确的实现会被判违规**。
 
     **告警** —— 可能是别的写法，也可能是真的漏了：
 
@@ -810,6 +827,9 @@ def check_source_kinds(relations, files, lines_by_file) -> tuple:
       （说明页面有内容驱动的尺寸），却没找到 Dynamic Type 或优先级原语。
     * ``relation-not-locatable``：计划里的区域名在源码里一个都没出现，
       意味着这些声明无法与实现对应上（可能是命名不一致，也可能压根没按计划写）。
+      被点到名的关系**本轮没有判定**（不是「判过且通过」）。这是一个用来提示
+      「有声明被静默跳过」的告警，所以只要有一条定位不到就逐条列出，
+      不能等到「全部定位不到」才说 —— 部分漏判和全部漏判一样看不见。
     """
     violations, warnings = [], []
     if not relations or not files:
@@ -822,78 +842,101 @@ def check_source_kinds(relations, files, lines_by_file) -> tuple:
     for rel in relations:
         by_axis.setdefault(rel.get("kind"), []).append(rel)
 
-    # ---- 1. intrinsic / bounded 的区域轴被写成了 == 常量（最硬的漏洞） ----
-    checkable = [r for r in relations
-                 if r.get("kind") in ("intrinsic", "bounded") and r.get("axis")]
-    unlocatable = []
-    for rel in checkable:
-        region = rel.get("id", "").rsplit(".", 1)[0]
-        axis = rel.get("axis")
-        tokens = _region_tokens(region)
-        if not tokens:
-            continue
-        located = False
-        for path in files:
-            for number, text in enumerate(code_by_file.get(path, []), start=1):
-                if not _line_mentions_region(text, tokens):
-                    continue
-                located = True
-                hits = size_constant_hits(text, axis)
-                if hits:
-                    violations.append({
-                        "kind": "intrinsic-axis-pinned-to-constant",
-                        "relation": rel.get("id"),
-                        "declaredKind": rel.get("kind"),
-                        "axis": axis,
-                        "file": str(path),
-                        "line": number,
-                        "detail": f"计划把 {rel.get('id')} 声明为 {rel.get('kind')}"
-                                  f"（{'内容撑开' if rel.get('kind') == 'intrinsic' else '边界约束'}），"
-                                  f"源码里该区域的 {axis} 轴却是**等值常量**约束（{hits[0]}）。"
-                                  f"设计稿给的宽高只是参考事实：文本/按钮/容器应当由内容或边界闭合，"
-                                  f"写成 == 常量会在窄屏、动态字体、长本地化文本下失守。"
-                                  f"要么改成 {'不给该轴约束（intrinsic）' if rel.get('kind') == 'intrinsic' else '>= / <= 边界'}，"
-                                  f"要么把计划改成 fixed 并给出 why。",
-                        "text": text.strip()[:120],
-                    })
-        if not located:
-            unlocatable.append(rel.get("id"))
+    # ---- 0. 「计划 → 源码」定位，三类判据共用同一次口径 ----
+    #
+    # 为什么单列一步：§1/§2/§3 都要问「这个区域在源码里吗」，而对「不在」的处理
+    # **必须一致**。区域名找不到 = 计划与实现对不上（多半是命名不一致），按本文件
+    # 既有口径那是**告警**（relation-not-locatable），不是硬违规。
+    #
+    # 本函数的前一版让 §2/§3 各自判，把「这一行有没有同时提到区域名和原语」直接
+    # 当判据 —— 区域名没命中的行当然也不会有原语，于是「定位不到」被读成
+    # 「这个区域没实现边界」，硬违规拦下了**正确的实现**：
+    #
+    #     计划 region 叫 offers，源码写
+    #     offersContainer.heightAnchor constraintGreaterThanOrEqualToConstant:44
+    #     → violations: bounded-axis-missing-limit（退出码 1）
+    #     而同一次运行的 warnings 里还写着「区域名一个都没出现」—— 自相矛盾。
+    #
+    # 根因是 ``_line_mentions_region`` 的边界正则认不出后缀命名（它自己只承诺认
+    # 原始名 / snake_case / 前导下划线，那是刻意的保守）。所以把「定位」与「判定」
+    # 拆开：定位不到 → 告警并**明确写出这几条没判**；定位到了才谈得上判「没实现」。
+    def region_lines(rel) -> list:
+        """源码里**提到该区域**的行 ``[(path, 行号, 文本)]``。
 
-    # ---- 2. bounded 必须在同一区域实现，不能用别处一条 >= 伪装 ----
+        这是本函数唯一的「区域归属」判据：§1/§2/§3 都只认这里吐出来的行，
+        别处的同款原语一律不算 —— 否则任意一条全局 ``>=`` 就能把 bounded 声明糊过去。
+        """
+        tokens = _region_tokens((rel.get("id") or "").rsplit(".", 1)[0])
+        if not tokens:
+            return []
+        return [(path, number, text)
+                for path in files
+                for number, text in enumerate(code_by_file.get(path, []), start=1)
+                if _line_mentions_region(text, tokens)]
+
+    tracked = [(rel, region_lines(rel)) for rel in relations
+               if rel.get("kind") in LOCATED_KINDS]
+    unlocatable = [rel.get("id") or "(无 id)" for rel, lines in tracked if not lines]
+
     all_text = [line for path in files for line in code_by_file.get(path, [])]
-    for rel in by_axis.get("bounded", []):
-        region = rel.get("id", "").rsplit(".", 1)[0]
+
+    # ---- 1. intrinsic / bounded 的区域轴被写成了 == 常量（最硬的漏洞） ----
+    for rel, lines in tracked:
+        if rel.get("kind") not in AXIS_CONSTANT_KINDS:
+            continue
         axis = rel.get("axis")
-        tokens = _region_tokens(region)
-        matched = False
-        for path in files:
-            for number, text in enumerate(code_by_file.get(path, []), start=1):
-                if tokens and _line_mentions_region(text, tokens) and BOUNDED_RE.search(text):
-                    matched = True
-                    break
-            if matched:
-                break
-        if not matched:
+        if not axis or not lines:
+            continue
+        for path, number, text in lines:
+            hits = size_constant_hits(text, axis)
+            if not hits:
+                continue
+            violations.append({
+                "kind": "intrinsic-axis-pinned-to-constant",
+                "relation": rel.get("id"),
+                "declaredKind": rel.get("kind"),
+                "axis": axis,
+                "file": str(path),
+                "line": number,
+                "detail": f"计划把 {rel.get('id')} 声明为 {rel.get('kind')}"
+                          f"（{'内容撑开' if rel.get('kind') == 'intrinsic' else '边界约束'}），"
+                          f"源码里该区域的 {axis} 轴却是**等值常量**约束（{hits[0]}）。"
+                          f"设计稿给的宽高只是参考事实：文本/按钮/容器应当由内容或边界闭合，"
+                          f"写成 == 常量会在窄屏、动态字体、长本地化文本下失守。"
+                          f"要么改成 {'不给该轴约束（intrinsic）' if rel.get('kind') == 'intrinsic' else '>= / <= 边界'}，"
+                          f"要么把计划改成 fixed 并给出 why。",
+                "text": text.strip()[:120],
+            })
+
+    # ---- 2. bounded 必须在**同一区域**实现，不能用别处一条 >= 伪装 ----
+    for rel, lines in tracked:
+        if rel.get("kind") != "bounded" or not lines:
+            continue
+        if not any(BOUNDED_RE.search(text) for _, _, text in lines):
             violations.append({
                 "kind": "bounded-axis-missing-limit",
                 "relation": rel.get("id", "?"),
-                "axis": axis,
-                "detail": f"计划声明了 {rel.get('id')} 为 bounded，但对应区域源码没有找到 >= / <= 或 min/max 原语；"
-                          "不能用其他区域的边界约束代替本关系。",
+                "axis": rel.get("axis"),
+                "detail": f"计划声明了 {rel.get('id')} 为 bounded，但源码里**提到该区域**的 "
+                          f"{len(lines)} 行里没有 >= / <= 或 min/max 原语；"
+                          "不能用其他区域的边界约束代替本关系。"
+                          "（若你确信写了，先确认源码里的标识符与计划的 region 名能对上："
+                          "对不上时会另有一条「定位不到」的告警，本条不会出现。）",
             })
 
-    # ---- 3. aspect-ratio 必须在同一区域实现，不能用别处一条比例伪装 ----
-    for rel in by_axis.get("aspect-ratio", []):
-        region = rel.get("id", "").rsplit(".", 1)[0]
-        tokens = _region_tokens(region)
-        matched = any(tokens and _line_mentions_region(text, tokens) and ASPECT_RE.search(text)
-                      for path in files for text in code_by_file.get(path, []))
-        if not matched:
+    # ---- 3. aspect-ratio 必须在**同一区域**实现，不能用别处一条比例伪装 ----
+    for rel, lines in tracked:
+        if rel.get("kind") != "aspect-ratio" or not lines:
+            continue
+        if not any(ASPECT_RE.search(text) for _, _, text in lines):
             violations.append({
                 "kind": "aspect-ratio-idiom-missing",
                 "relation": rel.get("id", "?"),
-                "detail": f"计划声明了 {rel.get('id')} 为 aspect-ratio，但对应区域源码没有找到比例约束原语；"
-                          "不能用其他区域的比例约束代替本关系。",
+                "detail": f"计划声明了 {rel.get('id')} 为 aspect-ratio，但源码里**提到该区域**的 "
+                          f"{len(lines)} 行里没有比例约束原语；"
+                          "不能用其他区域的比例约束代替本关系。"
+                          "（若你确信写了，先确认源码里的标识符与计划的 region 名能对上："
+                          "对不上时会另有一条「定位不到」的告警，本条不会出现。）",
             })
 
     # ---- 4. equal：只告警 ----
@@ -917,12 +960,19 @@ def check_source_kinds(relations, files, lines_by_file) -> tuple:
                 "内容驱动的布局必须同时声明「谁扩张、谁被压缩」，否则宽度不足时的截断行为是随机的。"
                 "若本页确实没有文字（纯图形页），忽略本条。")
 
-    # ---- 6. 区域名在源码里找不到 ----
-    if unlocatable and len(unlocatable) == len(checkable):
+    # ---- 6. 区域名在源码里找不到：逐条点名，并说明这几条**没有被判** ----
+    # 不能只在「全部定位不到」时才说：漏判 1 条与漏判 3 条一样看不见，
+    # 而「看不见」正是本契约里最贵的一种错法（没有症状）。
+    if unlocatable:
         warnings.append(
-            f"计划里 {len(checkable)} 条 intrinsic/bounded 关系的区域名在源码里一个都没出现，"
-            "无法与实现对应上：请确认源码里的命名与计划的 region 名一致，"
-            "否则「计划声明了什么」与「代码实现了什么」之间没有可核对的联系。")
+            f"计划里 {len(unlocatable)}/{len(tracked)} 条 "
+            f"{' / '.join(LOCATED_KINDS)} 关系的区域名在源码里找不到"
+            f"（{', '.join(str(name) for name in unlocatable)}），这几条**本轮没有判定**："
+            "请确认源码里的命名与计划的 region 名是否一致 —— 本文件只认原始名、"
+            "snake_case 与前导下划线（offers / offers_view / _offers），"
+            "offersContainer / offersView 这类**后缀命名认不出来**，会被当成定位不到。"
+            f"这几条的判据（{'、'.join(AXIS_CONSTANT_KINDS)} 不得写等值常量 / 边界原语 / 比例原语）"
+            "本次都未核对。")
 
     return violations, warnings
 

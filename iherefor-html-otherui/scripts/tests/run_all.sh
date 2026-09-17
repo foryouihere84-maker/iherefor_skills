@@ -37,6 +37,10 @@ run "init_ui_workspace 目录与索引"        "$PY" scripts/tests/test_init_ui_
 run "decide_next_step 停止判定"           "$PY" scripts/tests/test_decide_next_step.py
 run "文档与脚本参数漂移"                  "$PY" scripts/tests/test_doc_commands.py
 run "类别表守卫（两轴八类单一真相源）"      "$PY" scripts/tests/test_kind_taxonomy.py
+# 源码侧闭合关系的判据（含「定位不到只告警、不误判」那四条）统一放在
+# test_layout_proportions.py 的 26.5 系列：一个被测脚本的判据只放一处，
+# 免得同一个口径有两个家、改一处忘一处。所以这里不为它另起一组，当前共 15 组。
+# （没有自动核对组数的检查，改动后手工数一下 `grep -c '^run ' scripts/tests/run_all.sh`。）
 # 变异探针会临时改写被测源码，因此**不进本套件**（跑法见 evals/README.md）；
 # 它证明的是「上面这些断言不是空的」，改完校验器后应手动跑一次。
 # 判分器侧同理：.runtime/venv/bin/python3 evals/harness/probe_layout_judge.py
