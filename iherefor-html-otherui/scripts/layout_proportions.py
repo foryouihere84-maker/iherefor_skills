@@ -561,15 +561,11 @@ def classify_position(lo: float, hi: float, parent_lo: float, parent_hi: float,
     证据来源：孤立的大偏移不像内边距（更像布局位置），降级为比例并提示复核，
     而不是凭量级就替人拍板。
 
-    ``force_proportional`` 是**分层规则**：第一层子视图（直接父视图 = 页面/page）的
-    位置按父容器比例重排，随设备尺寸变化而自适应 —— 这是「设备尺寸 ≠ 设计稿尺寸」
-    场景下的适配核心。它**只作用于位置轴、且只作用于第一层**：更深层（第一层 → 第二层）
-    的相对关系必须固定，所以嵌套层不强制。尺寸轴照旧，不受此参数影响。
+    ``force_proportional`` 只用于第一层的**水平**位置。垂直位置不应自动按页面高度比例：
+    iOS 通常由 top/bottom 约束、UIStackView、UIScrollView 内容链和 intrinsic height 闭合。
+    只有画布装饰或确有比例语义的纵向元素才显式使用 proportional。
 
-    注意：这里 x、y 都强制比例。x 的比例在计划声明 ``adaptiveLayout`` 后会被
-    ``firstLevelWidthClass``（宽度档收口）在宽档下改由 widthPolicy 重排（见
-    check_adaptive_layout.py）；而 y 的比例**不参与宽度收口** —— 垂直轴的参考要素
-    是页面高度不是宽度，较短手机/横屏下更必须按高度比例重排，否则底部缺失。
+    注意：调用方只应对第一层 x 使用本开关。y 轴由垂直约束、内容链与滚动容器闭合。
     """
     lead, trail = lo - parent_lo, parent_hi - hi
     span = parent_hi - parent_lo
@@ -818,9 +814,7 @@ def analyse(page_facts: dict, transform, rect_space: str, target_mode: str,
                           and not element.get("ownText"))
 
         relations = []
-        # 第一层子视图：直接父视图就是页面外框（page）。这一层的位置按**页面比例**重排，
-        # 随设备尺寸自适应（水平 + 垂直都用比例）；更深层（第一层 → 第二层）的相对关系
-        # 必须固定，所以只有这一层强制比例。这是「设备尺寸 ≠ 设计稿尺寸」时的适配核心。
+        # 第一层子视图只对水平位置强制页面比例；垂直位置走普通约束分类。
         # 尺寸轴独立判定：由**闭合方式**决定（fixed/intrinsic/bounded/aspect-ratio…），
         # 不是「恒等于设计稿」。设计稿的 width/height 只是参考事实，脚本给出的是待 Agent
         # 逐条核对的候选 —— 「脚本生成 = 计划完成」不成立，见 references/sizing-and-positioning.md §2。
@@ -836,7 +830,7 @@ def analyse(page_facts: dict, transform, rect_space: str, target_mode: str,
             parent_hi = origin[axis] + span["width" if axis == "x" else "height"]
             shared = shared_insets(element, axis)
             placed = classify_position(lo, hi, parent_lo, parent_hi, shared,
-                                       force_proportional=is_first_level)
+                                       force_proportional=(is_first_level and axis == "x"))
             relation = {"id": f"{region}.{key}", "axis": key, "of": of_name,
                         "ofIndex": parent_index if basis_kind == "parent" else None,
                         "kind": placed["kind"]}

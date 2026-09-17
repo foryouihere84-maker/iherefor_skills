@@ -146,6 +146,10 @@ Android `sw600dp` 惯用 600dp。声明时必须同时给 `of`（基准父视图
 
 ### 4.1 宽度轴改变容器闭合结果，不缩放视觉常量
 
+宽度轴只负责横向收敛。纵向布局不把页面高度当作默认比例基准；优先由 Auto Layout 的垂直约束、
+UIStackView、UIScrollView 内容链和 intrinsic height 求解。`y` proportional 仅适用于有明确比例语义的
+装饰或媒体区域，并且必须在关系的 `why` 中说明原因。
+
 字号、行高、圆角、描边宽度、阴影、图标与位图资源的点值尺寸、最小点击区
 （≥44pt / 48dp）在**同一个平台的各个宽度档之间逐字相同**。这与
 [sizing-and-positioning.md §2.2](sizing-and-positioning.md#22-哪些量确实该用-fixed也就是永远不缩放的那一小组) 是同一条约束，
@@ -211,7 +215,7 @@ iPad」这个说法本身就不成立——「放大」隐含了一个「从手�
 
 ### 4.2 `adaptiveLayout` 存在时，第一层**水平**位置比例规则只在 `compact` 档生效
 
-[sizing-and-positioning.md §3.1.1](sizing-and-positioning.md#311-第一层子视图位置按页面比例重排设备尺寸--设计稿尺寸时的适配核心)
+[sizing-and-positioning.md §3.1.1](sizing-and-positioning.md#311-第一层子视图横向可重排纵向由内容链闭合)
 规定「第一层子视图的位置按页面比例重排」。这条规则要**分轴看**：
 
 - **水平位置** `x = page.width × ratio` 只在 **compact 档成立**。推到 1024pt 就会出事：
@@ -225,10 +229,8 @@ iPad」这个说法本身就不成立——「放大」隐含了一个「从手�
   `widthPolicy` 重排**（`max-content-width` 就是把它们收进居中的内容列里）。
   `compact` 档维持原规则不变 —— 这条收口由 `firstLevelWidthClass` 表达，**只管水平轴**。
 
-- **垂直位置** `y = page.height × ratio` **不受宽度档收口**，在所有宽度档下都按页面高度比例
-  重排。垂直轴的参考要素是高度不是宽度：较短手机、横屏下设备高度不足，第一层元素若写死
-  贴边/居中，底部会被推出可用区甚至裁掉。按高度比例重排让整列随可用高度均匀收缩，
-  底部不缺失。这条**不属于**宽度轴，也不该被 `firstLevelWidthClass` 收进去。
+- **垂直位置**不属于宽度轴，也不默认采用页面高度比例。它由 safe area、相邻元素、垂直栈、
+  intrinsic height 和滚动内容链闭合；短屏或长文本时允许滚动，不压缩整列内容。
 
 ### 4.3 安全区与系统 UI 参与位置求解，不参与尺寸；平板的系统区域与手机不同
 
@@ -408,7 +410,7 @@ Lanhu 只提供一份设计稿，其几何基准是**某一台设备**的 `bound
 | §2 宽度档 | `ui-implementation-plan.json` 的 `adaptiveLayout.windowSamples[]` + `adaptive-targets.json` 的 `samples[]` |
 | §3 宽度轴六档 | `adaptiveLayout.regions[].widthPolicy` + `maxContentWidth` |
 | §4.1 尺寸不缩放 | `audit_adaptive.py` 的 `sizeInvariance`（复用 `layoutProportions` 的 `kind == "fixed"`） |
-| §4.2 第一层水平比例只在 compact 生效、垂直始终按高度 | `check_adaptive_layout.py` 的计划校验（`firstLevelWidthClass` 只管水平轴）；`layoutProportions` 的 `forced: "first-level"` 对 x、y 都标记，但只有 x 受宽档收口 |
+| §4.2 第一层水平比例只在 compact 生效、纵向由内容链闭合 | `check_adaptive_layout.py` 的计划校验（`firstLevelWidthClass` 只管水平轴）；`layoutProportions` 只对 x 标记 `forced: "first-level"` |
 | §4.3 窗口 ≠ 屏幕 | `check_adaptive_layout.py` 的 `screen-as-layout-source` / `display-metrics-as-layout-source` |
 | §6 预留 hook 可核 | `check_adaptive_layout.py` 的 `missing-max-content-width` / `fixed-column-count` |
 | §7 几何审计 | `diff/adaptive-audit.json`（`audit_adaptive.py` 产出） |

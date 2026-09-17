@@ -307,7 +307,7 @@ def check_plan(plan):
             f'firstLevelWidthClass = {first_level!r}（非缺省 compact）：'
             '「第一层水平位置按页面比例」被放宽到了更宽的档。该规则的水平位置按比例 ×N 而尺寸 ×1，'
             '在宽档上会把内容挤到左侧，确认这是有意为之。'
-            '（垂直位置不受此开关影响：它在所有宽度档下都按页面高度比例重排。）')
+            '（垂直位置不受此开关影响：它由普通 Auto Layout 内容链闭合。）')
 
     forbidden = layout.get('forbiddenAdaptations')
     if not isinstance(forbidden, list) or not forbidden:

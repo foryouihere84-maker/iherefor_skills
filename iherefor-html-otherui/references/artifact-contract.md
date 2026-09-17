@@ -645,7 +645,7 @@ Agent 负责合并进 plan 并逐条核对 `kind`/`basis`/`of`（脚本是辅助
 | `regions[].columnCount` | object | `widthPolicy` 为 `grid` 时必需，含 `compact` / `medium` / `expanded` 三个正整数且**单调不减** |
 | `axisSwitch` | array | 需要切主轴的区域。每项含 `region` 与至少一对档位映射 |
 | `forbiddenAdaptations` | array | **非空**，至少含 `uniform-scale` / `stretch-full-width` / `font-scale` |
-| `firstLevelWidthClass` | string | 缺省 `compact`。限定 [sizing-and-positioning.md §3.1.1](sizing-and-positioning.md#311-第一层子视图位置按页面比例重排设备尺寸--设计稿尺寸时的适配核心) 的「第一层位置按页面比例」**只在哪一档生效** —— 见下 |
+| `firstLevelWidthClass` | string | 缺省 `compact`。限定 [sizing-and-positioning.md §3.1.1](sizing-and-positioning.md#311-第一层子视图横向可重排纵向由内容链闭合) 的「第一层水平位置按页面比例」**只在哪一档生效** —— 见下 |
 | `sizeVariants` | array | **可选**。多设备稿照稿还原的**几何尺寸**分档白名单，见下 |
 
 **`firstLevelWidthClass` 是必需的收口，不是可选开关。** 第一层位置比例规则在

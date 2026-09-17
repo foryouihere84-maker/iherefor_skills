@@ -406,8 +406,8 @@ def main():
                   f"用例4c：{rel['id']} 判为 fixed 必须标记 needsReview，"
                   "否则「生成端默认给 fixed」就等于把旧契约的默认值捡回来了")
 
-        # 用例 4b：第一层子视图（直接父视图 = 页面/page）的位置按父容器比例重排，
-        # 随设备尺寸自适应。**位置按比例，尺寸不按比例** —— 两条轴不共享同一个收口。
+        # 用例 4b：第一层子视图只强制**水平**比例。纵向必须回到普通 Auto Layout
+        # 分类，不能把页面高度比例当默认响应式策略。
         first_level = ["NavBar", "Card", "Avatar", "Button", "Slot", "Rail"]
         for name in first_level:
             rel = relations_of(plan, name)
@@ -415,8 +415,8 @@ def main():
             y_rel = rel[f"{name}.y"]
             check(x_rel["kind"] == "proportional" and x_rel.get("forced") == "first-level",
                   f"用例4b：{name}.x 是第一层，位置应强制 proportional，得到 {x_rel}")
-            check(y_rel["kind"] == "proportional" and y_rel.get("forced") == "first-level",
-                  f"用例4b：{name}.y 是第一层，位置应强制 proportional，得到 {y_rel}")
+            check(y_rel.get("forced") != "first-level",
+                  f"用例4b：{name}.y 不应强制 first-level proportional，得到 {y_rel}")
         # 第一层的**尺寸**独立判定：以 NavBar 高 64 为例，它是控件量级的候选 fixed，
         # 也就是「待 Agent 确认的视觉常量」—— 不是「组件尺寸恒等于设计稿」。
         nav_height = relations_of(plan, "NavBar")["NavBar.height"]

@@ -35,7 +35,8 @@ description: 将 Lanhu 设计稿映射为 SwiftUI、UIKit Swift、UIKit Objectiv
 2. Agent 负责语义理解、组件边界、目标技术栈实现。脚本可以提取事实、保存资源、编译和校验，但不得生成或覆盖生产 UI 源码。
 3. 不得因为某个 CSS/JS 特性无法等价映射而静默删除；必须写入 `unsupported` 并进入交付报告。
 4. 目标平台可以使用不同的组件树和布局策略；相同的是视觉目标，不是源代码形状。
-5. 生成代码必须经过目标平台**编译通过**，不能以「代码生成完成」代替完成。
+5. 默认目标是生成符合平台规范、可继续人工调整的 UI 代码。编译是推荐验证；用户要求可运行结果、
+   工程改动较大或已有编译环境时再作为硬门槛。
 6. **约束策略不是「整页等比缩放」，也不是「所有尺寸固定」。** 尺寸必须声明由
    `fixed`、`intrinsic`、`bounded`、`proportional`、`equal` 或 `aspect-ratio` 闭合；位置再用
    `pinned` / `centered` / `proportional` 表达。UIKit 优先使用 Auto Layout 的 intrinsic content size、
@@ -72,18 +73,18 @@ description: 将 Lanhu 设计稿映射为 SwiftUI、UIKit Swift、UIKit Objectiv
 组件之间的布局关系仍须遵循设计稿，不得写成「探针设备上换算出来的绝对值」——
 但这条约束管的是**位置与间距**。**尺寸走另一条路：它由下面的闭合方式契约决定，不因为「设计稿写了一个宽高」就自动取该值。**
 
-**第一层子视图（直接父视图 = 页面/page）的位置按页面比例重排，这是设备尺寸 ≠ 设计稿尺寸时**
-**的自适应核心：**
+**第一层子视图（直接父视图 = 页面/page）的横向位置可按页面宽度重排；纵向由内容链闭合：**
 
-- 第一层的**水平位置** `x = page.width × ratio`、**垂直位置** `y = page.height × ratio`，
-  都写成相对 page 的比例原语（`multiplier`），标记 `forced: "first-level"`；
+- 第一层的**水平位置**可在 compact 档按 `x = page.width × ratio` 重排，标记 `forced: "first-level"`；
+  **垂直位置不得默认按页面高度比例**。纵向优先使用 top/bottom 约束、垂直栈、滚动内容链和 intrinsic height；
+  只有画布装饰或确有比例语义的区域才声明 `y` proportional，并写明理由。
   **不得**写成探针设备上的绝对坐标（如 `x = 83`、`y = 132`）—— 那在换台设备时就错。
 - 第一层的尺寸不能默认写成 `fixed`。容器、文本和按钮应优先使用 `intrinsic` / `bounded` / `pinned`；
   只有设计意图确实要求固定的元素才使用 `fixed`。自适应的是由 Auto Layout 闭合的尺寸和位置。
 - 第一层 → 第二层（及更深）的**相对关系固定**：第二层的位置基准是它的直接父视图（某个第一层元素），
   不是页面。只有第一层这一档按页面比例，往下不再套。
-- **两条轴不共享同一个收口**：水平位置受**宽度档**收口（宽档改由 `widthPolicy` 重排，见下一节），
-  但**垂直位置在所有宽度档下都按页面高度比例重排**——垂直轴的参考要素是**高度不是宽度**。
+- 水平位置受**宽度档**收口（宽档改由 `widthPolicy` 重排，见下一节）；纵向由 Auto Layout、
+  UIStackView、UIScrollView 与 intrinsic size 求解，Dynamic Type 或长文本允许内容增长并滚动。
 - 背景（`.page` 外框）按 `pinned + fullBleed` 四边铺满，与第一层子视图按比例重排是两回事。
 
 `scripts/layout_proportions.py` 是**辅助工具**：它把事实表（`bounds`）+ 设备尺寸**转成 `layoutProportions` 声明片段**，
@@ -124,7 +125,7 @@ description: 将 Lanhu 设计稿映射为 SwiftUI、UIKit Swift、UIKit Objectiv
    **只有一套稿时**，「平板上字大一点更好看」是错的 —— 设计稿只有一套排版。
    **双稿时**，`xx` 与 `xx-iPad` 是两套并列的独立参考，跨稿尺寸照稿各自取值；
    出现差异必须逐档声明在 `adaptiveLayout.sizeVariants[]`（带 `basis`/`why`）。
-2. **第一层水平位置比例规则只在 `compact` 档成立**，垂直位置始终按页面高度比例。
+2. **第一层水平位置比例规则只在 `compact` 档成立**；垂直位置遵循普通 Auto Layout 约束，不能默认用页面高度比例。
 3. **窗口 ≠ 屏幕。** 分屏与自由窗口下 `UIScreen.main.bounds` / `DisplayMetrics.widthPixels`
    返回的是**整块屏**，不是你的窗口。iOS 用 `view.bounds` / `windowScene`，Android 用
    `WindowMetrics` / `WindowSizeClass`。
@@ -207,7 +208,8 @@ Lanhu 的 `bounds.width/height` 是参考事实，**不自动转换成固定宽�
 `fixed`、`intrinsic`、`bounded`、`pinned`、`proportional`、`equal` 或 `aspect-ratio`，并记录原因。
 文本、按钮、内容列和卡片默认优先 `intrinsic` / `bounded`；固定值只用于有明确视觉语义的尺寸。
 可变文本必须支持 Dynamic Type，交互控件用 `>= 44` 表达触控下限而不是写死 44。
-交付前必须验证 Dynamic Type、长文本、窄窗口、横竖屏和 iPad 宽屏，并检查 Auto Layout 冲突与 ambiguous layout。
+默认只需完成轻量的计划/源码规范检查；编译、Dynamic Type、长文本、多宽度几何和视觉验收属于按需增强验证。
+涉及 iOS 时仍应优先检查 safe area、滚动内容链和 Auto Layout 冲突，但不把人工体验检查伪装成生产交付门槛。
 
 **保真底线（防止自适应退化成「随便自适应」）**：自适应不等于放弃设计稿。设计稿在**它自己的宽度档**上仍是最强参考——
 所有尺寸闭合方式的选择，必须能在设计稿宽度上复现出设计稿的排版；换宽度档后允许重排，但重排后元素的
@@ -239,7 +241,11 @@ iOS 必须显式处理 `edgesForExtendedLayout`、`extendedLayoutIncludesOpaqueB
 
 任意 iOS 目标模式必须先读取 [references/ios-environment.md](references/ios-environment.md)，并运行 `scripts/discover_xcode_environment.py` 探测 `.xcworkspace/.xcodeproj`、scheme、模拟器和真机。禁止凭记忆选择 `-project`、`-workspace`、scheme 或 destination；探测结果必须进入页面 run 的 `ios-environment.json`。
 
-## 强制 Agent loop
+## 默认轻量 Agent loop
+
+本 skill 默认服务于“产出规范 UI 代码并交给人工继续体验调整”，不默认承担生产交付认证。
+默认只跑确定性、低成本的静态门：计划自身检查与源码闭合关系检查。编译、截图、多宽度几何审计、
+完整 run 产物和 delivery gate 属于增强验证，只有用户要求、工程风险较高或需要自动交付证据时启用。
 
 第 5 步（编译）是**验证阶段**，按「静态门先跑、动态门只跑一次」组织：
 
@@ -264,9 +270,9 @@ iOS 必须显式处理 `edgesForExtendedLayout`、`extendedLayoutIncludesOpaqueB
 
 Agent 必须建立页面事实表：可见区域、真实叠层、组件候选、文本、图片/SVG、渐变、阴影、滚动容器、交互状态和不支持特性。**几何以 `bounds`（几何权威）为主、样式以 `inspect_design_region` 的 `raw_style` 为准**；`bounds` 缺失时用基准截图/DOM 补齐。不得直接把每个设计节点当成原生组件。页面必须按视觉区域逐一复现（hero、标题/说明、每张卡片、CTA、页脚等），每个区域列出 bounding box、资源/层级、样式事实、原生组件映射。
 
-#### 2.1 过程中页面分析表（强制产物）
+#### 2.1 过程中页面分析表（复杂页面或增强验证时产出）
 
-第 2 步结束前，Agent 必须把上面的事实表**摊平成一张元素梳理表**，落成
+复杂页面、多人换手或需要完整追踪证据时，把上面的事实表**摊平成一张元素梳理表**，落成
 `<run>/过程中页面分析表.md`。它是 `dds-schema.json`（几何）与 `inspect_design_region`
 `raw_style`（样式）的**单元素视图**：把散落在两处的事实按 `parent_id` 对到同一行，
 让 Agent 与人一眼看清一个元素的几何 + 样式 + 资源 + 映射全貌，并**兜住「深层元素
@@ -336,12 +342,12 @@ python3 scripts/check_adaptive_layout.py --plan <run>/ui-implementation-plan.jso
 两门的 `violations == 0` 才允许进入编译。有违规就改源码后重跑 —— 这一步的迭代不消耗编译。
 退出码：`0` = 通过，`1` = 存在违规，`2` = 用法或读取错误。
 
-### 5. 编译
+### 5. 编译（推荐，按需）
 
-按目标模式使用 Xcode 或 Gradle 编译。iOS 与 Android 必须分别验证，不能用一个平台的通过推断另一个平台通过。
-**编译通过是本验证阶段的唯一动态硬门槛。** 编译 0 error 后，验收进入交付闸门。
+环境已就绪或用户要求可运行结果时，按目标模式使用 Xcode 或 Gradle 编译。未执行时要明确说明，
+但不因为缺少编译证据否定已经完成的规范代码生成。
 
-#### 5.1 最终页面分析表（强制产物）
+#### 5.1 最终页面分析表（增强验证产物）
 
 编译通过后、进入交付闸门前，Agent 必须**采样自核**关键元素的实际渲染几何，与设计稿
 `bounds` 对照，落成 `<run>/最终页面分析表.md`。这是半人工视觉验收的追踪表：把
@@ -377,7 +383,7 @@ python3 scripts/check_adaptive_layout.py --plan <run>/ui-implementation-plan.jso
 | Weekly 卡 | y 447-515 (68)，x 28-373 | 345×68 | y 445-513 | 345×68 | ✓ | ✓ | phone-compact | — |
 | Yearly 卡 | y 539-607 (68)，x 28-373 | 345×68 | y 540-608 | 345×68 | ✓ | ✓ | phone-compact | — |
 
-### 6. 交付闸门
+### 6. 交付闸门（仅生产交付模式）
 
 只有在所选目标模式的编译、资源接入（切图归位见「资源归位硬约束」）都通过时才标记
 `deliveryReady=true`。缺失源码、编译失败、存在未处理 `unsupported` 时，只能标记 `pass-with-review`、
@@ -388,9 +394,10 @@ python3 scripts/check_adaptive_layout.py --plan <run>/ui-implementation-plan.jso
 
 ## 输出证据
 
-多页面任务必须先在项目根创建 `.ihereforUI`。产物结构以 [references/artifact-contract.md](references/artifact-contract.md) 为唯一事实来源，生命周期见 [references/project-management.md](references/project-management.md)。可用 `scripts/init_ui_workspace.py` 初始化目录与索引。
+需要审计、跨 Agent 换手或生产交付证据时，才在项目根创建 `.ihereforUI`。产物结构以
+[references/artifact-contract.md](references/artifact-contract.md) 为事实来源。
 
-每个页面、每个目标模式、每次运行至少产出（缺一即不合规）：
+默认轻量模式至少保留 `ui-implementation-plan.json`，并运行布局计划/源码静态检查。以下完整产物只在增强验证模式要求：
 
 - `run.json`、`review.json`、`delivery-gate.json`
 - `ui-implementation-plan.json`、`resource-policy.json`
@@ -399,7 +406,7 @@ python3 scripts/check_adaptive_layout.py --plan <run>/ui-implementation-plan.jso
 - `过程中页面分析表.md`（第 2 步元素梳理摊平表）、`最终页面分析表.md`（第 5 步验证对照表）
 - `actual/`：编译日志
 
-每次写完 run 必须用 `scripts/validate_run.py --run <run-dir>` 自检；`deliveryReady` 只由闸门脚本推导，不得手写覆盖。
+增强验证模式写完 run 后再用 `scripts/validate_run.py --run <run-dir>` 自检；默认轻量模式无需创建或验证完整 run。
 
 ## 字段速查
 
@@ -447,8 +454,8 @@ python3 scripts/check_adaptive_layout.py --plan <run>/ui-implementation-plan.jso
 | `scripts/lanhu_design_facts.py` | （**可选/当前 MCP 不可用**）把 `lanhu_get_design_document` 返回体解析成设计事实摘要，仅交叉佐证 | 需要回看 Sketch 帧时（当前改用 `lanhu_inspect_design_region`） |
 | `scripts/layout_proportions.py` | 把几何事实转成 `layoutProportions` 约束规格，并列出「探针设备推导值」禁止清单 | 第 3 步写实现计划时 |
 | `scripts/check_layout_proportions.py` | 计划驱动地核对源码有没有照计划声明的 `kind` 实现；`--plan-only` 只校验计划 | 门 0 写码前、门 1 写码后编译前；纯静态 |
-| `scripts/check_adaptive_layout.py` | 宽度轴静态核对：声明完整 + 源码有封顶原语、无方向锁 / 屏幕系数 | 门 0 / 门 1；声明了 `adaptiveLayout` 就必须跑 |
-| `scripts/audit_adaptive.py` | 多宽度采样的几何契约审计（八项），不做像素比对 | 交付前；声明 `adaptiveLayout` 时必须跑 |
+| `scripts/check_adaptive_layout.py` | 宽度轴静态核对：声明完整 + 源码有封顶原语、无方向锁 / 屏幕系数 | iPad、多窗口或多宽度任务时跑 |
+| `scripts/audit_adaptive.py` | 多宽度采样的几何契约审计（八项），不做像素比对 | 增强验证/生产交付模式 |
 | `scripts/diff_device_variants.py` | 双稿尺寸 diff：按图层名对齐生成 `sizeVariants[]` | 存在 `xx` / `xx-iPad` 成对稿时 |
 | `scripts/check_pbxproj_ids.py` | pbxproj Object ID 唯一性门 | 每次手动改 `project.pbxproj` 之后、编译之前 |
 | `scripts/discover_xcode_environment.py` | 探测 Xcode 工程 / scheme / 模拟器 | iOS 目标写代码前 |

@@ -5,7 +5,7 @@
 
 ## 验证阶段的门（与修复闭环的关系）
 
-门的定义、位置与各自判什么，见 [SKILL.md 的「强制 Agent loop」](../SKILL.md#强制-agent-loop)。
+门的定义、位置与各自判什么，见 [SKILL.md 的「默认轻量 Agent loop」](../SKILL.md#默认轻量-agent-loop)。
 本节只讲它与**修复闭环轮次**的关系。
 
 **门 1 的迭代不计入本文件的「轮次」。** `scripts/check_layout_proportions.py` 只读计划与
