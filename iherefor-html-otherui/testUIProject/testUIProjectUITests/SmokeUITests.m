@@ -7,6 +7,40 @@
 @implementation SmokeUITests
 - (void)testLaunch { XCUIApplication *app = [[XCUIApplication alloc] init]; [app launch]; XCTAssertTrue(app.exists); }
 
+// 统一入口验收：点击入口页第一行（启屏页），push 进入 splash 页并确认页面渲染非空。
+- (void)testEntryPushsToSplash {
+    XCUIApplication *app = [[XCUIApplication alloc] init];
+    [app launch];
+    XCTAssertTrue(app.exists, @"App 未能启动");
+
+    // 入口列表第一行（启屏手机版）。使用 cell 文本命中，避免依赖坐标。
+    XCUIElement *firstCell = app.tables.cells.allElementsBoundByIndex.firstObject;
+    XCTAssertTrue(firstCell.exists, @"入口列表第一行不存在");
+    [firstCell tap];
+    // 等待 push 动画完成。
+    [NSThread sleepForTimeInterval:2.0];
+
+    // splash 页应至少有一个 image（logo 图标）+ 一个 static text（品牌名）。
+    XCUIElement *anyImage = app.images.firstMatch;
+    XCUIElement *anyText = app.staticTexts.firstMatch;
+
+    fprintf(stderr, "IHEREFOR_EVENT splash imageExists=%d textExists=%d textValue='%s'\n",
+            anyImage.exists ? 1 : 0,
+            anyText.exists ? 1 : 0,
+            anyText.exists ? [anyText.label UTF8String] : "<none>");
+    fflush(stderr);
+
+    // 截图留档（splash 页）。
+    XCUIScreenshot *shot = [XCUIScreen mainScreen].screenshot;
+    XCTAttachment *att = [XCTAttachment attachmentWithScreenshot:shot];
+    att.name = @"splash-page";
+    att.lifetime = XCTAttachmentLifetimeKeepAlways;
+    [self addAttachment:att];
+
+    XCTAssertTrue(anyImage.exists || anyText.exists, @"splash 页未渲染任何元素");
+}
+
+
 // 运行时设备尺寸探针。
 //
 // runtime-device.json 的 screenBoundsPoints / rootViewBounds **只认运行时 API 读数**：

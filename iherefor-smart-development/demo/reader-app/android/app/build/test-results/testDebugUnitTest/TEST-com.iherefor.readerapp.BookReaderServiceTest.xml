@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.iherefor.readerapp.BookReaderServiceTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-09-17T14:02:55.712Z" hostname="niukoudeMacBook-Pro-2.local" time="0.038">
+  <properties/>
+  <testcase name="shouldDispatchTxtToTxtParser" classname="com.iherefor.readerapp.BookReaderServiceTest" time="0.01"/>
+  <testcase name="shouldDispatchEpubToEpubParser" classname="com.iherefor.readerapp.BookReaderServiceTest" time="0.027"/>
+  <testcase name="shouldThrowForPdf" classname="com.iherefor.readerapp.BookReaderServiceTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

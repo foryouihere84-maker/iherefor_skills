@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>原型图 · &lt;功能名&gt;</title>
+<!--
+  ============================================================================
+  原型图模板 · iherefor-smart-development 阶段 2（原型设计）
+  ============================================================================
+  本文件同时是【视觉稿】与【交互原型】——高保真观感 + 可点击走通流程。
+
+  产物类型：收敛型 · 命名 原型图.html（无序号单例）。
+  它表达「当前界面共识」，随需求演进原地更新，不另建版本文件。
+
+  用法：
+  1. 把 <body> 的 data-prototype 改成你的 <feature>，改顶部原型带的 功能名/档位/日期。
+  2. 每个屏 = 一个 <section class="screen" data-screen="中文语义屏id">。
+     屏 id 必须中文语义（书架-空态 / 阅读器-正文 / 导入-格式被拒），
+     禁止 screen1 / div2 / bookshelf-empty 这类序号或英文兜底。
+     屏 id 必须与 原型说明.md 的「页面清单」表逐字一致。
+  3. 屏内只用本文件已定义的组件（navbar / appbar / tabbar / bottomnav / list-cell /
+     card / btn / input / empty / dialog …），不要外链任何 CDN、字体、图片。
+     图标用内联 SVG。
+  4. 关键交互：给可点元素加 data-goto="目标屏id"，即可自动跳屏。
+     顶栏返回按钮用 data-back="true"（回到屏列表里的上一屏）。
+  5. 视觉规格：改 :root 下的 CSS 变量（设计 token），并同步回 原型说明.md 第 4 节。
+  6. 多变体：同一屏加多个 <section data-screen="同一个id" data-variant="A|B">，
+     变体条自动出现；单变体时自动隐藏。
+  7. 跨端：顶部平台开关切换 iOS / Android 视觉语言。
+     需要两端不同结构的组件，用 class="ios-only" / "android-only" 各写一份。
+     单端功能可删掉平台开关。
+
+  硬约束：单文件、零依赖、零构建、双击即开；设备框 390×844；文案全中文。
+  规范细则见 references/原型绘制.md。
+  ============================================================================
+-->
+<style>
+/* ===========================================================================
+   设计 token —— 视觉稿的"可照抄数值"。改这里 = 改视觉方向。
+   同步要求：与同目录 原型说明.md 第 4 节「视觉稿规格」表一一对应。
+   =========================================================================== */
+:root{
+  --color-primary:#2F6FED;
+  --color-primary-soft:#E8F0FE;
+  --color-bg:#F2F4F7;
+  --color-surface:#FFFFFF;
+  --color-line:#E5E8EC;
+  --color-text:#1A1D21;
+  --color-text-dim:#6B7280;
+  --color-danger:#E5484D;
+  --color-success:#16A34A;
+
+  --font-title-lg:26px;
+  --font-title:17px;
+  --font-body:15px;
+  --font-caption:12.5px;
+
+  --space-page:16px;
+  --space-card:12px;
+  --space-gap:10px;
+
+  --radius-card:14px;
+  --radius-button:10px;
+  --radius-thumb:8px;
+
+  /* 页面外壳（工具本身，不属于被测设计） */
+  --shell-bg:#F6F7F9;
+  --shell-line:#D8DEE4;
+}
+/* 平台级视觉语言覆盖：iOS 更圆润、Android 更方且带高度 */
+.device[data-platform="ios"]{
+  --radius-card:12px; --radius-button:10px; --radius-thumb:6px;
+  --font-title-lg:28px;
+}
+.device[data-platform="android"]{
+  --radius-card:16px; --radius-button:22px; --radius-thumb:10px;
+  --font-title-lg:22px;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--shell-bg);color:var(--color-text);line-height:1.55;
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;
+}
+
+/* ── 顶部原型带：标注这不是成品 ───────────────────────────────── */
+.proto-bar{
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  padding:10px 18px;background:#1A1D21;color:#fff;font-size:13px;
+}
+.proto-bar .tag{background:#F0B429;color:#1A1D21;font-weight:700;border-radius:4px;padding:2px 8px;font-size:12px;letter-spacing:.5px}
+.proto-bar .k{color:#9AA4B2;font-size:12px;margin-right:4px}
+.proto-bar .v{font-weight:600}
+
+/* ── 工具条：平台开关 + 变体切换提示 ──────────────────────────── */
+.toolbar{
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:10px 18px;background:#fff;border-bottom:1px solid var(--shell-line);
+  font-size:13px;color:var(--color-text-dim);
+}
+.seg{display:inline-flex;border:1px solid var(--shell-line);border-radius:8px;overflow:hidden}
+.seg button{
+  border:0;background:#fff;color:var(--color-text-dim);font:inherit;
+  padding:5px 14px;cursor:pointer;
+}
+.seg button.on{background:var(--color-primary);color:#fff;font-weight:600}
+.seg button + button{border-left:1px solid var(--shell-line)}
+.toolbar .spacer{flex:1}
+.toolbar .hint{font-size:12px}
+
+/* ── 三栏布局 ─────────────────────────────────────────────────── */
+.layout{display:grid;grid-template-columns:216px minmax(0,1fr) 300px;gap:18px;max-width:1280px;margin:0 auto;padding:18px}
+@media (max-width:1100px){ .layout{grid-template-columns:1fr} }
+.card{background:#fff;border:1px solid var(--shell-line);border-radius:10px}
+.card-title{font-size:12px;color:var(--color-text-dim);font-weight:600;letter-spacing:.5px;padding:10px 14px;border-bottom:1px solid #EEF1F4}
+
+/* 屏列表 */
+.screen-list{padding:8px;max-height:74vh;overflow:auto}
+.screen-list button{
+  display:flex;flex-direction:column;gap:1px;width:100%;text-align:left;
+  padding:8px 10px;border:0;border-radius:6px;background:transparent;
+  color:var(--color-text);font-size:13px;cursor:pointer;font-family:inherit;
+}
+.screen-list button:hover{background:var(--shell-bg)}
+.screen-list button.on{background:var(--color-primary-soft);color:var(--color-primary);font-weight:600}
+.screen-list .sid{font-size:11px;color:var(--color-text-dim);font-family:ui-monospace,Menlo,monospace}
+.screen-list button.on .sid{color:var(--color-primary)}
+
+/* 舞台 */
+.stage{display:flex;flex-direction:column;align-items:center;gap:14px;padding:20px 0}
+.device{
+  width:390px;height:844px;background:var(--color-surface);
+  border:10px solid #1A1D21;border-radius:44px;overflow:hidden;position:relative;flex:0 0 auto;
+  box-shadow:0 18px 44px rgba(15,23,42,.20);
+}
+.device[data-platform="android"]{border-radius:30px}
+.device::after{ /* 听筒 */
+  content:"";position:absolute;top:9px;left:50%;transform:translateX(-50%);
+  width:92px;height:6px;border-radius:3px;background:rgba(0,0,0,.16);z-index:9;
+}
+.viewport{position:absolute;inset:0;overflow-y:auto;background:var(--color-bg)}
+
+/* 屏/变体显示控制 */
+.screen{display:none;min-height:100%}
+.screen.on{display:flex;flex-direction:column}
+[data-platform="ios"] .android-only,[data-platform="android"] .ios-only{display:none !important}
+
+/* 变体条：刻意与页面体系不同，避免被当成设计的一部分 */
+.variant-bar{
+  display:none;position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:60;
+  align-items:center;gap:10px;padding:8px 10px;border-radius:999px;
+  background:#111827;color:#fff;box-shadow:0 10px 24px rgba(0,0,0,.30);
+  font-family:ui-monospace,Menlo,monospace;font-size:13px;
+}
+.variant-bar.show{display:flex}
+.variant-bar button{width:28px;height:28px;border:0;border-radius:50%;cursor:pointer;background:#374151;color:#fff;font-size:14px;line-height:1;font-family:inherit}
+.variant-bar button:hover{background:#4B5563}
+.variant-bar .vlabel{min-width:120px;text-align:center}
+.variant-bar .hint{color:#9CA3AF;font-size:11px;font-family:inherit}
+
+/* 说明栏 */
+.notes{padding:12px 14px;font-size:13px}
+.notes h4{margin:10px 0 6px;font-size:13px}
+.notes h4:first-child{margin-top:0}
+.notes p{margin:0 0 8px;color:var(--color-text-dim);font-size:12.5px}
+.notes .pill{display:inline-block;background:var(--shell-bg);border:1px solid var(--shell-line);border-radius:20px;padding:1px 8px;font-size:11.5px;color:var(--color-text-dim);margin:0 4px 4px 0}
+.notes code{background:var(--shell-bg);border-radius:4px;padding:1px 5px;font-size:11.5px}
+
+/* ===========================================================================
+   设备内组件（视觉稿本体）—— 用 token，随平台切换自动变样
+   =========================================================================== */
+
+/* 导航：iOS 大标题 / Android TopAppBar */
+.navbar{
+  flex:0 0 auto;display:flex;align-items:flex-end;justify-content:space-between;
+  padding:38px var(--space-page) 10px;background:var(--color-surface);
+  border-bottom:1px solid var(--color-line);
+}
+.navbar .nav-title{font-size:var(--font-title-lg);font-weight:700;letter-spacing:-.4px}
+.navbar .nav-act{font-size:var(--font-body);color:var(--color-primary);cursor:pointer;padding-bottom:3px}
+
+.appbar{
+  flex:0 0 auto;display:flex;align-items:center;gap:12px;
+  height:58px;padding:0 12px 0 14px;margin-top:22px;background:var(--color-surface);
+  box-shadow:0 1px 3px rgba(15,23,42,.10);position:relative;z-index:5;
+}
+.appbar .appbar-title{font-size:var(--font-title);font-weight:600;flex:1}
+.appbar .appbar-act{font-size:var(--font-body);color:var(--color-primary);cursor:pointer}
+
+/* 内容区 */
+.content{flex:1 1 auto;overflow-y:auto;padding:var(--space-page);padding-bottom:96px}
+
+/* 列表单元 */
+.list{display:flex;flex-direction:column;gap:var(--space-gap)}
+.list-cell{
+  display:flex;gap:12px;align-items:center;padding:var(--space-card);
+  background:var(--color-surface);border-radius:var(--radius-card);cursor:pointer;
+  border:1px solid var(--color-line);
+}
+.device[data-platform="android"] .list-cell{border:0;box-shadow:0 1px 2px rgba(15,23,42,.10)}
+.list-cell:active{transform:scale(.995)}
+.thumb{
+  width:46px;height:64px;border-radius:var(--radius-thumb);flex:0 0 auto;
+  box-shadow:0 1px 3px rgba(15,23,42,.18);
+}
+.thumb.c1{background:linear-gradient(150deg,#4F7DF3,#2F4FD8)}
+.thumb.c2{background:linear-gradient(150deg,#F2994A,#E4572E)}
+.thumb.c3{background:linear-gradient(150deg,#27AE60,#0E7A45)}
+.cell-main{flex:1;min-width:0}
+.cell-title{
+  font-size:var(--font-body);font-weight:600;margin-bottom:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.cell-sub{font-size:var(--font-caption);color:var(--color-text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cell-tags{display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap}
+.badge{border:1px solid var(--color-line);border-radius:5px;padding:0 6px;font-size:11px;color:var(--color-text-dim)}
+.badge.fmt{background:var(--color-primary-soft);border-color:transparent;color:var(--color-primary);font-weight:600}
+.progress{height:4px;border-radius:2px;background:var(--color-line);overflow:hidden;margin-top:7px}
+.progress i{display:block;height:100%;background:var(--color-primary);border-radius:2px}
+
+/* 按钮 */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  height:44px;padding:0 20px;border-radius:var(--radius-button);cursor:pointer;
+  background:var(--color-surface);border:1px solid var(--color-line);
+  font-size:var(--font-body);color:var(--color-text);font-family:inherit;
+}
+.btn.primary{background:var(--color-primary);border-color:var(--color-primary);color:#fff;font-weight:600}
+.btn.block{display:flex;width:100%}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--color-primary)}
+
+/* 空态 / 加载 / 错误 */
+.center-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:0 32px}
+.empty-ico{width:88px;height:88px;border-radius:24px;background:var(--color-primary-soft);display:flex;align-items:center;justify-content:center;color:var(--color-primary)}
+.center-col .t{font-size:var(--font-title);font-weight:600}
+.center-col .s{font-size:var(--font-caption);color:var(--color-text-dim);max-width:250px}
+.center-col .err-ico{background:#FDECEC;color:var(--color-danger)}
+
+/* 骨架屏 */
+.skel{border-radius:var(--radius-card);background:var(--color-surface);padding:var(--space-card);display:flex;gap:12px;align-items:center;border:1px solid var(--color-line)}
+.skel .bar{height:9px;border-radius:5px;background:linear-gradient(90deg,#EDF0F3,#E2E7EC,#EDF0F3);background-size:200% 100%;animation:sh 1.3s infinite linear}
+@keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.skel .box{width:46px;height:64px;border-radius:var(--radius-thumb);background:linear-gradient(90deg,#EDF0F3,#E2E7EC,#EDF0F3);background-size:200% 100%;animation:sh 1.3s infinite linear;flex:0 0 auto}
+
+/* 阅读器正文 */
+.reader{flex:1;overflow-y:auto;background:var(--color-surface);padding:26px 22px 90px}
+.reader h2{font-size:19px;margin:0 0 16px;font-weight:700}
+.reader p{font-size:16.5px;line-height:1.95;margin:0 0 15px;color:#2A2E33;text-indent:2em}
+
+/* 底部导航：iOS 标签栏 / Android 底部导航 */
+.tabbar{
+  position:absolute;left:0;right:0;bottom:0;height:74px;display:flex;
+  background:rgba(255,255,255,.94);backdrop-filter:blur(12px);
+  border-top:1px solid var(--color-line);padding-bottom:14px;z-index:8;
+}
+.tabbar .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:10.5px;color:var(--color-text-dim);cursor:pointer}
+.tabbar .tab.on{color:var(--color-primary)}
+.tabbar .tab svg{width:23px;height:23px}
+
+.bottomnav{
+  position:absolute;left:0;right:0;bottom:0;height:70px;display:flex;align-items:center;
+  background:var(--color-surface);box-shadow:0 -1px 4px rgba(15,23,42,.10);z-index:8;
+}
+.bottomnav .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;color:var(--color-text-dim);cursor:pointer}
+.bottomnav .tab.on{color:var(--color-primary);font-weight:600}
+.bottomnav .tab.on .ico-pill{background:var(--color-primary-soft)}
+.ico-pill{padding:3px 14px;border-radius:14px;display:flex}
+.bottomnav .tab svg{width:21px;height:21px}
+.fab{
+  position:absolute;right:16px;bottom:86px;width:56px;height:56px;border-radius:18px;
+  background:var(--color-primary);color:#fff;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 12px rgba(47,111,237,.40);cursor:pointer;z-index:9;
+}
+
+/* 提示条 */
+.toast{
+  position:absolute;left:16px;right:16px;bottom:96px;background:#1A1D21;color:#fff;
+  border-radius:var(--radius-button);padding:11px 14px;font-size:13px;z-index:10;
+  display:flex;gap:8px;align-items:center;
+}
+</style>
+</head>
+
+<body data-prototype="&lt;feature&gt;">
+
+<!-- 顶部原型带：标注功能名 / 档位 / 保真度 / 生成时间，提醒这不是成品 -->
+<header class="proto-bar">
+  <span class="tag">原型 · 非成品</span>
+  <span><span class="k">功能</span><span class="v">&lt;功能名&gt;</span></span>
+  <span><span class="k">档位</span><span class="v">full</span></span>
+  <span><span class="k">保真度</span><span class="v">V2 视觉稿</span></span>
+  <span><span class="k">生成时间</span><span class="v">&lt;日期&gt;</span></span>
+  <span class="k">单文件零依赖 · 双击即开</span>
+</header>
+
+<!-- 工具条：平台开关（跨端视觉语言） -->
+<div class="toolbar">
+  <span>平台视觉语言</span>
+  <div class="seg" id="platformSeg">
+    <button data-platform="ios" class="on">iOS</button>
+    <button data-platform="android">Android</button>
+  </div>
+  <span class="spacer"></span>
+  <span class="hint">点屏内可点元素可跳转 · ← → 切换变体</span>
+</div>
+
+<div class="layout">
+
+  <!-- 屏列表：中文屏名 + 中文语义 id，一一对应 -->
+  <nav class="card">
+    <div class="card-title">页面清单</div>
+    <div class="screen-list" id="screenList">
+      <button data-goto="书架-加载中"><span>书架（加载中）</span><span class="sid">书架-加载中</span></button>
+      <button data-goto="书架-空态"><span>书架（空）</span><span class="sid">书架-空态</span></button>
+      <button data-goto="书架-有数据"><span>书架（有书）</span><span class="sid">书架-有数据</span></button>
+      <button data-goto="阅读器-正文"><span>阅读器（正文）</span><span class="sid">阅读器-正文</span></button>
+      <button data-goto="导入-格式被拒"><span>导入（格式被拒）</span><span class="sid">导入-格式被拒</span></button>
+    </div>
+  </nav>
+
+  <!-- 舞台：设备框 + 所有屏 + 变体条 -->
+  <section class="stage">
+    <div class="device" id="device" data-platform="ios">
+      <div class="viewport" id="viewport">
+
+        <!-- ===== 阅读器-正文 ===== -->
+        <section class="screen" data-screen="阅读器-正文">
+          <div class="navbar ios-only">
+            <span class="nav-act" data-back="true">‹ 书架</span>
+            <span class="nav-act">目录</span>
+          </div>
+          <div class="appbar android-only">
+            <span class="appbar-act" data-back="true">‹</span>
+            <span class="appbar-title">示例书 · EPUB</span>
+            <span class="appbar-act">目录</span>
+          </div>
+          <div class="reader">
+            <h2>第一章　启程</h2>
+            <p>清晨的光从窗缝里漏进来，落在摊开的书页上。他伸手把书翻到下一页，纸页摩擦的声音在安静的房间里格外清晰。</p>
+            <p>这是他在这个城市度过的第三个秋天。书架上的书越来越多，有些读过很多遍，有些只翻了几页就搁下了。</p>
+            <p>他想起第一次读书的那个下午，也是这样的光。那时候他还不知道，一本书可以陪一个人走这么远。</p>
+          </div>
+          <div class="tabbar ios-only">
+            <div class="tab on" data-goto="书架-有数据">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10v16H5.5A1.5 1.5 0 0 1 4 18.5z"/><path d="M10 4h8.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H10"/></svg>
+              书架
+            </div>
+            <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>目录</div>
+            <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 8.9 19a1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 8.9a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>设置</div>
+          </div>
+          <div class="bottomnav android-only">
+            <div class="tab on" data-goto="书架-有数据"><span class="ico-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10v16H5.5A1.5 1.5 0 0 1 4 18.5z"/><path d="M10 4h8.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H10"/></svg></span>书架</div>
+            <div class="tab"><span class="ico-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span>目录</div>
+            <div class="tab"><span class="ico-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg></span>设置</div>
+          </div>
+        </section>
+
+        <!-- ===== 书架-加载中 ===== -->
+        <section class="screen" data-screen="书架-加载中">
+          <div class="navbar ios-only">
+            <span class="nav-title">书架</span>
+            <span class="nav-act">导入</span>
+          </div>
+          <div class="appbar android-only">
+            <span class="appbar-title">书架</span>
+            <span class="appbar-act">导入</span>
+          </div>
+          <div class="content">
+            <div class="list">
+              <div class="skel"><div class="box"></div><div style="flex:1"><div class="bar" style="width:70%"></div><div class="bar" style="width:40%;margin-top:8px"></div></div></div>
+              <div class="skel"><div class="box"></div><div style="flex:1"><div class="bar" style="width:56%"></div><div class="bar" style="width:34%;margin-top:8px"></div></div></div>
+              <div class="skel"><div class="box"></div><div style="flex:1"><div class="bar" style="width:64%"></div><div class="bar" style="width:38%;margin-top:8px"></div></div></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== 书架-空态 ===== -->
+        <section class="screen" data-screen="书架-空态">
+          <div class="navbar ios-only">
+            <span class="nav-title">书架</span>
+            <span class="nav-act">导入</span>
+          </div>
+          <div class="appbar android-only">
+            <span class="appbar-title">书架</span>
+            <span class="appbar-act">导入</span>
+          </div>
+          <div class="content" style="display:flex">
+            <div class="center-col">
+              <div class="empty-ico">
+                <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10v16H5.5A1.5 1.5 0 0 1 4 18.5z"/><path d="M10 4h8.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H10"/></svg>
+              </div>
+              <div class="t">书架还是空的</div>
+              <div class="s">从设备导入 EPUB / PDF / TXT 文件，开始你的第一本书</div>
+              <button class="btn primary" data-goto="导入-格式被拒">导入书籍</button>
+            </div>
+          </div>
+          <div class="tabbar ios-only">
+            <div class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10v16H5.5A1.5 1.5 0 0 1 4 18.5z"/><path d="M10 4h8.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H10"/></svg>书架</div>
+            <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>设置</div>
+          </div>
+          <div class="bottomnav android-only">
+            <div class="tab on"><span class="ico-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10v16H5.5A1.5 1.5 0 0 1 4 18.5z"/><path d="M10 4h8.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H10"/></svg></span>书架</div>
+            <div class="tab"><span class="ico-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg></span>设置</div>
+          </div>
+          <div class="fab android-only">＋</div>
+        </section>
+
+        <!-- ===== 书架-有数据（两个结构互斥的变体） ===== -->
+        <section class="screen" data-screen="书架-有数据" data-variant="A（列表式）">
+          <div class="navbar ios-only">
+            <span class="nav-title">书架</span>
+            <span class="nav-act">导入</span>
+          </div>
+          <div class="appbar android-only">
+            <span class="appbar-title">书架</span>
+            <span class="appbar-act">导入</span>
+          </div>
+          <div class="content">
+            <div class="list">
+              <div class="list-cell" data-goto="阅读器-正文">
+                <div class="thumb c1"></div>
+                <div class="cell-main">
+                  <div class="cell-title">示例书 · EPUB 演示</div>
+                  <div class="cell-sub">未知作者</div>
+                  <div class="cell-tags"><span class="badge fmt">EPUB</span><span class="badge">已读 42%</span></div>
+                  <div class="progress"><i style="width:42%"></i></div>
+                </div>
+              </div>
+              <div class="list-cell" data-goto="阅读器-正文">
+                <div class="thumb c2"></div>
+                <div class="cell-main">
+                  <div class="cell-title">示例书 · PDF 演示</div>
+                  <div class="cell-sub">示例出版社</div>
+                  <div class="cell-tags"><span class="badge fmt">PDF</span><span class="badge">第 12 页</span></div>
+                  <div class="progress"><i style="width:18%"></i></div>
+                </div>
+              </div>
+              <div class="list-cell" data-goto="阅读器-正文">
+                <div class="thumb c3"></div>
+                <div class="cell-main">
+                  <div class="cell-title">示例书 · 阅读应用演示（超长书名截断效果）</div>
+                  <div class="cell-sub">未知作者</div>
+                  <div class="cell-tags"><span class="badge fmt">TXT</span><span class="badge">未开始</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="tabbar ios-only">
+            <div class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10v16H5.5A1.5 1.5 0 0 1 4 18.5z"/><path d="M10 4h8.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H10"/></svg>书架</div>
+            <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>设置</div>
+          </div>
+          <div class="bottomnav android-only">
+            <div class="tab on"><span class="ico-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10v16H5.5A1.5 1.5 0 0 1 4 18.5z"/><path d="M10 4h8.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H10"/></svg></span>书架</div>
+            <div class="tab"><span class="ico-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg></span>设置</div>
+          </div>
+          <div class="fab android-only">＋</div>
+        </section>
+
+        <!-- 变体 B：结构互斥（封面网格优先） -->
+        <section class="screen" data-screen="书架-有数据" data-variant="B（封面网格）">
+          <div class="navbar ios-only">
+            <span class="nav-title">书架</span>
+            <span class="nav-act">导入</span>
+          </div>
+          <div class="appbar android-only">
+            <span class="appbar-title">书架</span>
+            <span class="appbar-act">导入</span>
+          </div>
+          <div class="content">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+              <div data-goto="阅读器-正文" style="cursor:pointer">
+                <div class="thumb c1" style="width:100%;height:170px;border-radius:var(--radius-card)"></div>
+                <div class="cell-title" style="margin-top:7px">示例书 · EPUB 演示</div>
+                <div class="cell-sub">已读 42%</div>
+              </div>
+              <div data-goto="阅读器-正文" style="cursor:pointer">
+                <div class="thumb c2" style="width:100%;height:170px;border-radius:var(--radius-card)"></div>
+                <div class="cell-title" style="margin-top:7px">示例书 · PDF 演示</div>
+                <div class="cell-sub">第 12 页</div>
+              </div>
+              <div data-goto="阅读器-正文" style="cursor:pointer">
+                <div class="thumb c3" style="width:100%;height:170px;border-radius:var(--radius-card)"></div>
+                <div class="cell-title" style="margin-top:7px">阅读应用演示</div>
+                <div class="cell-sub">未开始</div>
+              </div>
+            </div>
+          </div>
+          <div class="tabbar ios-only">
+            <div class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10v16H5.5A1.5 1.5 0 0 1 4 18.5z"/><path d="M10 4h8.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H10"/></svg>书架</div>
+            <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>设置</div>
+          </div>
+          <div class="bottomnav android-only">
+            <div class="tab on"><span class="ico-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10v16H5.5A1.5 1.5 0 0 1 4 18.5z"/><path d="M10 4h8.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H10"/></svg></span>书架</div>
+            <div class="tab"><span class="ico-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg></span>设置</div>
+          </div>
+          <div class="fab android-only">＋</div>
+        </section>
+
+        <!-- ===== 导入-格式被拒（错误 / 拒绝态） ===== -->
+        <section class="screen" data-screen="导入-格式被拒">
+          <div class="navbar ios-only">
+            <span class="nav-act" data-back="true">‹ 书架</span>
+            <span class="nav-title" style="font-size:var(--font-title)">导入</span>
+            <span class="nav-act" style="visibility:hidden">占位</span>
+          </div>
+          <div class="appbar android-only">
+            <span class="appbar-act" data-back="true">‹</span>
+            <span class="appbar-title">导入</span>
+          </div>
+          <div class="content" style="display:flex">
+            <div class="center-col">
+              <div class="empty-ico err-ico">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.2v.3"/></svg>
+              </div>
+              <div class="t">不支持的格式</div>
+              <div class="s">仅支持 EPUB / PDF / TXT，请换一个文件重新导入</div>
+              <button class="btn primary" data-goto="书架-有数据">重新选择文件</button>
+              <button class="btn ghost" data-goto="书架-有数据">返回书架</button>
+            </div>
+          </div>
+          <div class="toast">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.2v.3"/></svg>
+            已跳过「示例书.mobi」：格式不受支持
+          </div>
+        </section>
+
+      </div>
+    </div>
+
+    <!-- 变体条：单变体时自动隐藏 -->
+    <div class="variant-bar" id="variantBar">
+      <button id="vPrev" title="上一个变体（←）">‹</button>
+      <span class="vlabel" id="vLabel">A</span>
+      <button id="vNext" title="下一个变体（→）">›</button>
+      <span class="hint">← → 切换变体</span>
+    </div>
+  </section>
+
+  <!-- 说明栏：与 原型说明.md 保持一致 -->
+  <aside class="card">
+    <div class="card-title">当前屏说明</div>
+    <div class="notes">
+      <h4 id="nTitle">—</h4>
+      <p id="nUse">—</p>
+      <p><code id="nId">—</code></p>
+      <h4>对应故事</h4>
+      <div id="nStories"></div>
+      <h4>覆盖状态</h4>
+      <div id="nStates"></div>
+    </div>
+  </aside>
+
+</div>
+
+<script>
+(function(){
+  /* 屏元数据：必须与 原型说明.md 的「页面清单」「状态覆盖」保持一致 */
+  var META = {
+    '书架-加载中'   : {name:'书架（加载中）', use:'首次进入书架、正在读取本地书籍的中态', stories:['US-2'], states:['加载中']},
+    '书架-空态'     : {name:'书架（空）'    , use:'一条书都没有时的引导',            stories:['US-2'], states:['空态']},
+    '书架-有数据'   : {name:'书架（有书）'  , use:'书架主列表（多变体）',            stories:['US-2','US-5'], states:['有数据','极值','超长截断']},
+    '阅读器-正文'   : {name:'阅读器（正文）', use:'按格式分派的阅读界面',            stories:['US-3','US-4'], states:['有数据']},
+    '导入-格式被拒' : {name:'导入（格式被拒）', use:'不支持格式的拒绝提示',          stories:['US-1'], states:['错误 / 拒绝']}
+  };
+
+  var screens  = Array.prototype.slice.call(document.querySelectorAll('.screen'));
+  var listBtns = Array.prototype.slice.call(document.querySelectorAll('#screenList button'));
+  var device   = document.getElementById('device');
+  var vBar = document.getElementById('variantBar');
+  var vLabel = document.getElementById('vLabel');
+
+  /* 同一屏 id 可对应多个变体 */
+  var variantsOf = {};
+  screens.forEach(function(s){
+    var id = s.getAttribute('data-screen');
+    (variantsOf[id] = variantsOf[id] || []).push(s.getAttribute('data-variant') || '');
+  });
+  var order = Object.keys(variantsOf);
+
+  var curScreen = null, curVariant = 0, history = [];
+
+  function readURL(){
+    var h = decodeURIComponent((location.hash||'').replace(/^#/,''));
+    var q = new URLSearchParams(location.search);
+    return {screen:h, variant:q.get('variant'), platform:q.get('platform')};
+  }
+  function writeURL(){
+    var vs = variantsOf[curScreen] || [''];
+    var key = vs[curVariant];
+    var qs = [];
+    if(key) qs.push('variant=' + encodeURIComponent(key));
+    qs.push('platform=' + device.getAttribute('data-platform'));
+    history.replaceState(null,'', location.pathname + '?' + qs.join('&') + '#' + encodeURIComponent(curScreen));
+  }
+
+  function render(){
+    var vs = variantsOf[curScreen] || [''];
+    screens.forEach(function(s){
+      var id = s.getAttribute('data-screen');
+      var key = s.getAttribute('data-variant') || '';
+      s.classList.toggle('on', id === curScreen && key === vs[curVariant]);
+    });
+    listBtns.forEach(function(b){
+      b.classList.toggle('on', b.getAttribute('data-goto') === curScreen);
+    });
+    var multi = vs.length > 1;
+    vBar.classList.toggle('show', multi);
+    vLabel.textContent = multi ? (vs[curVariant] + ' / 共 ' + vs.length + ' 个变体') : '';
+
+    var m = META[curScreen] || {};
+    document.getElementById('nTitle').textContent = m.name || curScreen;
+    document.getElementById('nUse').textContent   = m.use  || '';
+    document.getElementById('nId').textContent    = curScreen;
+    document.getElementById('nStories').innerHTML = (m.stories||[]).map(function(s){return '<span class="pill">'+s+'</span>';}).join('');
+    document.getElementById('nStates').innerHTML  = (m.states ||[]).map(function(s){return '<span class="pill">'+s+'</span>';}).join('');
+    if(vBar.classList.contains('show')) vBar.style.bottom = device.getAttribute('data-platform') === 'android' ? '18px' : '22px';
+  }
+
+  function goto(id, variantKey, keepHistory){
+    if(!variantsOf[id]) return;
+    if(keepHistory && curScreen) history.push(curScreen);
+    curScreen = id;
+    var vs = variantsOf[id] || [''];
+    curVariant = Math.max(0, vs.indexOf(variantKey || ''));
+    render(); writeURL();
+    document.getElementById('viewport').scrollTop = 0;
+  }
+  function step(d){
+    var vs = variantsOf[curScreen] || [''];
+    curVariant = (curVariant + d + vs.length) % vs.length;
+    render(); writeURL();
+  }
+  function back(){
+    var prev = history.pop();
+    if(prev) goto(prev); else goto(order[0]);
+  }
+
+  /* 屏列表点击 */
+  listBtns.forEach(function(b){
+    b.addEventListener('click', function(){ history = []; goto(b.getAttribute('data-goto')); });
+  });
+  /* 屏内交互：data-goto 跳屏；data-back 返回上一屏 */
+  document.querySelectorAll('[data-goto]').forEach(function(el){
+    if(el.closest('#screenList')) return;
+    el.addEventListener('click', function(e){ e.stopPropagation(); goto(el.getAttribute('data-goto'), null, true); });
+  });
+  document.querySelectorAll('[data-back]').forEach(function(el){
+    el.addEventListener('click', function(e){ e.stopPropagation(); back(); });
+  });
+
+  /* 平台视觉语言开关 */
+  document.querySelectorAll('#platformSeg button').forEach(function(b){
+    b.addEventListener('click', function(){
+      document.querySelectorAll('#platformSeg button').forEach(function(x){ x.classList.remove('on'); });
+      b.classList.add('on');
+      device.setAttribute('data-platform', b.getAttribute('data-platform'));
+      render(); writeURL();
+    });
+  });
+
+  /* 变体条 */
+  document.getElementById('vPrev').addEventListener('click', function(){ step(-1); });
+  document.getElementById('vNext').addEventListener('click', function(){ step(1); });
+
+  /* 键盘：输入框聚焦时不拦截 */
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'ArrowLeft')  step(-1);
+    if(e.key === 'ArrowRight') step(1);
+  });
+
+  window.addEventListener('hashchange', function(){
+    var u = readURL(); if(u.screen && variantsOf[u.screen]) goto(u.screen, u.variant);
+  });
+
+  /* 启动：读 URL，回填平台与屏 */
+  var boot = readURL();
+  if(boot.platform === 'ios' || boot.platform === 'android'){
+    device.setAttribute('data-platform', boot.platform);
+    document.querySelectorAll('#platformSeg button').forEach(function(x){
+      x.classList.toggle('on', x.getAttribute('data-platform') === boot.platform);
+    });
+  }
+  goto((boot.screen && variantsOf[boot.screen]) ? boot.screen : order[0], boot.variant);
+})();
+</script>
+</body>
+</html>

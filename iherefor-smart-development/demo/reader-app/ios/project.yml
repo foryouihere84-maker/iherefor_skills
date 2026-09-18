@@ -1,0 +1,40 @@
+name: ReaderApp
+options:
+  bundleIdPrefix: com.iherefor
+  deploymentTarget:
+    iOS: "17.0"
+settings:
+  base:
+    GENERATE_INFOPLIST_FILE: YES
+    CODE_SIGNING_ALLOWED: NO
+    SWIFT_VERSION: "5.9"
+targets:
+  ReaderApp:
+    type: application
+    platform: iOS
+    sources: [ReaderApp]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.iherefor.readerapp
+  ReaderAppTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [ReaderAppTests]
+    dependencies:
+      - target: ReaderApp
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.iherefor.readerapp.tests
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/ReaderApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ReaderApp
+        BUNDLE_LOADER: $(TEST_HOST)
+schemes:
+  ReaderApp:
+    build:
+      targets:
+        ReaderApp: all
+        ReaderAppTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets: [ReaderAppTests]

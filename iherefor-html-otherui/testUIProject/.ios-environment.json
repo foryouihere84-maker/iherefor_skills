@@ -26,11 +26,17 @@
           "udid": "006735BF-E25E-4629-8405-3CCE87156171",
           "runtime": "com.apple.CoreSimulator.SimRuntime.iOS-26-0",
           "state": "Booted"
+        },
+        {
+          "name": "iPad (A16)",
+          "udid": "FF3E7338-B9B0-41BA-991E-3FAB2E7086D1",
+          "runtime": "com.apple.CoreSimulator.SimRuntime.iOS-26-0",
+          "state": "Booted"
         }
       ]
     },
     "physical": {
-      "command": "xcrun devicectl list devices --json-output /var/folders/w3/rrn3js2n3wvgb5rhryhdtspw0000gn/T/tmp7ewyz4sp/devicectl-devices.json",
+      "command": "xcrun devicectl list devices --json-output /var/folders/w3/rrn3js2n3wvgb5rhryhdtspw0000gn/T/tmpb7dyy03q/devicectl-devices.json",
       "status": "passed",
       "stderr": "",
       "code": 0,
@@ -45,9 +51,9 @@
         {
           "name": "for的iPhone",
           "udid": "9770CBED-BE86-5EB9-8DE9-F6FBE9D8E63C",
-          "osVersion": "26.6",
+          "osVersion": "27.0",
           "pairingState": "paired",
-          "tunnelState": "unavailable"
+          "tunnelState": "connected"
         },
         {
           "name": "iPad7-2019",
@@ -73,6 +79,13 @@
         "state": "Booted"
       },
       {
+        "kind": "simulator",
+        "name": "iPad (A16)",
+        "udid": "FF3E7338-B9B0-41BA-991E-3FAB2E7086D1",
+        "runtime": "com.apple.CoreSimulator.SimRuntime.iOS-26-0",
+        "state": "Booted"
+      },
+      {
         "kind": "physical",
         "name": "Coco d iPhone",
         "udid": "8E21C8FD-2F28-5A42-806F-D46095EF3A2D",
@@ -84,9 +97,9 @@
         "kind": "physical",
         "name": "for的iPhone",
         "udid": "9770CBED-BE86-5EB9-8DE9-F6FBE9D8E63C",
-        "osVersion": "26.6",
+        "osVersion": "27.0",
         "pairingState": "paired",
-        "tunnelState": "unavailable"
+        "tunnelState": "connected"
       },
       {
         "kind": "physical",

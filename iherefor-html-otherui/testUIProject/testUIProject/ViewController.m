@@ -2,77 +2,56 @@
 //  ViewController.m
 //  testUIProject
 //
-//  项目管理入口：用一个列表枚举工程里所有的 ViewController，
-//  点击任意一行即 push 到对应的视图，方便逐页联调与回归。
+//  统一入口骨架：一个空的 UITableView 页面清单。后续页面在此逐条接入。
 //
 
 #import "ViewController.h"
 
-#import "AgeSelectionViewController.h"
-#import "BrushSelectionViewController.h"
-#import "PaletteSelectionViewController.h"
-#import "PurposeSelectionViewController.h"
-#import "SpecialOfferViewController.h"
-#import "StyleSelectionViewController.h"
-#import "SubscriptionPlanSelectionViewController.h"
-
-// 每个条目声明「列表上的名字」与「要创建哪个类」。
-// 类用 NSString 表示并延迟创建，避免一次性初始化所有页面带来的副作用。
-static NSArray<NSArray<NSString *> *> *s_Entries(void) {
-    static NSArray<NSArray<NSString *> *> *entries;
-    static dispatch_once_t once;
-    dispatch_once(&once, ^{
-        entries = @[
-            @[ @"Age Selection",      @"AgeSelectionViewController" ],
-            @[ @"Brush Selection",    @"BrushSelectionViewController" ],
-            @[ @"Palette Selection",  @"PaletteSelectionViewController" ],
-            @[ @"Purpose Selection",  @"PurposeSelectionViewController" ],
-            @[ @"Special Offer",      @"SpecialOfferViewController" ],
-            @[ @"Style Selection",    @"StyleSelectionViewController" ],
-            @[ @"Subscription Plan",  @"SubscriptionPlanSelectionViewController" ],
-        ];
-    });
-    return entries;
-}
-
 @interface ViewController () <UITableViewDataSource, UITableViewDelegate>
+
+@property (nonatomic, strong) UITableView *tableView;
+
 @end
 
-@implementation ViewController {
-    UITableView *_tableView;
-}
+@implementation ViewController
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.title = @"View Controllers";
-    self.view.backgroundColor = [UIColor systemBackgroundColor];
 
-    _tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStylePlain];
-    _tableView.dataSource = self;
-    _tableView.delegate = self;
-    _tableView.rowHeight = UITableViewAutomaticDimension;
-    _tableView.estimatedRowHeight = 48.0;
-    [_tableView registerClass:[UITableViewCell class] forCellReuseIdentifier:@"Cell"];
-    [self.view addSubview:_tableView];
-}
+    self.title = @"页面入口";
+    self.view.backgroundColor = [UIColor systemGroupedBackgroundColor];
 
-- (void)viewDidLayoutSubviews {
-    [super viewDidLayoutSubviews];
-    _tableView.frame = self.view.bounds;
+    self.tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStyleInsetGrouped];
+    self.tableView.dataSource = self;
+    self.tableView.delegate = self;
+    self.tableView.rowHeight = 64.0;
+    [self.tableView registerClass:[UITableViewCell class] forCellReuseIdentifier:@"cell"];
+    [self.view addSubview:self.tableView];
+
+    self.tableView.translatesAutoresizingMaskIntoConstraints = NO;
+    [NSLayoutConstraint activateConstraints:@[
+        [self.tableView.topAnchor constraintEqualToAnchor:self.view.topAnchor],
+        [self.tableView.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
+        [self.tableView.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor],
+        [self.tableView.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
+    ]];
 }
 
 #pragma mark - UITableViewDataSource
 
-- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    return (NSInteger)s_Entries().count;
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
+    return 1;
 }
 
-- (UITableViewCell *)tableView:(UITableView *)tableView
-         cellForRowAtIndexPath:(NSIndexPath *)indexPath {
-    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"Cell"
-                                                           forIndexPath:indexPath];
-    cell.textLabel.text = s_Entries()[(NSUInteger)indexPath.row][0];
-    cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
+    return 0;
+}
+
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
+    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"cell" forIndexPath:indexPath];
+    UIListContentConfiguration *config = [cell defaultContentConfiguration];
+    config.text = @"（待接入页面）";
+    cell.contentConfiguration = config;
     return cell;
 }
 
@@ -80,17 +59,6 @@ static NSArray<NSArray<NSString *> *> *s_Entries(void) {
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
-
-    NSString *className = s_Entries()[(NSUInteger)indexPath.row][1];
-    Class cls = NSClassFromString(className);
-    if (!cls || ![cls isSubclassOfClass:[UIViewController class]]) {
-        NSLog(@"ViewController: unknown controller class %@", className);
-        return;
-    }
-
-    UIViewController *controller = [[cls alloc] init];
-    controller.title = s_Entries()[(NSUInteger)indexPath.row][0];
-    [self.navigationController pushViewController:controller animated:YES];
 }
 
 @end

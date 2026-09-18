@@ -1,0 +1,4114 @@
+{
+  "schema_version": "2",
+  "source_type": "sketch",
+  "coordinate_space": "source_canvas",
+  "canvas": {
+    "width": 810,
+    "height": 1080
+  },
+  "canvas_origin": {
+    "x": 0,
+    "y": 0
+  },
+  "scale_metadata": {
+    "device": "iOS @1x",
+    "ArtboardScale": 2,
+    "sliceScale": 4,
+    "exportScale": 2
+  },
+  "nodes": [
+    {
+      "node_id": "1B56D937-4AC1-425C-A4F6-2EA1AE9BAB43",
+      "source_id": "1B56D937-4AC1-425C-A4F6-2EA1AE9BAB43",
+      "identity_source": "source_id",
+      "parent_id": null,
+      "source_parent_id": null,
+      "source_order": 0,
+      "name": "引导完成-iPad",
+      "node_type": "artboard-group",
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 810,
+        "height": 1080
+      },
+      "bounds_source_field": "left/top/width/height",
+      "source_visible": null,
+      "text": null,
+      "raw_style": {
+        "includeBackgroundColorInExport": true,
+        "top": 0,
+        "left": 0,
+        "fills": [
+          {
+            "type": "color",
+            "color": {
+              "a": 1,
+              "b": 242,
+              "value": "rgba(241,240,242,1)",
+              "g": 240,
+              "r": 241
+            }
+          }
+        ],
+        "height": 1080,
+        "hasBackgroundColor": true,
+        "position_x": 787.75,
+        "index": "0",
+        "position_y": 159,
+        "width": 810
+      },
+      "asset_ids": [],
+      "source_pointer": "/info/0"
+    },
+    {
+      "node_id": "FE8C2F8D-74D6-4D72-B371-9488B56D2C33",
+      "source_id": "FE8C2F8D-74D6-4D72-B371-9488B56D2C33",
+      "identity_source": "source_id",
+      "parent_id": "DBA477F0-8123-4B6D-B578-C1CB439F4813",
+      "source_parent_id": "DBA477F0-8123-4B6D-B578-C1CB439F4813",
+      "source_order": 1,
+      "name": "矩形",
+      "node_type": "shape",
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 810,
+        "height": 702
+      },
+      "bounds_source_field": "left/top/width/height",
+      "source_visible": true,
+      "text": null,
+      "raw_style": {
+        "hasExportDDSImage": true,
+        "isFlippedHorizontal": false,
+        "hasFixedLeft": false,
+        "edited": false,
+        "isFlippedVertical": false,
+        "isVisible": true,
+        "influenceHeight": 702,
+        "booleanOperation": -1,
+        "points": [
+          {
+            "hasCurveTo": false,
+            "curveTo": {
+              "x": 0,
+              "y": 0
+            },
+            "curveMode": 1,
+            "hasCurveFrom": false,
+            "curveFrom": {
+              "x": 0,
+              "y": 0
+            },
+            "cornerRadius": 0,
+            "point": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          {
+            "hasCurveTo": false,
+            "curveTo": {
+              "x": 1,
+              "y": 0
+            },
+            "curveMode": 1,
+            "hasCurveFrom": false,
+            "curveFrom": {
+              "x": 1,
+              "y": 0
+            },
+            "cornerRadius": 0,
+            "point": {
+              "x": 1,
+              "y": 0
+            }
+          },
+          {
+            "hasCurveTo": false,
+            "curveTo": {
+              "x": 1,
+              "y": 1
+            },
+            "curveMode": 1,
+            "hasCurveFrom": false,
+            "curveFrom": {
+              "x": 1,
+              "y": 1
+            },
+            "cornerRadius": 0,
+            "point": {
+              "x": 1,
+              "y": 1
+            }
+          },
+          {
+            "hasCurveTo": false,
+            "curveTo": {
+              "x": 0,
+              "y": 1
+            },
+            "curveMode": 1,
+            "hasCurveFrom": false,
+            "curveFrom": {
+              "x": 0,
+              "y": 1
+            },
+            "cornerRadius": 0,
+            "point": {
+              "x": 0,
+              "y": 1
+            }
+          }
+        ],
+        "borderOptions": {
+          "dashPattern": [],
+          "lineCapStyle": 0,
+          "lineJoinStyle": 0,
+          "isEnabled": true
+        },
+        "top": 0,
+        "hasFixedWidth": false,
+        "left": 0,
+        "ddsOriginFrame": {
+          "height": 702,
+          "x": 0,
+          "y": 0,
+          "width": 810
+        },
+        "hasFixedBottom": false,
+        "blendMode": 0,
+        "hasClippingMask": 1,
+        "rotation": 0,
+        "isLocked": false,
+        "fills": [
+          {
+            "patternTileScale": 1,
+            "noiseIntensity": 0,
+            "type": "color",
+            "blendMode": 0,
+            "noiseIndex": 0,
+            "opacity": 1,
+            "color": {
+              "a": 1,
+              "b": 195,
+              "value": "rgba(187,190,195,1)",
+              "g": 190,
+              "r": 187
+            },
+            "patternFillType": 1,
+            "isEnabled": true,
+            "fillType": 0
+          }
+        ],
+        "opacity": 100,
+        "startMarkerType": 0,
+        "hasFixedRight": false,
+        "exportable": false,
+        "height": 702,
+        "windingRule": 1,
+        "hasFixedTop": false,
+        "isAutolayout": false,
+        "miterLimit": 10,
+        "influenceWidth": 810,
+        "layerOriginFrame": {
+          "height": 702,
+          "x": 0,
+          "y": 0,
+          "width": 810
+        },
+        "isClosed": true,
+        "pointRadiusBehaviour": 1,
+        "endMarkerType": 0,
+        "shouldBreakMaskChain": false,
+        "index": 2,
+        "hasFixedHeight": false,
+        "influenceLeft": 0,
+        "sharedStyleID": "",
+        "width": 810,
+        "influenceTop": 0,
+        "clippingMaskMode": 0
+      },
+      "asset_ids": [
+        "FE8C2F8D-74D6-4D72-B371-9488B56D2C33:ddsImage"
+      ],
+      "source_pointer": "/info/1"
+    },
+    {
+      "node_id": "49ED42B4-2E03-42B7-BCE9-7397A46E9868",
+      "source_id": "49ED42B4-2E03-42B7-BCE9-7397A46E9868",
+      "identity_source": "source_id",
+      "parent_id": "DBA477F0-8123-4B6D-B578-C1CB439F4813",
+      "source_parent_id": "DBA477F0-8123-4B6D-B578-C1CB439F4813",
+      "source_order": 2,
+      "name": "位图",
+      "node_type": "bitmap",
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 810,
+        "height": 702
+      },
+      "bounds_source_field": "left/top/width/height",
+      "source_visible": true,
+      "text": null,
+      "raw_style": {
+        "hasExportDDSImage": true,
+        "isFlippedHorizontal": false,
+        "hasFixedLeft": false,
+        "isFlippedVertical": false,
+        "isVisible": true,
+        "influenceHeight": 702,
+        "borderOptions": {
+          "dashPattern": [],
+          "lineCapStyle": 0,
+          "lineJoinStyle": 0,
+          "isEnabled": true
+        },
+        "top": 0,
+        "hasFixedWidth": false,
+        "left": 0,
+        "ddsOriginFrame": {
+          "height": 702,
+          "x": 0,
+          "y": 0,
+          "width": 810
+        },
+        "hasFixedBottom": false,
+        "blendMode": 0,
+        "hasClippingMask": 0,
+        "rotation": 0,
+        "opacity": 100,
+        "startMarkerType": 0,
+        "hasFixedRight": false,
+        "exportable": false,
+        "height": 702,
+        "windingRule": 1,
+        "hasFixedTop": false,
+        "isAutolayout": false,
+        "miterLimit": 10,
+        "influenceWidth": 810,
+        "layerOriginFrame": {
+          "height": 1022,
+          "x": -4.547473508864641e-13,
+          "y": 0,
+          "width": 810.2120481927709
+        },
+        "endMarkerType": 0,
+        "shouldBreakMaskChain": false,
+        "index": 2,
+        "hasFixedHeight": false,
+        "influenceLeft": 0,
+        "sharedStyleID": "",
+        "width": 810,
+        "influenceTop": 0,
+        "clippingMaskMode": 0
+      },
+      "asset_ids": [
+        "49ED42B4-2E03-42B7-BCE9-7397A46E9868:ddsImage"
+      ],
+      "source_pointer": "/info/2"
+    },
+    {
+      "node_id": "DBA477F0-8123-4B6D-B578-C1CB439F4813",
+      "source_id": "DBA477F0-8123-4B6D-B578-C1CB439F4813",
+      "identity_source": "source_id",
+      "parent_id": "1B56D937-4AC1-425C-A4F6-2EA1AE9BAB43",
+      "source_parent_id": "1B56D937-4AC1-425C-A4F6-2EA1AE9BAB43",
+      "source_order": 3,
+      "name": "vip_banner_top",
+      "node_type": "layer-group",
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 810,
+        "height": 702
+      },
+      "bounds_source_field": "left/top/width/height",
+      "source_visible": true,
+      "text": null,
+      "raw_style": {
+        "hasExportDDSImage": false,
+        "isFlippedHorizontal": false,
+        "hasFixedLeft": false,
+        "isFlippedVertical": false,
+        "isVisible": true,
+        "influenceHeight": 702,
+        "booleanOperation": 0,
+        "top": 0,
+        "hasFixedWidth": false,
+        "left": 0,
+        "ddsOriginFrame": {
+          "height": 702,
+          "x": 0,
+          "y": 0,
+          "width": 810
+        },
+        "hasFixedBottom": false,
+        "blendMode": 0,
+        "hasClippingMask": 0,
+        "rotation": 0,
+        "opacity": 100,
+        "startMarkerType": 0,
+        "hasFixedRight": false,
+        "exportable": true,
+        "height": 702,
+        "windingRule": 0,
+        "hasFixedTop": false,
+        "isAutolayout": false,
+        "miterLimit": 0,
+        "influenceWidth": 810,
+        "layerOriginFrame": {
+          "height": 702,
+          "x": 0,
+          "y": 0,
+          "width": 810
+        },
+        "pointRadiusBehaviour": 0,
+        "endMarkerType": 0,
+        "shouldBreakMaskChain": false,
+        "index": 1,
+        "hasFixedHeight": false,
+        "influenceLeft": 0,
+        "sharedStyleID": "",
+        "isCopy": false,
+        "width": 810,
+        "influenceTop": 0,
+        "clippingMaskMode": 0
+      },
+      "asset_ids": [
+        "DBA477F0-8123-4B6D-B578-C1CB439F4813:image"
+      ],
+      "source_pointer": "/info/3"
+    },
+    {
+      "node_id": "E3EF26CC-05A6-4F0F-8264-052A19CAA2D7",
+      "source_id": "E3EF26CC-05A6-4F0F-8264-052A19CAA2D7",
+      "identity_source": "source_id",
+      "parent_id": "3EFBA0DC-386C-4974-B949-2939FABE3E75",
+      "source_parent_id": "3EFBA0DC-386C-4974-B949-2939FABE3E75",
+      "source_order": 4,
+      "name": "矩形",
+      "node_type": "shape",
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 810,
+        "height": 702
+      },
+      "bounds_source_field": "left/top/width/height",
+      "source_visible": true,
+      "text": null,
+      "raw_style": {
+        "hasExportDDSImage": true,
+        "isFlippedHorizontal": false,
+        "hasFixedLeft": false,
+        "edited": false,
+        "isFlippedVertical": false,
+        "isVisible": true,
+        "influenceHeight": 702,
+        "booleanOperation": -1,
+        "points": [
+          {
+            "hasCurveTo": false,
+            "curveTo": {
+              "x": 0,
+              "y": 0
+            },
+            "curveMode": 1,
+            "hasCurveFrom": false,
+            "curveFrom": {
+              "x": 0,
+              "y": 0
+            },
+            "cornerRadius": 0,
+            "point": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          {
+            "hasCurveTo": false,
+            "curveTo": {
+              "x": 1,
+              "y": 0
+            },
+            "curveMode": 1,
+            "hasCurveFrom": false,
+            "curveFrom": {
+              "x": 1,
+              "y": 0
+            },
+            "cornerRadius": 0,
+            "point": {
+              "x": 1,
+              "y": 0
+            }
+          },
+          {
+            "hasCurveTo": false,
+            "curveTo": {
+              "x": 1,
+              "y": 1
+            },
+            "curveMode": 1,
+            "hasCurveFrom": false,
+            "curveFrom": {
+              "x": 1,
+              "y": 1
+            },
+            "cornerRadius": 0,
+            "point": {
+              "x": 1,
+              "y": 1
+            }
+          },
+          {
+            "hasCurveTo": false,
+            "curveTo": {
+              "x": 0,
+              "y": 1
+            },
+            "curveMode": 1,
+            "hasCurveFrom": false,
+            "curveFrom": {
+              "x": 0,
+              "y": 1
+            },
+            "cornerRadius": 0,
+            "point": {
+              "x": 0,
+              "y": 1
+            }
+          }
+        ],
+        "borderOptions": {
+          "dashPattern": [],
+          "lineCapStyle": 0,
+          "lineJoinStyle": 0,
+          "isEnabled": true
+        },
+        "top": 0,
+        "hasFixedWidth": false,
+        "left": 0,
+        "ddsOriginFrame": {
+          "height": 702,
+          "x": 0,
+          "y": 0,
+          "width": 810
+        },
+        "hasFixedBottom": false,
+        "blendMode": 0,
+        "hasClippingMask": 1,
+        "rotation": 0,
+        "isLocked": false,
+        "fills": [
+          {
+            "patternTileScale": 1,
+            "noiseIntensity": 0,
+            "type": "color",
+            "blendMode": 0,
+            "noiseIndex": 0,
+            "opacity": 1,
+            "color": {
+              "a": 1,
+              "b": 248,
+              "value": "rgba(248,248,248,1)",
+              "g": 248,
+              "r": 248
+            },
+            "patternFillType": 1,
+            "isEnabled": true,
+            "fillType": 0
+          }
+        ],
+        "opacity": 100,
+        "startMarkerType": 0,
+        "hasFixedRight": false,
+        "exportable": false,
+        "height": 702,
+        "windingRule": 1,
+        "hasFixedTop": false,
+        "isAutolayout": false,
+        "miterLimit": 10,
+        "influenceWidth": 810,
+        "layerOriginFrame": {
+          "height": 702,
+          "x": 0,
+          "y": 0,
+          "width": 810
+        },
+        "isClosed": true,
+        "pointRadiusBehaviour": 1,
+        "endMarkerType": 0,
+        "shouldBreakMaskChain": false,
+        "index": 2,
+        "hasFixedHeight": false,
+        "influenceLeft": 0,
+        "sharedStyleID": "",
+        "width": 810,
+        "influenceTop": 0,
+        "clippingMaskMode": 0
+      },
+      "asset_ids": [
+        "E3EF26CC-05A6-4F0F-8264-052A19CAA2D7:ddsImage"
+      ],
+      "source_pointer": "/info/4"
+    },
+    {
+      "node_id": "C4AC84E5-6B10-4217-B7F2-F065416B24C1",
+      "source_id": "C4AC84E5-6B10-4217-B7F2-F065416B24C1",
+      "identity_source": "source_id",
+      "parent_id": "3EFBA0DC-386C-4974-B949-2939FABE3E75",
+      "source_parent_id": "3EFBA0DC-386C-4974-B949-2939FABE3E75",
+      "source_order": 5,
+      "name": "9备份",
+      "node_type": "bitmap",
+      "bounds": {
+        "x": 97,
+        "y": 1,
+        "width": 579.75,
+        "height": 701
+      },
+      "bounds_source_field": "left/top/width/height",
+      "source_visible": true,
+      "text": null,
+      "raw_style": {
+        "hasExportDDSImage": true,
+        "isFlippedHorizontal": false,
+        "hasFixedLeft": false,
+        "isFlippedVertical": false,
+        "isVisible": true,
+        "influenceHeight": 701,
+        "borderOptions": {
+          "dashPattern": [],
+          "lineCapStyle": 0,
+          "lineJoinStyle": 0,
+          "isEnabled": true
+        },
+        "top": 1,
+        "hasFixedWidth": false,
+        "left": 97,
+        "ddsOriginFrame": {
+          "height": 701,
+          "x": 97,
+          "y": 1,
+          "width": 580
+        },
+        "hasFixedBottom": false,
+        "blendMode": 0,
+        "hasClippingMask": 0,
+        "rotation": 0,
+        "opacity": 100,
+        "startMarkerType": 0,
+        "colorControls": {
+          "hue": 0,
+          "contrast": 1,
+          "saturation": 0.877251,
+          "isEnabled": true,
+          "brightness": -0.019125
+        },
+        "hasFixedRight": false,
+        "exportable": false,
+        "height": 701,
+        "windingRule": 1,
+        "hasFixedTop": false,
+        "isAutolayout": false,
+        "miterLimit": 10,
+        "influenceWidth": 579.75,
+        "layerOriginFrame": {
+          "height": 773,
+          "x": 97,
+          "y": 1,
+          "width": 579.75
+        },
+        "endMarkerType": 0,
+        "shouldBreakMaskChain": false,
+        "index": 2,
+        "hasFixedHeight": false,
+        "influenceLeft": 97,
+        "sharedStyleID": "",
+        "width": 579.75,
+        "influenceTop": 1,
+        "clippingMaskMode": 0
+      },
+      "asset_ids": [
+        "C4AC84E5-6B10-4217-B7F2-F065416B24C1:ddsImage"
+      ],
+      "source_pointer": "/info/5"
+    },
+    {
+      "node_id": "28AAF9A8-0200-4B43-88D0-360874653C57",
+      "source_id": "28AAF9A8-0200-4B43-88D0-360874653C57",
+      "identity_source": "source_id",
+      "parent_id": "3EFBA0DC-386C-4974-B949-2939FABE3E75",
+      "source_parent_id": "3EFBA0DC-386C-4974-B949-2939FABE3E75",
+      "source_order": 6,
+      "name": "矩形",
+      "node_type": "shape",
+      "bounds": {
+        "x": 539.9763403943984,
+        "y": 168.87402478496324,
+        "width": 207.25907626960407,
+        "height": 278
+      },
+      "bounds_source_field": "left/top/width/height",
+      "source_visible": true,
+      "text": null,
+      "raw_style": {
+        "hasExportDDSImage": true,
+        "isFlippedHorizontal": false,
+        "hasFixedLeft": false,
+        "edited": false,
+        "isFlippedVertical": false,
+        "isVisible": true,
+        "influenceHeight": 278,
+        "booleanOperation": -1,
+        "points": [
+          {
+            "hasCurveTo": false,
+            "curveTo": {
+              "x": 0.06773487478494644,
+              "y": 3.469446951953614e-18
+            },
+            "curveMode": 1,
+            "hasCurveFrom": false,
+            "curveFrom": {
+              "x": 0.06773487478494644,
+              "y": 3.469446951953614e-18
+            },
+            "cornerRadius": 15,
+            "point": {
+              "x": 0.06773487478494644,
+              "y": 3.469446951953614e-18
+            }
+          },
+          {
+            "hasCurveTo": false,
+            "curveTo": {
+              "x": 1,
+              "y": 0.03642536699771881
+            },
+            "curveMode": 1,
+            "hasCurveFrom": false,
+            "curveFrom": {
+              "x": 1,
+              "y": 0.03642536699771881
+            },
+            "cornerRadius": 15,
+            "point": {
+              "x": 1,
+              "y": 0.03642536699771881
+            }
+          },
+          {
+            "hasCurveTo": false,
+            "curveTo": {
+              "x": 0.9322651028633118,
+              "y": 1
+            },
+            "curveMode": 1,
+            "hasCurveFrom": false,
+            "curveFrom": {
+              "x": 0.9322651028633118,
+              "y": 1
+            },
+            "cornerRadius": 15,
+            "point": {
+              "x": 0.9322651028633118,
+              "y": 1
+            }
+          },
+          {
+            "hasCurveTo": false,
+            "curveTo": {
+              "x": 6.938893903907228e-18,
+              "y": 0.9635746479034424
+            },
+            "curveMode": 1,
+            "hasCurveFrom": false,
+            "curveFrom": {
+              "x": 6.938893903907228e-18,
+              "y": 0.9635746479034424
+            },
+            "cornerRadius": 15,
+            "point": {
+              "x": 6.938893903907228e-18,
+              "y": 0.9635746479034424
+            }
+          }
+        ],
+        "borderOptions": {
+          "dashPattern": [],
+          "lineCapStyle": 0,
+          "lineJoinStyle": 0,
+          "isEnabled": true
+        },
+        "top": 168.87402478496324,
+        "hasFixedWidth": false,
+        "left": 539.9763403943984,
+        "ddsOriginFrame": {
+          "height": 294,
+          "x": 534,
+          "y": 164,
+          "width": 223
+        },
+        "hasFixedBottom": false,
+        "blendMode": 0,
+        "hasClippingMask": 0,
+        "rotation": 0,
+        "isLocked": false,
+        "fills": [],
+        "opacity": 100,
+        "startMarkerType": 0,
+        "hasFixedRight": false,
+        "exportable": false,
+        "height": 278,
+        "windingRule": 1,
+        "hasFixedTop": false,
+        "isAutolayout": false,
+        "miterLimit": 10,
+        "influenceWidth": 207.25907626960407,
+        "layerOriginFrame": {
+          "height": 278,
+          "x": 539.9763403943984,
+          "y": 168.87402478496324,
+          "width": 207.25907626960407
+        },
+        "isClosed": true,
+        "borders": [
+          {
+            "position": "外边框",
+            "type": "color",
+            "blendMode": 0,
+            "opacity": 1,
+            "color": {
+              "a": 1,
+              "b": 255,
+              "value": "rgba(255,255,255,1)",
+              "g": 255,
+              "r": 255
+            },
+            "thickness": 2,
+            "isEnabled": true,
+            "fillType": 0
+          }
+        ],
+        "pointRadiusBehaviour": 1,
+        "endMarkerType": 0,
+        "shouldBreakMaskChain": false,
+        "index": 2,
+        "hasFixedHeight": false,
+        "influenceLeft": 539.9763403943984,
+        "sharedStyleID": "",
+        "shadow": [
+          {
+            "blurRadius": 6,
+            "offsetX": 2,
+            "offsetY": 3,
+            "type": "外阴影",
+            "blendMode": 0,
+            "opacity": 1,
+            "color": {
+              "a": 0.18,
+              "b": 0,
+              "value": "rgba(0,0,0,0.18)",
+              "g": 0,
+              "r": 0
+            },
+            "isEnabled": true,
+            "spread": 0
+          }
+        ],
+        "width": 207.25907626960407,
+        "influenceTop": 168.87402478496324,
+        "clippingMaskMode": 0
+      },
+      "asset_ids": [
+        "28AAF9A8-0200-4B43-88D0-360874653C57:ddsImage"
+      ],
+      "source_pointer": "/info/6"
+    },
+    {
+      "node_id": "C6AC2B17-A639-40BC-AD8D-1AD4026A6232",
+      "source_id": "C6AC2B17-A639-40BC-AD8D-1AD4026A6232",
+      "identity_source": "source_id",
+      "parent_id": "3EFBA0DC-386C-4974-B949-2939FABE3E75",
+      "source_parent_id": "3EFBA0DC-386C-4974-B949-2939FABE3E75",
+      "source_order": 7,
+      "name": "277efb4d4619881c090b888f4d184aa56b8fa8a62d707-8gJp9z_fw480",
+      "node_type": "bitmap",
+      "bounds": {
+        "x": 459.1246415859787,
+        "y": 285.62302345017383,
+        "width": 160.93787952173307,
+        "height": 160.9378795217333
+      },
+      "bounds_source_field": "left/top/width/height",
+      "source_visible": true,
+      "text": null,
+      "raw_style": {
+        "hasExportDDSImage": true,
+        "isFlippedHorizontal": false,
+        "hasFixedLeft": false,
+        "isFlippedVertical": false,
+        "isVisible": true,
+        "influenceHeight": 160.9378795217333,
+        "borderOptions": {
+          "dashPattern": [],
+          "lineCapStyle": 0,
+          "lineJoinStyle": 0,
+          "isEnabled": true
+        },
+        "top": 285.62302345017383,
+        "hasFixedWidth": false,
+        "left": 459.1246415859787,
+        "ddsOriginFrame": {
+          "height": 189,
+          "x": 445,
+          "y": 272,
+          "width": 189
+        },
+        "hasFixedBottom": false,
+        "blendMode": 0,
+        "hasClippingMask": 0,
+        "rotation": -208,
+        "fills": [
+          {
+            "patternTileScale": 1,
+            "noiseIntensity": 0,
+            "type": "color",
+            "blendMode": 0,
+            "noiseIndex": 0,
+            "opacity": 1,
+            "color": {
+              "a": 1,
+              "b": 255,
+              "value": "rgba(255,255,255,1)",
+              "g": 255,
+              "r": 255
+            },
+            "patternFillType": 1,
+            "isEnabled": true,
+            "fillType": 0
+          }
+        ],
+        "opacity": 100,
+        "startMarkerType": 0,
+        "hasFixedRight": false,
+        "exportable": false,
+        "height": 160.9378795217333,
+        "windingRule": 1,
+        "hasFixedTop": false,
+        "isAutolayout": false,
+        "miterLimit": 10,
+        "influenceWidth": 160.93787952173307,
+        "layerOriginFrame": {
+          "height": 160.9378795217333,
+          "x": 459.1246415859787,
+          "y": 285.62302345017383,
+          "width": 160.93787952173307
+        },
+        "endMarkerType": 0,
+        "shouldBreakMaskChain": false,
+        "index": 2,
+        "hasFixedHeight": false,
+        "influenceLeft": 459.1246415859787,
+        "sharedStyleID": "",
+        "shadow": [
+          {
+            "blurRadius": 10,
+            "offsetX": 0,
+            "offsetY": 0,
+            "type": "外阴影",
+            "blendMode": 0,
+            "opacity": 1,
+            "color": {
+              "a": 0.5,
+              "b": 0,
+              "value": "rgba(0,0,0,0.5)",
+              "g": 0,
+              "r": 0
+            },
+            "isEnabled": true,
+            "spread": 0
+          }
+        ],
+        "width": 160.93787952173307,
+        "influenceTop": 285.62302345017383,
+        "clippingMaskMode": 0
+      },
+      "asset_ids": [
+        "C6AC2B17-A639-40BC-AD8D-1AD4026A6232:ddsImage"
+      ],
+      "source_pointer": "/info/7"
+    },
+    {
+      "node_id": "983C767D-EB9A-4585-976F-43A9179307F1",
+      "source_id": "983C767D-EB9A-4585-976F-43A9179307F1",
+      "identity_source": "source_id",
+      "parent_id": "3EFBA0DC-386C-4974-B949-2939FABE3E75",
+      "source_parent_id": "3EFBA0DC-386C-4974-B949-2939FABE3E75",
+      "source_order": 8,
+      "name": "08ea7f7fde30807161ffbbf61418bfc71214fe534464e-ewzg8E_fw1200",
+      "node_type": "bitmap",
+      "bounds": {
+        "x": 610.9044607508085,
+        "y": 145.87402478496324,
+        "width": 76.02855580167898,
+        "height": 56.05621057643316
+      },
+      "bounds_source_field": "left/top/width/height",
+      "source_visible": true,
+      "text": null,
+      "raw_style": {
+        "hasExportDDSImage": true,
+        "isFlippedHorizontal": false,
+        "hasFixedLeft": false,
+        "isFlippedVertical": false,
+        "isVisible": true,
+        "influenceHeight": 56.05621057643316,
+        "borderOptions": {
+          "dashPattern": [],
+          "lineCapStyle": 0,
+          "lineJoinStyle": 0,
+          "isEnabled": true
+        },
+        "top": 145.87402478496324,
+        "hasFixedWidth": false,
+        "left": 610.9044607508085,
+        "ddsOriginFrame": {
+          "height": 57,
+          "x": 610,
+          "y": 145,
+          "width": 77
+        },
+        "hasFixedBottom": false,
+        "blendMode": 0,
+        "hasClippingMask": 0,
+        "rotation": 0,
+        "opacity": 100,
+        "startMarkerType": 0,
+        "hasFixedRight": false,
+        "exportable": false,
+        "height": 56.05621057643316,
+        "windingRule": 1,
+        "hasFixedTop": false,
+        "isAutolayout": false,
+        "miterLimit": 10,
+        "influenceWidth": 76.02855580167898,
+        "layerOriginFrame": {
+          "height": 56.05621057643316,
+          "x": 610.9044607508085,
+          "y": 145.87402478496324,
+          "width": 76.02855580167898
+        },
+        "endMarkerType": 0,
+        "shouldBreakMaskChain": false,
+        "index": 2,
+        "hasFixedHeight": false,
+        "influenceLeft": 610.9044607508085,
+        "sharedStyleID": "",
+        "width": 76.02855580167898,
+        "influenceTop": 145.87402478496324,
+        "clippingMaskMode": 0
+      },
+      "asset_ids": [
+        "983C767D-EB9A-4585-976F-43A9179307F1:ddsImage"
+      ],
+      "source_pointer": "/info/8"
+    },
+    {
+      "node_id": "3EFBA0DC-386C-4974-B949-2939FABE3E75",
+      "source_id": "3EFBA0DC-386C-4974-B949-2939FABE3E75",
+      "identity_source": "source_id",
+      "parent_id": "1B56D937-4AC1-425C-A4F6-2EA1AE9BAB43",
+      "source_parent_id": "1B56D937-4AC1-425C-A4F6-2EA1AE9BAB43",
+      "source_order": 9,
+      "name": "milu_vip_title_bg_ipad",
+      "node_type": "layer-group",
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 810,
+        "height": 702
+      },
+      "bounds_source_field": "left/top/width/height",
+      "source_visible": true,
+      "text": null,
+      "raw_style": {
+        "hasExportDDSImage": false,
+        "isFlippedHorizontal": false,
+        "hasFixedLeft": false,
+        "isFlippedVertical": false,
+        "isVisible": true,
+        "influenceHeight": 702,
+        "booleanOperation": 0,
+        "top": 0,
+        "hasFixedWidth": false,
+        "left": 0,
+        "ddsOriginFrame": {
+          "height": 702,
+          "x": 0,
+          "y": 0,
+          "width": 810
+        },
+        "hasFixedBottom": false,
+        "blendMode": 0,
+        "hasClippingMask": 0,
+        "rotation": 0,
+        "opacity": 100,
+        "startMarkerType": 0,
+        "hasFixedRight": false,
+        "exportable": true,
+        "height": 702,
+        "windingRule": 0,
+        "hasFixedTop": false,
+        "isAutolayout": false,
+        "miterLimit": 0,
+        "influenceWidth": 810,
+        "layerOriginFrame": {
+          "height": 702,
+          "x": 0,
+          "y": 0,
+          "width": 810
+        },
+        "pointRadiusBehaviour": 0,
+        "endMarkerType": 0,
+        "shouldBreakMaskChain": false,
+        "index": 1,
+        "hasFixedHeight": false,
+        "influenceLeft": 0,
+        "sharedStyleID": "",
+        "isCopy": false,
+        "width": 810,
+        "influenceTop": 0,
+        "clippingMaskMode": 0
+      },
+      "asset_ids": [
+        "3EFBA0DC-386C-4974-B949-2939FABE3E75:image"
+      ],
+      "source_pointer": "/info/9"
+    },
+    {
+      "node_id": "E317A02B-CF57-4658-BC90-078910D9B82D",
+      "source_id": "E317A02B-CF57-4658-BC90-078910D9B82D",
+      "identity_source": "source_id",
+      "parent_id": "1B56D937-4AC1-425C-A4F6-2EA1AE9BAB43",
+      "source_parent_id": "1B56D937-4AC1-425C-A4F6-2EA1AE9BAB43",
+      "source_order": 10,
+      "name": "矩形",
+      "node_type": "shape",
+      "bounds": {
+        "x": 0,
+        "y": 351,
+        "width": 810,
+        "height": 363
+      },
+      "bounds_source_field": "left/top/width/height",
+      "source_visible": true,
+      "text": null,
+      "raw_style": {
+        "hasExportDDSImage": true,
+        "isFlippedHorizontal": false,
+        "hasFixedLeft": false,
+        "edited": false,
+        "isFlippedVertical": false,
+        "isVisible": true,
+        "influenceHeight": 363,
+        "booleanOperation": -1,
+        "points": [
+          {
+            "hasCurveTo": false,
+            "curveTo": {
+              "x": 0,
+              "y": 0
+            },
+            "curveMode": 1,
+            "hasCurveFrom": false,
+            "curveFrom": {
+              "x": 0,
+              "y": 0
+            },
+            "cornerRadius": 0,
+            "point": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          {
+            "hasCurveTo": false,
+            "curveTo": {
+              "x": 1,
+              "y": 0
+            },
+            "curveMode": 1,
+            "hasCurveFrom": false,
+            "curveFrom": {
+              "x": 1,
+              "y": 0
+            },
+            "cornerRadius": 0,
+            "point": {
+              "x": 1,
+              "y": 0
+            }
+          },
+          {
+            "hasCurveTo": false,
+            "curveTo": {
+              "x": 1,
+              "y": 1
+            },
+            "curveMode": 1,
+            "hasCurveFrom": false,
+            "curveFrom": {
+              "x": 1,
+              "y": 1
+            },
+            "cornerRadius": 0,
+            "point": {
+              "x": 1,
+              "y": 1
+            }
+          },
+          {
+            "hasCurveTo": false,
+            "curveTo": {
+              "x": 0,
+              "y": 1
+            },
+            "curveMode": 1,
+            "hasCurveFrom": false,
+            "curveFrom": {
+              "x": 0,
+              "y": 1
+            },
+            "cornerRadius": 0,
+            "point": {
+              "x": 0,
+              "y": 1
+            }
+          }
+        ],
+        "borderOptions": {
+          "dashPattern": [],
+          "lineCapStyle": 0,
+          "lineJoinStyle": 0,
+          "isEnabled": true
+        },
+        "top": 351,
+        "hasFixedWidth": false,
+        "left": 0,
+        "ddsOriginFrame": {
+          "height": 363,
+          "x": 0,
+          "y": 351,
+          "width": 810
+        },
+        "hasFixedBottom": false,
+        "blendMode": 0,
+        "hasClippingMask": 0,
+        "rotation": 0,
+        "isLocked": false,
+        "fills": [
+          {
+            "gradient": {
+              "colorStops": [
+                {
+                  "position": 0,
+                  "color": {
+                    "a": 0,
+                    "b": 255,
+                    "value": "rgba(255,255,255,0)",
+                    "g": 255,
+                    "r": 255
+                  }
+                },
+                {
+                  "position": 1,
+                  "color": {
+                    "a": 1,
+                    "b": 241,
+                    "value": "rgba(241,241,241,1)",
+                    "g": 241,
+                    "r": 241
+                  }
+                }
+              ],
+              "type": "linear",
+              "gradientType": 0,
+              "to": {
+                "x": 0.5,
+                "y": 0.43689608573913574
+              },
+              "elipseLength": 0,
+              "from": {
+                "x": 0.5,
+                "y": 0
+              }
+            },
+            "patternTileScale": 1,
+            "noiseIntensity": 0,
+            "type": "gradient",
+            "blendMode": 0,
+            "noiseIndex": 0,
+            "opacity": 1,
+            "patternFillType": 1,
+            "isEnabled": true,
+            "fillType": 1
+          }
+        ],
+        "opacity": 100,
+        "startMarkerType": 0,
+        "hasFixedRight": false,
+        "exportable": true,
+        "height": 363,
+        "windingRule": 1,
+        "hasFixedTop": false,
+        "isAutolayout": false,
+        "miterLimit": 10,
+        "influenceWidth": 810,
+        "layerOriginFrame": {
+          "height": 363,
+          "x": 0,
+          "y": 351,
+          "width": 810
+        },
+        "isClosed": true,
+        "pointRadiusBehaviour": 1,
+        "endMarkerType": 0,
+        "shouldBreakMaskChain": false,
+        "index": 1,
+        "hasFixedHeight": false,
+        "influenceLeft": 0,
+        "sharedStyleID": "",
+        "width": 810,
+        "influenceTop": 351,
+        "clippingMaskMode": 0
+      },
+      "asset_ids": [
+        "E317A02B-CF57-4658-BC90-078910D9B82D:image",
+        "E317A02B-CF57-4658-BC90-078910D9B82D:ddsImage"
+      ],
+      "source_pointer": "/info/10"
+    },
+    {
+      "node_id": "4A2D4C99-3FA2-444B-A5FD-D8DF3F659A41",
+      "source_id": "4A2D4C99-3FA2-444B-A5FD-D8DF3F659A41",
+      "identity_source": "source_id",
+      "parent_id": "1B56D937-4AC1-425C-A4F6-2EA1AE9BAB43",
+      "source_parent_id": "1B56D937-4AC1-425C-A4F6-2EA1AE9BAB43",
+      "source_order": 11,
+      "name": "Pop Color Art is now",
+      "node_type": "text",
+      "bounds": {
+        "x": 219,
+        "y": 547,
+        "width": 372,
+        "height": 68
+      },
+      "bounds_source_field": "left/top/width/height",
+      "source_visible": true,
+      "text": "Pop Color Art  is now ready\nfor you!",
+      "raw_style": {
+        "hasExportDDSImage": false,
+        "isFlippedHorizontal": false,
+        "hasFixedLeft": false,
+        "isFlippedVertical": false,
+        "dontSynchroniseWithSymbol": false,
+        "isVisible": true,
+        "influenceHeight": 68,
+        "kerning": 0,
+        "top": 547,
+        "hasFixedWidth": true,
+        "left": 219,
+        "lineSpacingBehaviour": 3,
+        "automaticallyDrawOnUnderlyingPath": false,
+        "ddsOriginFrame": {
+          "height": 68,
+          "x": 219,
+          "y": 547,
+          "width": 372
+        },
+        "hasFixedBottom": false,
+        "blendMode": 0,
+        "hasClippingMask": 0,
+        "rotation": 0,
+        "isLocked": false,
+        "opacity": 100,
+        "hasFixedRight": false,
+        "exportable": false,
+        "height": 68,
+        "hasFixedTop": false,
+        "isAutolayout": false,
+        "characterSpacing": 0,
+        "influenceWidth": 372,
+        "layerOriginFrame": {
+          "height": 68,
+          "x": 219,
+          "y": 547,
+          "width": 372
+        },
+        "textBehaviour": 0,
+        "shouldBreakMaskChain": false,
+        "index": 1,
+        "hasFixedHeight": true,
+        "influenceLeft": 219,
+        "sharedStyleID": "",
+        "font": {
+          "align": "right",
+          "kerning": 0,
+          "line": 34,
+          "size": 28,
+          "verticalAlignment": 0,
+          "styles": [
+            {
+              "tailIndent": 0,
+              "baseWritingDirection": -1,
+              "line": 34,
+              "location": "0",
+              "minimumLineHeight": 0,
+              "length": "36",
+              "size": "28",
+              "color": {
+                "a": 0,
+                "b": 0,
+                "value": "rgba(22,22,22,1.000000)",
+                "g": 0,
+                "r": 0
+              },
+              "lineHeightMultiple": 0,
+              "defaultTabInterval": 0,
+              "firstLineHeadIndent": 0,
+              "hyphenationFactor": 0,
+              "lineBreakMode": 0,
+              "paragraphSpacing": "0",
+              "kern": 0,
+              "alignment": 2,
+              "maximumLineHeight": 0,
+              "displayName": "Avenir LT 95 Black",
+              "content": "Pop Color Art  is now ready\nfor you!",
+              "headerLevel": 0,
+              "lineSpacing": 0,
+              "headIndent": 0,
+              "tighteningFactorForTruncation": false,
+              "spacing": "0",
+              "font": "AvenirLT-Black",
+              "decorationLine": "none",
+              "paragraphSpacingBefore": 0
+            }
+          ],
+          "color": {
+            "a": 1,
+            "b": 22,
+            "value": "rgba(22,22,22,1)",
+            "g": 22,
+            "r": 22
+          },
+          "displayName": "Avenir LT 95 Black",
+          "content": "Pop Color Art  is now ready\nfor you!",
+          "textAlignment": 2,
+          "spacing": 0,
+          "font": "AvenirLT-Black"
+        },
+        "width": 372,
+        "influenceTop": 547,
+        "ddsAdaptiveFrame": {
+          "top": 547,
+          "left": 219,
+          "height": 68,
+          "width": 372
+        },
+        "clippingMaskMode": 0
+      },
+      "asset_ids": [],
+      "source_pointer": "/info/11"
+    },
+    {
+      "node_id": "C23B30B4-CF51-490A-AFDF-9A6799031504",
+      "source_id": "C23B30B4-CF51-490A-AFDF-9A6799031504",
+      "identity_source": "source_id",
+      "parent_id": "1B56D937-4AC1-425C-A4F6-2EA1AE9BAB43",
+      "source_parent_id": "1B56D937-4AC1-425C-A4F6-2EA1AE9BAB43",
+      "source_order": 12,
+      "name": "Looks mazing",
+      "node_type": "text",
+      "bounds": {
+        "x": 318,
+        "y": 510,
+        "width": 174,
+        "height": 34
+      },
+      "bounds_source_field": "left/top/width/height",
+      "source_visible": true,
+      "text": "Looks mazing",
+      "raw_style": {
+        "hasExportDDSImage": false,
+        "isFlippedHorizontal": false,
+        "hasFixedLeft": false,
+        "isFlippedVertical": false,
+        "dontSynchroniseWithSymbol": false,
+        "isVisible": true,
+        "influenceHeight": 34,
+        "kerning": 0,
+        "top": 510,
+        "hasFixedWidth": true,
+        "left": 318,
+        "lineSpacingBehaviour": 3,
+        "automaticallyDrawOnUnderlyingPath": false,
+        "ddsOriginFrame": {
+          "height": 34,
+          "x": 318,
+          "y": 510,
+          "width": 174
+        },
+        "hasFixedBottom": false,
+        "blendMode": 0,
+        "hasClippingMask": 0,
+        "rotation": 0,
+        "isLocked": false,
+        "opacity": 100,
+        "hasFixedRight": false,
+        "exportable": false,
+        "height": 34,
+        "hasFixedTop": false,
+        "isAutolayout": false,
+        "characterSpacing": 0,
+        "influenceWidth": 174,
+        "layerOriginFrame": {
+          "height": 34,
+          "x": 318,
+          "y": 510,
+          "width": 174
+        },
+        "textBehaviour": 0,
+        "shouldBreakMaskChain": false,
+        "index": 1,
+        "hasFixedHeight": true,
+        "influenceLeft": 318,
+        "sharedStyleID": "",
+        "font": {
+          "align": "right",
+          "kerning": 0,
+          "line": 34,
+          "size": 28,
+          "verticalAlignment": 0,
+          "styles": [
+            {
+              "tailIndent": 0,
+              "baseWritingDirection": -1,
+              "line": 34,
+              "location": "0",
+              "minimumLineHeight": 0,
+              "length": "12",
+              "size": "28",
+              "color": {
+                "a": 0,
+                "b": 0,
+                "value": "rgba(22,22,22,1.000000)",
+                "g": 0,
+                "r": 0
+              },
+              "lineHeightMultiple": 0,
+              "defaultTabInterval": 0,
+              "firstLineHeadIndent": 0,
+              "hyphenationFactor": 0,
+              "lineBreakMode": 0,
+              "paragraphSpacing": "0",
+              "kern": 0,
+              "alignment": 2,
+              "maximumLineHeight": 0,
+              "displayName": "Avenir LT 65 Medium",
+              "content": "Looks mazing",
+              "headerLevel": 0,
+              "lineSpacing": 0,
+              "headIndent": 0,
+              "tighteningFactorForTruncation": false,
+              "spacing": "0",
+              "font": "AvenirLT-Medium",
+              "decorationLine": "none",
+              "paragraphSpacingBefore": 0
+            }
+          ],
+          "color": {
+            "a": 1,
+            "b": 22,
+            "value": "rgba(22,22,22,1)",
+            "g": 22,
+            "r": 22
+          },
+          "displayName": "Avenir LT 65 Medium",
+          "content": "Looks mazing",
+          "textAlignment": 2,
+          "spacing": 0,
+          "font": "AvenirLT-Medium"
+        },
+        "width": 174,
+        "influenceTop": 510,
+        "ddsAdaptiveFrame": {
+          "top": 510,
+          "left": 318,
+          "height": 34,
+          "width": 174
+        },
+        "clippingMaskMode": 0
+      },
+      "asset_ids": [],
+      "source_pointer": "/info/12"
+    },
+    {
+      "node_id": "BCFC82E7-B1B0-4DC2-AA4C-9396F57D7A53",
+      "source_id": "BCFC82E7-B1B0-4DC2-AA4C-9396F57D7A53",
+      "identity_source": "source_id",
+      "parent_id": "20745020-3950-451A-849C-97D5E62C56BC",
+      "source_parent_id": "20745020-3950-451A-849C-97D5E62C56BC",
+      "source_order": 13,
+      "name": "椭圆形备份 2",
+      "node_type": "shape",
+      "bounds": {
+        "x": 369,
+        "y": 715,
+        "width": 72,
+        "height": 72
+      },
+      "bounds_source_field": "left/top/width/height",
+      "source_visible": true,
+      "text": null,
+      "raw_style": {
+        "hasExportDDSImage": false,
+        "isFlippedHorizontal": false,
+        "hasFixedLeft": false,
+        "edited": false,
+        "isFlippedVertical": false,
+        "isVisible": true,
+        "influenceHeight": 72,
+        "booleanOperation": -1,
+        "points": [
+          {
+            "hasCurveTo": true,
+            "curveTo": {
+              "x": 0.22385762631893158,
+              "y": 1
+            },
+            "curveMode": 2,
+            "hasCurveFrom": true,
+            "curveFrom": {
+              "x": 0.7761423587799072,
+              "y": 1
+            },
+            "cornerRadius": 0,
+            "point": {
+              "x": 0.5,
+              "y": 1
+            }
+          },
+          {
+            "hasCurveTo": true,
+            "curveTo": {
+              "x": 1,
+              "y": 0.7761423587799072
+            },
+            "curveMode": 2,
+            "hasCurveFrom": true,
+            "curveFrom": {
+              "x": 1,
+              "y": 0.22385762631893158
+            },
+            "cornerRadius": 0,
+            "point": {
+              "x": 1,
+              "y": 0.5
+            }
+          },
+          {
+            "hasCurveTo": true,
+            "curveTo": {
+              "x": 0.7761423587799072,
+              "y": 0
+            },
+            "curveMode": 2,
+            "hasCurveFrom": true,
+            "curveFrom": {
+              "x": 0.22385762631893158,
+              "y": 0
+            },
+            "cornerRadius": 0,
+            "point": {
+              "x": 0.5,
+              "y": 0
+            }
+          },
+          {
+            "hasCurveTo": true,
+            "curveTo": {
+              "x": 0,
+              "y": 0.22385762631893158
+            },
+            "curveMode": 2,
+            "hasCurveFrom": true,
+            "curveFrom": {
+              "x": 0,
+              "y": 0.7761423587799072
+            },
+            "cornerRadius": 0,
+            "point": {
+              "x": 0,
+              "y": 0.5
+            }
+          }
+        ],
+        "borderOptions": {
+          "dashPattern": [],
+          "lineCapStyle": 0,
+          "lineJoinStyle": 0,
+          "isEnabled": true
+        },
+        "top": 715,
+        "hasFixedWidth": false,
+        "left": 369,
+        "ddsOriginFrame": {
+          "height": 72,
+          "x": 369,
+          "y": 715,
+          "width": 72
+        },
+        "hasFixedBottom": false,
+        "blendMode": 0,
+        "hasClippingMask": 0,
+        "rotation": 0,
+        "isLocked": false,
+        "fills": [
+          {
+            "patternTileScale": 1,
+            "noiseIntensity": 0,
+            "type": "color",
+            "blendMode": 0,
+            "noiseIndex": 0,
+            "opacity": 1,
+            "color": {
+              "a": 1,
+              "b": 255,
+              "value": "rgba(89,87,255,1)",
+              "g": 87,
+              "r": 89
+            },
+            "patternFillType": 1,
+            "isEnabled": true,
+            "fillType": 0
+          }
+        ],
+        "opacity": 100,
+        "startMarkerType": 0,
+        "hasFixedRight": false,
+        "exportable": false,
+        "height": 72,
+        "windingRule": 1,
+        "hasFixedTop": false,
+        "isAutolayout": false,
+        "miterLimit": 10,
+        "influenceWidth": 72,
+        "layerOriginFrame": {
+          "height": 72,
+          "x": 369,
+          "y": 715,
+          "width": 72
+        },
+        "isClosed": true,
+        "pointRadiusBehaviour": 1,
+        "endMarkerType": 0,
+        "shouldBreakMaskChain": false,
+        "index": 2,
+        "hasFixedHeight": false,
+        "influenceLeft": 369,
+        "sharedStyleID": "",
+        "width": 72,
+        "influenceTop": 715,
+        "clippingMaskMode": 0
+      },
+      "asset_ids": [],
+      "source_pointer": "/info/13"
+    },
+    {
+      "node_id": "E744A04E-A870-4477-A098-F724E6724271",
+      "source_id": "E744A04E-A870-4477-A098-F724E6724271",
+      "identity_source": "source_id",
+      "parent_id": "20745020-3950-451A-849C-97D5E62C56BC",
+      "source_parent_id": "20745020-3950-451A-849C-97D5E62C56BC",
+      "source_order": 14,
+      "name": "路径 3备份 2",
+      "node_type": "shape",
+      "bounds": {
+        "x": 388.358942736043,
+        "y": 739.5357142857138,
+        "width": 32.14285714285734,
+        "height": 23.14285714285711
+      },
+      "bounds_source_field": "left/top/width/height",
+      "source_visible": true,
+      "text": null,
+      "raw_style": {
+        "hasExportDDSImage": false,
+        "isFlippedHorizontal": false,
+        "hasFixedLeft": false,
+        "edited": false,
+        "isFlippedVertical": false,
+        "isVisible": true,
+        "influenceHeight": 23.14285714285711,
+        "booleanOperation": 0,
+        "points": [
+          {
+            "hasCurveTo": false,
+            "curveTo": {
+              "x": 0,
+              "y": 0.45426297187805176
+            },
+            "curveMode": 1,
+            "hasCurveFrom": false,
+            "curveFrom": {
+              "x": 0,
+              "y": 0.45426297187805176
+            },
+            "cornerRadius": 0,
+            "point": {
+              "x": 0,
+              "y": 0.45426297187805176
+            }
+          },
+          {
+            "hasCurveTo": false,
+            "curveTo": {
+              "x": 0.3670780062675476,
+              "y": 1
+            },
+            "curveMode": 1,
+            "hasCurveFrom": false,
+            "curveFrom": {
+              "x": 0.3670780062675476,
+              "y": 1
+            },
+            "cornerRadius": 2,
+            "point": {
+              "x": 0.3670780062675476,
+              "y": 1
+            }
+          },
+          {
+            "hasCurveTo": false,
+            "curveTo": {
+              "x": 1,
+              "y": 0
+            },
+            "curveMode": 1,
+            "hasCurveFrom": false,
+            "curveFrom": {
+              "x": 1,
+              "y": 0
+            },
+            "cornerRadius": 0,
+            "point": {
+              "x": 1,
+              "y": 0
+            }
+          }
+        ],
+        "borderOptions": {
+          "dashPattern": [],
+          "lineCapStyle": 1,
+          "lineJoinStyle": 1,
+          "isEnabled": true
+        },
+        "top": 739.5357142857138,
+        "hasFixedWidth": false,
+        "left": 388.358942736043,
+        "ddsOriginFrame": {
+          "height": 23.14285714285712,
+          "x": 388.3589427360429,
+          "y": 739.5357142857139,
+          "width": 32.14285714285715
+        },
+        "hasFixedBottom": false,
+        "blendMode": 0,
+        "hasClippingMask": 0,
+        "rotation": 0,
+        "isLocked": false,
+        "opacity": 100,
+        "startMarkerType": 0,
+        "hasFixedRight": false,
+        "exportable": false,
+        "height": 23.14285714285711,
+        "windingRule": 1,
+        "hasFixedTop": false,
+        "isAutolayout": false,
+        "miterLimit": 10,
+        "influenceWidth": 32.14285714285734,
+        "layerOriginFrame": {
+          "height": 23.14285714285711,
+          "x": 388.358942736043,
+          "y": 739.5357142857138,
+          "width": 32.14285714285734
+        },
+        "isClosed": false,
+        "borders": [
+          {
+            "position": "中心边框",
+            "type": "color",
+            "blendMode": 0,
+            "opacity": 1,
+            "color": {
+              "a": 1,
+              "b": 255,
+              "value": "rgba(255,255,255,1)",
+              "g": 255,
+              "r": 255
+            },
+            "thickness": 4,
+            "isEnabled": true,
+            "fillType": 0
+          }
+        ],
+        "pointRadiusBehaviour": 1,
+        "endMarkerType": 0,
+        "shouldBreakMaskChain": false,
+        "index": 2,
+        "hasFixedHeight": false,
+        "influenceLeft": 388.358942736043,
+        "sharedStyleID": "",
+        "width": 32.14285714285734,
+        "influenceTop": 739.5357142857138,
+        "clippingMaskMode": 0
+      },
+      "asset_ids": [],
+      "source_pointer": "/info/14"
+    },
+    {
+      "node_id": "20745020-3950-451A-849C-97D5E62C56BC",
+      "source_id": "20745020-3950-451A-849C-97D5E62C56BC",
+      "identity_source": "source_id",
+      "parent_id": "1B56D937-4AC1-425C-A4F6-2EA1AE9BAB43",
+      "source_parent_id": "1B56D937-4AC1-425C-A4F6-2EA1AE9BAB43",
+      "source_order": 15,
+      "name": "splash_icon_ok_l",
+      "node_type": "layer-group",
+      "bounds": {
+        "x": 369,
+        "y": 715,
+        "width": 72,
+        "height": 72
+      },
+      "bounds_source_field": "left/top/width/height",
+      "source_visible": true,
+      "text": null,
+      "raw_style": {
+        "hasExportDDSImage": true,
+        "isFlippedHorizontal": false,
+        "hasFixedLeft": false,
+        "isFlippedVertical": false,
+        "isVisible": true,
+        "influenceHeight": 72,
+        "booleanOperation": 0,
+        "top": 715,
+        "hasFixedWidth": false,
+        "left": 369,
+        "ddsOriginFrame": {
+          "height": 72,
+          "x": 369,
+          "y": 715,
+          "width": 72
+        },
+        "hasFixedBottom": false,
+        "blendMode": 0,
+        "hasClippingMask": 0,
+        "rotation": 0,
+        "opacity": 100,
+        "startMarkerType": 0,
+        "hasFixedRight": false,
+        "exportable": true,
+        "height": 72,
+        "windingRule": 0,
+        "hasFixedTop": false,
+        "isAutolayout": false,
+        "miterLimit": 0,
+        "influenceWidth": 72,
+        "layerOriginFrame": {
+          "height": 72,
+          "x": 369,
+          "y": 715,
+          "width": 72
+        },
+        "pointRadiusBehaviour": 0,
+        "endMarkerType": 0,
+        "shouldBreakMaskChain": false,
+        "index": 1,
+        "hasFixedHeight": false,
+        "influenceLeft": 369,
+        "sharedStyleID": "",
+        "isCopy": false,
+        "width": 72,
+        "influenceTop": 715,
+        "clippingMaskMode": 0
+      },
+      "asset_ids": [
+        "20745020-3950-451A-849C-97D5E62C56BC:image",
+        "20745020-3950-451A-849C-97D5E62C56BC:ddsImage"
+      ],
+      "source_pointer": "/info/15"
+    },
+    {
+      "node_id": "EECAB03E-99A9-4249-98B9-895C51DD3BBC",
+      "source_id": "EECAB03E-99A9-4249-98B9-895C51DD3BBC",
+      "identity_source": "source_id",
+      "parent_id": "772616BE-4F52-4DD8-85E3-3FCE45299291",
+      "source_parent_id": "772616BE-4F52-4DD8-85E3-3FCE45299291",
+      "source_order": 16,
+      "name": "矩形",
+      "node_type": "shape",
+      "bounds": {
+        "x": 165,
+        "y": 904,
+        "width": 480,
+        "height": 75
+      },
+      "bounds_source_field": "left/top/width/height",
+      "source_visible": true,
+      "text": null,
+      "raw_style": {
+        "radius": [
+          38
+        ],
+        "hasExportDDSImage": true,
+        "isFlippedHorizontal": false,
+        "hasFixedLeft": false,
+        "edited": false,
+        "isFlippedVertical": false,
+        "isVisible": true,
+        "influenceHeight": 75,
+        "booleanOperation": 1,
+        "points": [
+          {
+            "hasCurveTo": false,
+            "curveTo": {
+              "x": 0,
+              "y": -1.395758508770939e-14
+            },
+            "curveMode": 1,
+            "hasCurveFrom": false,
+            "curveFrom": {
+              "x": 0,
+              "y": -1.395758508770939e-14
+            },
+            "cornerRadius": 38,
+            "point": {
+              "x": 0,
+              "y": -1.395758508770939e-14
+            }
+          },
+          {
+            "hasCurveTo": false,
+            "curveTo": {
+              "x": 1,
+              "y": -6.723788192886104e-15
+            },
+            "curveMode": 1,
+            "hasCurveFrom": false,
+            "curveFrom": {
+              "x": 1,
+              "y": -6.723788192886104e-15
+            },
+            "cornerRadius": 38,
+            "point": {
+              "x": 1,
+              "y": -6.723788192886104e-15
+            }
+          },
+          {
+            "hasCurveTo": false,
+            "curveTo": {
+              "x": 1,
+              "y": 1
+            },
+            "curveMode": 1,
+            "hasCurveFrom": false,
+            "curveFrom": {
+              "x": 1,
+              "y": 1
+            },
+            "cornerRadius": 38,
+            "point": {
+              "x": 1,
+              "y": 1
+            }
+          },
+          {
+            "hasCurveTo": false,
+            "curveTo": {
+              "x": 2.6020852139652106e-18,
+              "y": 1
+            },
+            "curveMode": 1,
+            "hasCurveFrom": false,
+            "curveFrom": {
+              "x": 2.6020852139652106e-18,
+              "y": 1
+            },
+            "cornerRadius": 38,
+            "point": {
+              "x": 2.6020852139652106e-18,
+              "y": 1
+            }
+          }
+        ],
+        "borderOptions": {
+          "dashPattern": [],
+          "lineCapStyle": 0,
+          "lineJoinStyle": 0,
+          "isEnabled": true
+        },
+        "top": 904,
+        "hasFixedWidth": false,
+        "left": 165,
+        "ddsOriginFrame": {
+          "height": 75,
+          "x": 165,
+          "y": 904,
+          "width": 480
+        },
+        "hasFixedBottom": false,
+        "blendMode": 0,
+        "hasClippingMask": 1,
+        "rotation": 0,
+        "isLocked": false,
+        "fills": [
+          {
+            "patternTileScale": 1,
+            "noiseIntensity": 0,
+            "type": "color",
+            "blendMode": 0,
+            "noiseIndex": 0,
+            "opacity": 1,
+            "color": {
+              "a": 1,
+              "b": 255,
+              "value": "rgba(89,87,255,1)",
+              "g": 87,
+              "r": 89
+            },
+            "patternFillType": 1,
+            "isEnabled": true,
+            "fillType": 0
+          }
+        ],
+        "opacity": 100,
+        "startMarkerType": 0,
+        "hasFixedRight": false,
+        "exportable": false,
+        "height": 75,
+        "windingRule": 1,
+        "hasFixedTop": false,
+        "isAutolayout": false,
+        "miterLimit": 10,
+        "influenceWidth": 480,
+        "layerOriginFrame": {
+          "height": 75,
+          "x": 165,
+          "y": 904,
+          "width": 480
+        },
+        "isClosed": true,
+        "pointRadiusBehaviour": 1,
+        "endMarkerType": 0,
+        "shouldBreakMaskChain": false,
+        "index": 3,
+        "hasFixedHeight": false,
+        "influenceLeft": 165,
+        "sharedStyleID": "",
+        "width": 480,
+        "influenceTop": 904,
+        "clippingMaskMode": 0
+      },
+      "asset_ids": [
+        "EECAB03E-99A9-4249-98B9-895C51DD3BBC:ddsImage"
+      ],
+      "source_pointer": "/info/16"
+    },
+    {
+      "node_id": "E024AA7A-3B9C-4D73-9AE9-01062A2311BD",
+      "source_id": "E024AA7A-3B9C-4D73-9AE9-01062A2311BD",
+      "identity_source": "source_id",
+      "parent_id": "772616BE-4F52-4DD8-85E3-3FCE45299291",
+      "source_parent_id": "772616BE-4F52-4DD8-85E3-3FCE45299291",
+      "source_order": 17,
+      "name": "Continue",
+      "node_type": "text",
+      "bounds": {
+        "x": 334,
+        "y": 927,
+        "width": 141,
+        "height": 28
+      },
+      "bounds_source_field": "left/top/width/height",
+      "source_visible": true,
+      "text": "Continue",
+      "raw_style": {
+        "hasExportDDSImage": false,
+        "isFlippedHorizontal": true,
+        "hasFixedLeft": false,
+        "isFlippedVertical": false,
+        "dontSynchroniseWithSymbol": false,
+        "isVisible": true,
+        "influenceHeight": 28,
+        "kerning": 0,
+        "top": 927,
+        "hasFixedWidth": true,
+        "left": 334,
+        "lineSpacingBehaviour": 3,
+        "automaticallyDrawOnUnderlyingPath": false,
+        "ddsOriginFrame": {
+          "height": 28,
+          "x": 335,
+          "y": 927,
+          "width": 141
+        },
+        "hasFixedBottom": false,
+        "blendMode": 0,
+        "hasClippingMask": 0,
+        "rotation": 0,
+        "isLocked": false,
+        "opacity": 100,
+        "hasFixedRight": false,
+        "exportable": false,
+        "height": 28,
+        "hasFixedTop": false,
+        "isAutolayout": false,
+        "characterSpacing": 0,
+        "influenceWidth": 141,
+        "layerOriginFrame": {
+          "height": 28,
+          "x": 334,
+          "y": 927,
+          "width": 141
+        },
+        "textBehaviour": 1,
+        "shouldBreakMaskChain": false,
+        "index": 3,
+        "hasFixedHeight": true,
+        "influenceLeft": 334,
+        "sharedStyleID": "",
+        "font": {
+          "align": "right",
+          "kerning": 0,
+          "line": 28,
+          "size": 20,
+          "verticalAlignment": 0,
+          "styles": [
+            {
+              "tailIndent": 0,
+              "baseWritingDirection": -1,
+              "line": 28,
+              "location": "0",
+              "minimumLineHeight": 0,
+              "length": "8",
+              "size": "20",
+              "color": {
+                "a": 0,
+                "b": 0,
+                "value": "rgba(255,255,255,1.000000)",
+                "g": 0,
+                "r": 0
+              },
+              "lineHeightMultiple": 0,
+              "defaultTabInterval": 0,
+              "firstLineHeadIndent": 0,
+              "hyphenationFactor": 0,
+              "lineBreakMode": 0,
+              "paragraphSpacing": "0",
+              "kern": 0,
+              "alignment": 2,
+              "maximumLineHeight": 0,
+              "displayName": "苹方-简 中黑体",
+              "content": "Continue",
+              "headerLevel": 0,
+              "lineSpacing": 0,
+              "headIndent": 0,
+              "tighteningFactorForTruncation": false,
+              "spacing": "0",
+              "font": "PingFangSC-Medium",
+              "decorationLine": "none",
+              "paragraphSpacingBefore": 0
+            }
+          ],
+          "color": {
+            "a": 1,
+            "b": 255,
+            "value": "rgba(255,255,255,1)",
+            "g": 255,
+            "r": 255
+          },
+          "displayName": "苹方-简 中黑体",
+          "content": "Continue",
+          "textAlignment": 2,
+          "spacing": 0,
+          "font": "PingFangSC-Medium"
+        },
+        "width": 141,
+        "influenceTop": 927,
+        "ddsAdaptiveFrame": {
+          "top": 927,
+          "left": 335,
+          "height": 28,
+          "width": 86
+        },
+        "clippingMaskMode": 0
+      },
+      "asset_ids": [],
+      "source_pointer": "/info/17"
+    },
+    {
+      "node_id": "772616BE-4F52-4DD8-85E3-3FCE45299291",
+      "source_id": "772616BE-4F52-4DD8-85E3-3FCE45299291",
+      "identity_source": "source_id",
+      "parent_id": "5B1D5993-FFBF-49C2-9CA5-E4E3F34219DA",
+      "source_parent_id": "5B1D5993-FFBF-49C2-9CA5-E4E3F34219DA",
+      "source_order": 18,
+      "name": "合并形状",
+      "node_type": "layer-group",
+      "bounds": {
+        "x": 165,
+        "y": 904,
+        "width": 480,
+        "height": 75
+      },
+      "bounds_source_field": "left/top/width/height",
+      "source_visible": true,
+      "text": null,
+      "raw_style": {
+        "hasExportDDSImage": false,
+        "isFlippedHorizontal": true,
+        "hasFixedLeft": false,
+        "isFlippedVertical": false,
+        "isVisible": true,
+        "influenceHeight": 75,
+        "booleanOperation": 0,
+        "top": 904,
+        "hasFixedWidth": false,
+        "left": 165,
+        "ddsOriginFrame": {
+          "height": 75,
+          "x": 165,
+          "y": 904,
+          "width": 480
+        },
+        "hasFixedBottom": false,
+        "blendMode": 0,
+        "hasClippingMask": 0,
+        "rotation": 0,
+        "opacity": 100,
+        "startMarkerType": 0,
+        "hasFixedRight": false,
+        "exportable": false,
+        "height": 75,
+        "windingRule": 0,
+        "hasFixedTop": false,
+        "isAutolayout": false,
+        "miterLimit": 0,
+        "influenceWidth": 480,
+        "layerOriginFrame": {
+          "height": 75,
+          "x": 165,
+          "y": 904,
+          "width": 480
+        },
+        "pointRadiusBehaviour": 0,
+        "endMarkerType": 0,
+        "shouldBreakMaskChain": false,
+        "index": 2,
+        "hasFixedHeight": false,
+        "influenceLeft": 165,
+        "sharedStyleID": "",
+        "isCopy": false,
+        "width": 480,
+        "influenceTop": 904,
+        "clippingMaskMode": 0
+      },
+      "asset_ids": [],
+      "source_pointer": "/info/18"
+    },
+    {
+      "node_id": "79DE2D5B-5591-405E-BAAF-794BA5DCA0EF",
+      "source_id": "79DE2D5B-5591-405E-BAAF-794BA5DCA0EF",
+      "identity_source": "source_id",
+      "parent_id": "EA46F309-064D-487B-822C-388AB2F241A1",
+      "source_parent_id": "EA46F309-064D-487B-822C-388AB2F241A1",
+      "source_order": 19,
+      "name": "椭圆形",
+      "node_type": "shape",
+      "bounds": {
+        "x": 569,
+        "y": 919,
+        "width": 44,
+        "height": 44
+      },
+      "bounds_source_field": "left/top/width/height",
+      "source_visible": true,
+      "text": null,
+      "raw_style": {
+        "hasExportDDSImage": true,
+        "isFlippedHorizontal": false,
+        "hasFixedLeft": false,
+        "edited": false,
+        "isFlippedVertical": false,
+        "isVisible": true,
+        "influenceHeight": 44,
+        "booleanOperation": -1,
+        "points": [
+          {
+            "hasCurveTo": true,
+            "curveTo": {
+              "x": 0.22385762631893158,
+              "y": 1
+            },
+            "curveMode": 2,
+            "hasCurveFrom": true,
+            "curveFrom": {
+              "x": 0.7761423587799072,
+              "y": 1
+            },
+            "cornerRadius": 0,
+            "point": {
+              "x": 0.5,
+              "y": 1
+            }
+          },
+          {
+            "hasCurveTo": true,
+            "curveTo": {
+              "x": 1,
+              "y": 0.7761423587799072
+            },
+            "curveMode": 2,
+            "hasCurveFrom": true,
+            "curveFrom": {
+              "x": 1,
+              "y": 0.22385762631893158
+            },
+            "cornerRadius": 0,
+            "point": {
+              "x": 1,
+              "y": 0.5
+            }
+          },
+          {
+            "hasCurveTo": true,
+            "curveTo": {
+              "x": 0.7761423587799072,
+              "y": 0
+            },
+            "curveMode": 2,
+            "hasCurveFrom": true,
+            "curveFrom": {
+              "x": 0.22385762631893158,
+              "y": 0
+            },
+            "cornerRadius": 0,
+            "point": {
+              "x": 0.5,
+              "y": 0
+            }
+          },
+          {
+            "hasCurveTo": true,
+            "curveTo": {
+              "x": 0,
+              "y": 0.22385762631893158
+            },
+            "curveMode": 2,
+            "hasCurveFrom": true,
+            "curveFrom": {
+              "x": 0,
+              "y": 0.7761423587799072
+            },
+            "cornerRadius": 0,
+            "point": {
+              "x": 0,
+              "y": 0.5
+            }
+          }
+        ],
+        "borderOptions": {
+          "dashPattern": [],
+          "lineCapStyle": 0,
+          "lineJoinStyle": 0,
+          "isEnabled": true
+        },
+        "top": 919,
+        "hasFixedWidth": false,
+        "left": 569,
+        "ddsOriginFrame": {
+          "height": 44,
+          "x": 569,
+          "y": 919,
+          "width": 44
+        },
+        "hasFixedBottom": false,
+        "blendMode": 0,
+        "hasClippingMask": 0,
+        "rotation": 0,
+        "isLocked": false,
+        "fills": [
+          {
+            "patternTileScale": 1,
+            "noiseIntensity": 0,
+            "type": "color",
+            "blendMode": 0,
+            "noiseIndex": 0,
+            "opacity": 1,
+            "color": {
+              "a": 1,
+              "b": 255,
+              "value": "rgba(255,255,255,1)",
+              "g": 255,
+              "r": 255
+            },
+            "patternFillType": 1,
+            "isEnabled": true,
+            "fillType": 0
+          }
+        ],
+        "opacity": 0,
+        "startMarkerType": 0,
+        "hasFixedRight": false,
+        "exportable": false,
+        "height": 44,
+        "windingRule": 1,
+        "hasFixedTop": false,
+        "isAutolayout": false,
+        "miterLimit": 10,
+        "influenceWidth": 44,
+        "layerOriginFrame": {
+          "height": 44,
+          "x": 569,
+          "y": 919,
+          "width": 44
+        },
+        "isClosed": true,
+        "pointRadiusBehaviour": 1,
+        "endMarkerType": 0,
+        "shouldBreakMaskChain": false,
+        "index": 4,
+        "hasFixedHeight": false,
+        "influenceLeft": 569,
+        "sharedStyleID": "",
+        "width": 44,
+        "influenceTop": 919,
+        "clippingMaskMode": 0
+      },
+      "asset_ids": [
+        "79DE2D5B-5591-405E-BAAF-794BA5DCA0EF:ddsImage"
+      ],
+      "source_pointer": "/info/19"
+    },
+    {
+      "node_id": "76E882EE-0E55-499D-8829-F5DC480304F4",
+      "source_id": "76E882EE-0E55-499D-8829-F5DC480304F4",
+      "identity_source": "source_id",
+      "parent_id": "51D8212C-4EBE-4B7E-8407-0412ED38EDAF",
+      "source_parent_id": "51D8212C-4EBE-4B7E-8407-0412ED38EDAF",
+      "source_order": 20,
+      "name": "形状结合",
+      "node_type": "shape",
+      "bounds": {
+        "x": 578.5837836992214,
+        "y": 929.2849999999994,
+        "width": 23.40373020237257,
+        "height": 23.403730202372344
+      },
+      "bounds_source_field": "left/top/width/height",
+      "source_visible": true,
+      "text": null,
+      "raw_style": {
+        "hasExportDDSImage": false,
+        "isFlippedHorizontal": false,
+        "hasFixedLeft": false,
+        "isFlippedVertical": false,
+        "isVisible": true,
+        "influenceHeight": 23.403730202372344,
+        "booleanOperation": 0,
+        "borderOptions": {
+          "dashPattern": [],
+          "lineCapStyle": 0,
+          "lineJoinStyle": 0,
+          "isEnabled": true
+        },
+        "top": 929.2849999999994,
+        "hasFixedWidth": false,
+        "left": 578.5837836992214,
+        "ddsOriginFrame": {
+          "height": 16.5440595052852,
+          "x": 583.4374446210782,
+          "y": 932.7148353485433,
+          "width": 16.55381315703074
+        },
+        "hasFixedBottom": false,
+        "blendMode": 0,
+        "hasClippingMask": 0,
+        "rotation": 0,
+        "fills": [
+          {
+            "patternTileScale": 1,
+            "noiseIntensity": 0,
+            "type": "color",
+            "blendMode": 0,
+            "noiseIndex": 0,
+            "opacity": 1,
+            "color": {
+              "a": 1,
+              "b": 255,
+              "value": "rgba(255,255,255,1)",
+              "g": 255,
+              "r": 255
+            },
+            "patternFillType": 1,
+            "isEnabled": true,
+            "fillType": 0
+          }
+        ],
+        "opacity": 100,
+        "startMarkerType": 0,
+        "hasFixedRight": false,
+        "exportable": false,
+        "height": 23.403730202372344,
+        "windingRule": 1,
+        "hasFixedTop": false,
+        "isAutolayout": false,
+        "miterLimit": 10,
+        "influenceWidth": 23.40373020237257,
+        "layerOriginFrame": {
+          "height": 23.403730202372344,
+          "x": 578.5837836992214,
+          "y": 929.2849999999994,
+          "width": 23.40373020237257
+        },
+        "pointRadiusBehaviour": 0,
+        "endMarkerType": 0,
+        "shouldBreakMaskChain": false,
+        "index": 5,
+        "hasFixedHeight": false,
+        "influenceLeft": 578.5837836992214,
+        "sharedStyleID": "",
+        "isCopy": false,
+        "width": 23.40373020237257,
+        "influenceTop": 929.2849999999994,
+        "clippingMaskMode": 0
+      },
+      "asset_ids": [],
+      "source_pointer": "/info/20"
+    },
+    {
+      "node_id": "51D8212C-4EBE-4B7E-8407-0412ED38EDAF",
+      "source_id": "51D8212C-4EBE-4B7E-8407-0412ED38EDAF",
+      "identity_source": "source_id",
+      "parent_id": "EA46F309-064D-487B-822C-388AB2F241A1",
+      "source_parent_id": "EA46F309-064D-487B-822C-388AB2F241A1",
+      "source_order": 21,
+      "name": "编组 4",
+      "node_type": "layer-group",
+      "bounds": {
+        "x": 578.58378369922,
+        "y": 929.284999999998,
+        "width": 23.403730202373026,
+        "height": 23.4037302023728
+      },
+      "bounds_source_field": "left/top/width/height",
+      "source_visible": true,
+      "text": null,
+      "raw_style": {
+        "hasExportDDSImage": true,
+        "isFlippedHorizontal": false,
+        "hasFixedLeft": false,
+        "isFlippedVertical": false,
+        "isVisible": true,
+        "influenceHeight": 23.4037302023728,
+        "booleanOperation": 0,
+        "top": 929.284999999998,
+        "hasFixedWidth": false,
+        "left": 578.58378369922,
+        "ddsOriginFrame": {
+          "height": 24,
+          "x": 578,
+          "y": 929,
+          "width": 24
+        },
+        "hasFixedBottom": false,
+        "blendMode": 0,
+        "hasClippingMask": 0,
+        "rotation": 315,
+        "opacity": 100,
+        "startMarkerType": 0,
+        "hasFixedRight": false,
+        "exportable": false,
+        "height": 23.4037302023728,
+        "windingRule": 0,
+        "hasFixedTop": false,
+        "isAutolayout": false,
+        "miterLimit": 0,
+        "influenceWidth": 23.403730202373026,
+        "layerOriginFrame": {
+          "height": 23.4037302023728,
+          "x": 578.58378369922,
+          "y": 929.284999999998,
+          "width": 23.403730202373026
+        },
+        "pointRadiusBehaviour": 0,
+        "endMarkerType": 0,
+        "shouldBreakMaskChain": false,
+        "index": 4,
+        "hasFixedHeight": false,
+        "influenceLeft": 578.58378369922,
+        "sharedStyleID": "",
+        "isCopy": false,
+        "width": 23.403730202373026,
+        "influenceTop": 929.284999999998,
+        "clippingMaskMode": 0
+      },
+      "asset_ids": [
+        "51D8212C-4EBE-4B7E-8407-0412ED38EDAF:ddsImage"
+      ],
+      "source_pointer": "/info/21"
+    },
+    {
+      "node_id": "EA46F309-064D-487B-822C-388AB2F241A1",
+      "source_id": "EA46F309-064D-487B-822C-388AB2F241A1",
+      "identity_source": "source_id",
+      "parent_id": "E66B96AF-8347-4B11-AED9-427DCDA3D22B",
+      "source_parent_id": "E66B96AF-8347-4B11-AED9-427DCDA3D22B",
+      "source_order": 22,
+      "name": "btn_back",
+      "node_type": "layer-group",
+      "bounds": {
+        "x": 569,
+        "y": 919,
+        "width": 44,
+        "height": 44
+      },
+      "bounds_source_field": "left/top/width/height",
+      "source_visible": true,
+      "text": null,
+      "raw_style": {
+        "hasExportDDSImage": false,
+        "isFlippedHorizontal": false,
+        "hasFixedLeft": false,
+        "isFlippedVertical": false,
+        "isVisible": true,
+        "influenceHeight": 44,
+        "booleanOperation": 0,
+        "top": 919,
+        "hasFixedWidth": false,
+        "left": 569,
+        "ddsOriginFrame": {
+          "height": 44,
+          "x": 569,
+          "y": 919,
+          "width": 44
+        },
+        "hasFixedBottom": false,
+        "blendMode": 0,
+        "hasClippingMask": 0,
+        "rotation": 0,
+        "opacity": 100,
+        "startMarkerType": 0,
+        "hasFixedRight": false,
+        "exportable": true,
+        "height": 44,
+        "windingRule": 0,
+        "hasFixedTop": false,
+        "isAutolayout": false,
+        "miterLimit": 0,
+        "influenceWidth": 44,
+        "layerOriginFrame": {
+          "height": 44,
+          "x": 569,
+          "y": 919,
+          "width": 44
+        },
+        "pointRadiusBehaviour": 0,
+        "endMarkerType": 0,
+        "shouldBreakMaskChain": false,
+        "index": 3,
+        "hasFixedHeight": false,
+        "influenceLeft": 569,
+        "sharedStyleID": "",
+        "isCopy": false,
+        "width": 44,
+        "influenceTop": 919,
+        "clippingMaskMode": 0
+      },
+      "asset_ids": [
+        "EA46F309-064D-487B-822C-388AB2F241A1:image"
+      ],
+      "source_pointer": "/info/22"
+    },
+    {
+      "node_id": "E66B96AF-8347-4B11-AED9-427DCDA3D22B",
+      "source_id": "E66B96AF-8347-4B11-AED9-427DCDA3D22B",
+      "identity_source": "source_id",
+      "parent_id": "5B1D5993-FFBF-49C2-9CA5-E4E3F34219DA",
+      "source_parent_id": "5B1D5993-FFBF-49C2-9CA5-E4E3F34219DA",
+      "source_order": 23,
+      "name": "paint_icon_close",
+      "node_type": "layer-group",
+      "bounds": {
+        "x": 569,
+        "y": 919,
+        "width": 44,
+        "height": 44
+      },
+      "bounds_source_field": "left/top/width/height",
+      "source_visible": true,
+      "text": null,
+      "raw_style": {
+        "hasExportDDSImage": true,
+        "isFlippedHorizontal": true,
+        "hasFixedLeft": false,
+        "isFlippedVertical": false,
+        "isVisible": true,
+        "influenceHeight": 44,
+        "booleanOperation": 0,
+        "top": 919,
+        "hasFixedWidth": false,
+        "left": 569,
+        "ddsOriginFrame": {
+          "height": 44,
+          "x": 569,
+          "y": 919,
+          "width": 44
+        },
+        "hasFixedBottom": false,
+        "blendMode": 0,
+        "hasClippingMask": 0,
+        "rotation": 0,
+        "opacity": 100,
+        "startMarkerType": 0,
+        "hasFixedRight": false,
+        "exportable": true,
+        "height": 44,
+        "windingRule": 0,
+        "hasFixedTop": false,
+        "isAutolayout": false,
+        "miterLimit": 0,
+        "influenceWidth": 44,
+        "layerOriginFrame": {
+          "height": 44,
+          "x": 569,
+          "y": 919,
+          "width": 44
+        },
+        "pointRadiusBehaviour": 0,
+        "endMarkerType": 0,
+        "shouldBreakMaskChain": false,
+        "index": 2,
+        "hasFixedHeight": false,
+        "influenceLeft": 569,
+        "sharedStyleID": "",
+        "isCopy": false,
+        "width": 44,
+        "influenceTop": 919,
+        "clippingMaskMode": 0
+      },
+      "asset_ids": [
+        "E66B96AF-8347-4B11-AED9-427DCDA3D22B:image",
+        "E66B96AF-8347-4B11-AED9-427DCDA3D22B:ddsImage"
+      ],
+      "source_pointer": "/info/23"
+    },
+    {
+      "node_id": "5B1D5993-FFBF-49C2-9CA5-E4E3F34219DA",
+      "source_id": "5B1D5993-FFBF-49C2-9CA5-E4E3F34219DA",
+      "identity_source": "source_id",
+      "parent_id": "1B56D937-4AC1-425C-A4F6-2EA1AE9BAB43",
+      "source_parent_id": "1B56D937-4AC1-425C-A4F6-2EA1AE9BAB43",
+      "source_order": 24,
+      "name": "合并形状备份 3",
+      "node_type": "layer-group",
+      "bounds": {
+        "x": 165,
+        "y": 904,
+        "width": 480,
+        "height": 75
+      },
+      "bounds_source_field": "left/top/width/height",
+      "source_visible": true,
+      "text": null,
+      "raw_style": {
+        "hasExportDDSImage": false,
+        "isFlippedHorizontal": false,
+        "hasFixedLeft": false,
+        "isFlippedVertical": false,
+        "isVisible": true,
+        "influenceHeight": 75,
+        "booleanOperation": 0,
+        "top": 904,
+        "hasFixedWidth": false,
+        "left": 165,
+        "ddsOriginFrame": {
+          "height": 75,
+          "x": 165,
+          "y": 904,
+          "width": 480
+        },
+        "hasFixedBottom": false,
+        "blendMode": 0,
+        "hasClippingMask": 0,
+        "rotation": 0,
+        "opacity": 100,
+        "startMarkerType": 0,
+        "hasFixedRight": false,
+        "exportable": false,
+        "height": 75,
+        "windingRule": 0,
+        "hasFixedTop": false,
+        "isAutolayout": false,
+        "miterLimit": 0,
+        "influenceWidth": 480,
+        "layerOriginFrame": {
+          "height": 75,
+          "x": 165,
+          "y": 904,
+          "width": 480
+        },
+        "pointRadiusBehaviour": 0,
+        "endMarkerType": 0,
+        "shouldBreakMaskChain": false,
+        "index": 1,
+        "hasFixedHeight": false,
+        "influenceLeft": 165,
+        "sharedStyleID": "",
+        "isCopy": false,
+        "width": 480,
+        "influenceTop": 904,
+        "clippingMaskMode": 0
+      },
+      "asset_ids": [],
+      "source_pointer": "/info/24"
+    }
+  ],
+  "assets": [
+    {
+      "asset_id": "FE8C2F8D-74D6-4D72-B371-9488B56D2C33:ddsImage",
+      "node_id": "FE8C2F8D-74D6-4D72-B371-9488B56D2C33",
+      "kind": "render_fallback",
+      "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPngd0520528c8469984d5bcd6eb4739308276239f3eb8033ff55f0362f037f374d2",
+      "format_hint": null,
+      "render_bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 810,
+        "height": 702
+      },
+      "render_bounds_source_field": "ddsOriginFrame",
+      "source_field": "ddsImage",
+      "source_pointer": "/info/1/ddsImage",
+      "variants": [
+        {
+          "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPngd0520528c8469984d5bcd6eb4739308276239f3eb8033ff55f0362f037f374d2",
+          "format_hint": null,
+          "source_field": "ddsImage.imageUrl"
+        }
+      ],
+      "source_size": {
+        "height": 702,
+        "width": 810
+      },
+      "source_point": {
+        "x": 3151,
+        "y": 636
+      },
+      "pixel_dimensions": null,
+      "pixel_dimensions_status": "requires_download"
+    },
+    {
+      "asset_id": "49ED42B4-2E03-42B7-BCE9-7397A46E9868:ddsImage",
+      "node_id": "49ED42B4-2E03-42B7-BCE9-7397A46E9868",
+      "kind": "render_fallback",
+      "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPngd392f6363631c038b05d93142e808b9bc0715d5582e81cb64d8ab33c3007a13b",
+      "format_hint": null,
+      "render_bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 810,
+        "height": 702
+      },
+      "render_bounds_source_field": "ddsOriginFrame",
+      "source_field": "ddsImage",
+      "source_pointer": "/info/2/ddsImage",
+      "variants": [
+        {
+          "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPngd392f6363631c038b05d93142e808b9bc0715d5582e81cb64d8ab33c3007a13b",
+          "format_hint": null,
+          "source_field": "ddsImage.imageUrl"
+        }
+      ],
+      "source_size": {
+        "height": 702,
+        "width": 810
+      },
+      "source_point": {
+        "x": 3151,
+        "y": 636
+      },
+      "pixel_dimensions": null,
+      "pixel_dimensions_status": "requires_download"
+    },
+    {
+      "asset_id": "DBA477F0-8123-4B6D-B578-C1CB439F4813:image",
+      "node_id": "DBA477F0-8123-4B6D-B578-C1CB439F4813",
+      "kind": "exported_asset",
+      "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPng6ab43cdf18d5f33b8866d8bae1d9ba73d81a67fa4054e2bba507a79122362a3b",
+      "format_hint": null,
+      "render_bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 810,
+        "height": 702
+      },
+      "render_bounds_source_field": "node.bounds",
+      "source_field": "image",
+      "source_pointer": "/info/3/image",
+      "variants": [
+        {
+          "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPng6ab43cdf18d5f33b8866d8bae1d9ba73d81a67fa4054e2bba507a79122362a3b",
+          "format_hint": null,
+          "source_field": "image.imageUrl"
+        }
+      ],
+      "source_size": {
+        "height": 702,
+        "width": 810
+      },
+      "source_point": {
+        "x": 3151,
+        "y": 636
+      },
+      "pixel_dimensions": null,
+      "pixel_dimensions_status": "requires_download"
+    },
+    {
+      "asset_id": "E3EF26CC-05A6-4F0F-8264-052A19CAA2D7:ddsImage",
+      "node_id": "E3EF26CC-05A6-4F0F-8264-052A19CAA2D7",
+      "kind": "render_fallback",
+      "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPng3f4deb60acfc5abb36f471c6139e069f603a720070a86a9bfb3423595d0a6a0b",
+      "format_hint": null,
+      "render_bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 810,
+        "height": 702
+      },
+      "render_bounds_source_field": "ddsOriginFrame",
+      "source_field": "ddsImage",
+      "source_pointer": "/info/4/ddsImage",
+      "variants": [
+        {
+          "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPng3f4deb60acfc5abb36f471c6139e069f603a720070a86a9bfb3423595d0a6a0b",
+          "format_hint": null,
+          "source_field": "ddsImage.imageUrl"
+        }
+      ],
+      "source_size": {
+        "height": 702,
+        "width": 810
+      },
+      "source_point": {
+        "x": 3151,
+        "y": 636
+      },
+      "pixel_dimensions": null,
+      "pixel_dimensions_status": "requires_download"
+    },
+    {
+      "asset_id": "C4AC84E5-6B10-4217-B7F2-F065416B24C1:ddsImage",
+      "node_id": "C4AC84E5-6B10-4217-B7F2-F065416B24C1",
+      "kind": "render_fallback",
+      "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPngfd62df10ab34e344bc62a43c8333cf4ca83e64b6438d6e7da975766fab953001",
+      "format_hint": null,
+      "render_bounds": {
+        "x": 97,
+        "y": 1,
+        "width": 580,
+        "height": 701
+      },
+      "render_bounds_source_field": "ddsOriginFrame",
+      "source_field": "ddsImage",
+      "source_pointer": "/info/5/ddsImage",
+      "variants": [
+        {
+          "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPngfd62df10ab34e344bc62a43c8333cf4ca83e64b6438d6e7da975766fab953001",
+          "format_hint": null,
+          "source_field": "ddsImage.imageUrl"
+        }
+      ],
+      "source_size": {
+        "height": 701,
+        "width": 580
+      },
+      "source_point": {
+        "x": 3248,
+        "y": 637
+      },
+      "pixel_dimensions": null,
+      "pixel_dimensions_status": "requires_download"
+    },
+    {
+      "asset_id": "28AAF9A8-0200-4B43-88D0-360874653C57:ddsImage",
+      "node_id": "28AAF9A8-0200-4B43-88D0-360874653C57",
+      "kind": "render_fallback",
+      "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPngdbe0b13296d717e64d06782b4dc2b1df8f55a3523c6c5dae0581e08bb90e5060",
+      "format_hint": null,
+      "render_bounds": {
+        "x": 534,
+        "y": 164,
+        "width": 223,
+        "height": 294
+      },
+      "render_bounds_source_field": "ddsOriginFrame",
+      "source_field": "ddsImage",
+      "source_pointer": "/info/6/ddsImage",
+      "variants": [
+        {
+          "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPngdbe0b13296d717e64d06782b4dc2b1df8f55a3523c6c5dae0581e08bb90e5060",
+          "format_hint": null,
+          "source_field": "ddsImage.imageUrl"
+        }
+      ],
+      "source_size": {
+        "height": 294,
+        "width": 223
+      },
+      "source_point": {
+        "x": 3685,
+        "y": 800
+      },
+      "pixel_dimensions": null,
+      "pixel_dimensions_status": "requires_download"
+    },
+    {
+      "asset_id": "C6AC2B17-A639-40BC-AD8D-1AD4026A6232:ddsImage",
+      "node_id": "C6AC2B17-A639-40BC-AD8D-1AD4026A6232",
+      "kind": "render_fallback",
+      "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPng23f981bfa6115f53294ff9d7a4dcd04ece35d608c3939795823d4602363abd67",
+      "format_hint": null,
+      "render_bounds": {
+        "x": 445,
+        "y": 272,
+        "width": 189,
+        "height": 189
+      },
+      "render_bounds_source_field": "ddsOriginFrame",
+      "source_field": "ddsImage",
+      "source_pointer": "/info/7/ddsImage",
+      "variants": [
+        {
+          "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPng23f981bfa6115f53294ff9d7a4dcd04ece35d608c3939795823d4602363abd67",
+          "format_hint": null,
+          "source_field": "ddsImage.imageUrl"
+        }
+      ],
+      "source_size": {
+        "height": 189,
+        "width": 189
+      },
+      "source_point": {
+        "x": 3596,
+        "y": 908
+      },
+      "pixel_dimensions": null,
+      "pixel_dimensions_status": "requires_download"
+    },
+    {
+      "asset_id": "983C767D-EB9A-4585-976F-43A9179307F1:ddsImage",
+      "node_id": "983C767D-EB9A-4585-976F-43A9179307F1",
+      "kind": "render_fallback",
+      "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPng60b1c44f308848ebcb1c87d6201e7cbaebdcd6f13e5198c6c7e5daeb5ccff394",
+      "format_hint": null,
+      "render_bounds": {
+        "x": 610,
+        "y": 145,
+        "width": 77,
+        "height": 57
+      },
+      "render_bounds_source_field": "ddsOriginFrame",
+      "source_field": "ddsImage",
+      "source_pointer": "/info/8/ddsImage",
+      "variants": [
+        {
+          "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPng60b1c44f308848ebcb1c87d6201e7cbaebdcd6f13e5198c6c7e5daeb5ccff394",
+          "format_hint": null,
+          "source_field": "ddsImage.imageUrl"
+        }
+      ],
+      "source_size": {
+        "height": 57,
+        "width": 77
+      },
+      "source_point": {
+        "x": 3761,
+        "y": 781
+      },
+      "pixel_dimensions": null,
+      "pixel_dimensions_status": "requires_download"
+    },
+    {
+      "asset_id": "3EFBA0DC-386C-4974-B949-2939FABE3E75:image",
+      "node_id": "3EFBA0DC-386C-4974-B949-2939FABE3E75",
+      "kind": "exported_asset",
+      "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPng72f60df590b7730b3328e4360800dc709d6c2bb993e21a26bcc22dd3e53a93c5",
+      "format_hint": null,
+      "render_bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 810,
+        "height": 702
+      },
+      "render_bounds_source_field": "node.bounds",
+      "source_field": "image",
+      "source_pointer": "/info/9/image",
+      "variants": [
+        {
+          "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPng72f60df590b7730b3328e4360800dc709d6c2bb993e21a26bcc22dd3e53a93c5",
+          "format_hint": null,
+          "source_field": "image.imageUrl"
+        }
+      ],
+      "source_size": {
+        "height": 702,
+        "width": 810
+      },
+      "source_point": {
+        "x": 3151,
+        "y": 636
+      },
+      "pixel_dimensions": null,
+      "pixel_dimensions_status": "requires_download"
+    },
+    {
+      "asset_id": "E317A02B-CF57-4658-BC90-078910D9B82D:image",
+      "node_id": "E317A02B-CF57-4658-BC90-078910D9B82D",
+      "kind": "exported_asset",
+      "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPng9487b67d9fb98d229d0c43bb91beb59df84825c7b29abe19382d25bf03f0d70f",
+      "format_hint": null,
+      "render_bounds": {
+        "x": 0,
+        "y": 351,
+        "width": 810,
+        "height": 363
+      },
+      "render_bounds_source_field": "node.bounds",
+      "source_field": "image",
+      "source_pointer": "/info/10/image",
+      "variants": [
+        {
+          "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPng9487b67d9fb98d229d0c43bb91beb59df84825c7b29abe19382d25bf03f0d70f",
+          "format_hint": null,
+          "source_field": "image.imageUrl"
+        },
+        {
+          "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchSVG5d51e87abb05df3084fce930ee09cff637bbc836e4be0a5a26a737d581f8fb80",
+          "format_hint": "svg",
+          "source_field": "image.svgUrl"
+        }
+      ],
+      "source_size": {
+        "height": 363,
+        "width": 810
+      },
+      "source_point": {
+        "x": 3151,
+        "y": 987
+      },
+      "pixel_dimensions": null,
+      "pixel_dimensions_status": "requires_download"
+    },
+    {
+      "asset_id": "E317A02B-CF57-4658-BC90-078910D9B82D:ddsImage",
+      "node_id": "E317A02B-CF57-4658-BC90-078910D9B82D",
+      "kind": "render_fallback",
+      "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPngd42b1961093db5770029bf47e2a5c307995cd133a81de2aebead5c7c815313e4",
+      "format_hint": null,
+      "render_bounds": {
+        "x": 0,
+        "y": 351,
+        "width": 810,
+        "height": 363
+      },
+      "render_bounds_source_field": "ddsOriginFrame",
+      "source_field": "ddsImage",
+      "source_pointer": "/info/10/ddsImage",
+      "variants": [
+        {
+          "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPngd42b1961093db5770029bf47e2a5c307995cd133a81de2aebead5c7c815313e4",
+          "format_hint": null,
+          "source_field": "ddsImage.imageUrl"
+        }
+      ],
+      "source_size": {
+        "height": 363,
+        "width": 810
+      },
+      "source_point": {
+        "x": 3151,
+        "y": 987
+      },
+      "pixel_dimensions": null,
+      "pixel_dimensions_status": "requires_download"
+    },
+    {
+      "asset_id": "20745020-3950-451A-849C-97D5E62C56BC:image",
+      "node_id": "20745020-3950-451A-849C-97D5E62C56BC",
+      "kind": "exported_asset",
+      "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPng75c739d0ddc6caa561d15c102c05680c3b9092da283d9a1ca4651d59e4b593d0",
+      "format_hint": null,
+      "render_bounds": {
+        "x": 369,
+        "y": 715,
+        "width": 72,
+        "height": 72
+      },
+      "render_bounds_source_field": "node.bounds",
+      "source_field": "image",
+      "source_pointer": "/info/15/image",
+      "variants": [
+        {
+          "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPng75c739d0ddc6caa561d15c102c05680c3b9092da283d9a1ca4651d59e4b593d0",
+          "format_hint": null,
+          "source_field": "image.imageUrl"
+        },
+        {
+          "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchSVG8463b6a39133fd65cdc4a03c9575b1ac14a3df0587d32389f9534c734c273ad7",
+          "format_hint": "svg",
+          "source_field": "image.svgUrl"
+        }
+      ],
+      "source_size": {
+        "height": 72,
+        "width": 72
+      },
+      "source_point": {
+        "x": 3520,
+        "y": 1351
+      },
+      "pixel_dimensions": null,
+      "pixel_dimensions_status": "requires_download"
+    },
+    {
+      "asset_id": "20745020-3950-451A-849C-97D5E62C56BC:ddsImage",
+      "node_id": "20745020-3950-451A-849C-97D5E62C56BC",
+      "kind": "render_fallback",
+      "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPngfb6163c84b38543deefd12e4c009b665d04c5091d6d578633612529dbfa9b7db",
+      "format_hint": null,
+      "render_bounds": {
+        "x": 369,
+        "y": 715,
+        "width": 72,
+        "height": 72
+      },
+      "render_bounds_source_field": "ddsOriginFrame",
+      "source_field": "ddsImage",
+      "source_pointer": "/info/15/ddsImage",
+      "variants": [
+        {
+          "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPngfb6163c84b38543deefd12e4c009b665d04c5091d6d578633612529dbfa9b7db",
+          "format_hint": null,
+          "source_field": "ddsImage.imageUrl"
+        }
+      ],
+      "source_size": {
+        "height": 72,
+        "width": 72
+      },
+      "source_point": {
+        "x": 3520,
+        "y": 1351
+      },
+      "pixel_dimensions": null,
+      "pixel_dimensions_status": "requires_download"
+    },
+    {
+      "asset_id": "EECAB03E-99A9-4249-98B9-895C51DD3BBC:ddsImage",
+      "node_id": "EECAB03E-99A9-4249-98B9-895C51DD3BBC",
+      "kind": "render_fallback",
+      "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPng120777ce4f0296a89d8b8c8f0a69e1823f7e34c0d5ac75002e80d5545ce566a6",
+      "format_hint": null,
+      "render_bounds": {
+        "x": 165,
+        "y": 904,
+        "width": 480,
+        "height": 75
+      },
+      "render_bounds_source_field": "ddsOriginFrame",
+      "source_field": "ddsImage",
+      "source_pointer": "/info/16/ddsImage",
+      "variants": [
+        {
+          "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPng120777ce4f0296a89d8b8c8f0a69e1823f7e34c0d5ac75002e80d5545ce566a6",
+          "format_hint": null,
+          "source_field": "ddsImage.imageUrl"
+        }
+      ],
+      "source_size": {
+        "height": 75,
+        "width": 480
+      },
+      "source_point": {
+        "x": 3316,
+        "y": 1540
+      },
+      "pixel_dimensions": null,
+      "pixel_dimensions_status": "requires_download"
+    },
+    {
+      "asset_id": "79DE2D5B-5591-405E-BAAF-794BA5DCA0EF:ddsImage",
+      "node_id": "79DE2D5B-5591-405E-BAAF-794BA5DCA0EF",
+      "kind": "render_fallback",
+      "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPnga596c30d3aa149c43137fca3e9ecee6ff3666fcf8fa4b12d7ef6a2d2af2096c4",
+      "format_hint": null,
+      "render_bounds": {
+        "x": 569,
+        "y": 919,
+        "width": 44,
+        "height": 44
+      },
+      "render_bounds_source_field": "ddsOriginFrame",
+      "source_field": "ddsImage",
+      "source_pointer": "/info/19/ddsImage",
+      "variants": [
+        {
+          "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPnga596c30d3aa149c43137fca3e9ecee6ff3666fcf8fa4b12d7ef6a2d2af2096c4",
+          "format_hint": null,
+          "source_field": "ddsImage.imageUrl"
+        }
+      ],
+      "source_size": {
+        "height": 44,
+        "width": 44
+      },
+      "source_point": {
+        "x": 3720,
+        "y": 1555
+      },
+      "pixel_dimensions": null,
+      "pixel_dimensions_status": "requires_download"
+    },
+    {
+      "asset_id": "51D8212C-4EBE-4B7E-8407-0412ED38EDAF:ddsImage",
+      "node_id": "51D8212C-4EBE-4B7E-8407-0412ED38EDAF",
+      "kind": "render_fallback",
+      "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPng22624bae7e6f6b734d090cb343109585d973217efa5d2fee6cd617fcd7fd23d0",
+      "format_hint": null,
+      "render_bounds": {
+        "x": 578,
+        "y": 929,
+        "width": 24,
+        "height": 24
+      },
+      "render_bounds_source_field": "ddsOriginFrame",
+      "source_field": "ddsImage",
+      "source_pointer": "/info/21/ddsImage",
+      "variants": [
+        {
+          "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPng22624bae7e6f6b734d090cb343109585d973217efa5d2fee6cd617fcd7fd23d0",
+          "format_hint": null,
+          "source_field": "ddsImage.imageUrl"
+        }
+      ],
+      "source_size": {
+        "height": 24,
+        "width": 24
+      },
+      "source_point": {
+        "x": 3729,
+        "y": 1565
+      },
+      "pixel_dimensions": null,
+      "pixel_dimensions_status": "requires_download"
+    },
+    {
+      "asset_id": "EA46F309-064D-487B-822C-388AB2F241A1:image",
+      "node_id": "EA46F309-064D-487B-822C-388AB2F241A1",
+      "kind": "exported_asset",
+      "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPng6163c4d73e4177a8bc52617cceb5e32c6a959cea2a7c31a99078ba940678fa9a",
+      "format_hint": null,
+      "render_bounds": {
+        "x": 569,
+        "y": 919,
+        "width": 44,
+        "height": 44
+      },
+      "render_bounds_source_field": "node.bounds",
+      "source_field": "image",
+      "source_pointer": "/info/22/image",
+      "variants": [
+        {
+          "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPng6163c4d73e4177a8bc52617cceb5e32c6a959cea2a7c31a99078ba940678fa9a",
+          "format_hint": null,
+          "source_field": "image.imageUrl"
+        },
+        {
+          "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchSVG9d492f25490367f14594744eefec7f3bca3c954e95e489a07c6652e807978295",
+          "format_hint": "svg",
+          "source_field": "image.svgUrl"
+        }
+      ],
+      "source_size": {
+        "height": 44,
+        "width": 44
+      },
+      "source_point": {
+        "x": 3720,
+        "y": 1555
+      },
+      "pixel_dimensions": null,
+      "pixel_dimensions_status": "requires_download"
+    },
+    {
+      "asset_id": "E66B96AF-8347-4B11-AED9-427DCDA3D22B:image",
+      "node_id": "E66B96AF-8347-4B11-AED9-427DCDA3D22B",
+      "kind": "exported_asset",
+      "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPng59d56785b179a0656912addb943bcb74c15d4e8e7b363c9c9836776fae193f03",
+      "format_hint": null,
+      "render_bounds": {
+        "x": 569,
+        "y": 919,
+        "width": 44,
+        "height": 44
+      },
+      "render_bounds_source_field": "node.bounds",
+      "source_field": "image",
+      "source_pointer": "/info/23/image",
+      "variants": [
+        {
+          "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPng59d56785b179a0656912addb943bcb74c15d4e8e7b363c9c9836776fae193f03",
+          "format_hint": null,
+          "source_field": "image.imageUrl"
+        },
+        {
+          "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchSVG160f1419aa3b2ea4d8808aba625d3a3c32a1883ebfe96c0319d13f5218d63854",
+          "format_hint": "svg",
+          "source_field": "image.svgUrl"
+        }
+      ],
+      "source_size": {
+        "height": 44,
+        "width": 44
+      },
+      "source_point": {
+        "x": 3720,
+        "y": 1555
+      },
+      "pixel_dimensions": null,
+      "pixel_dimensions_status": "requires_download"
+    },
+    {
+      "asset_id": "E66B96AF-8347-4B11-AED9-427DCDA3D22B:ddsImage",
+      "node_id": "E66B96AF-8347-4B11-AED9-427DCDA3D22B",
+      "kind": "render_fallback",
+      "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPng54f6a84bdea045ccb4b36af9c95278f80ff586db4730a3206826c56a9a1ba606",
+      "format_hint": null,
+      "render_bounds": {
+        "x": 569,
+        "y": 919,
+        "width": 44,
+        "height": 44
+      },
+      "render_bounds_source_field": "ddsOriginFrame",
+      "source_field": "ddsImage",
+      "source_pointer": "/info/23/ddsImage",
+      "variants": [
+        {
+          "url": "https://lanhu-oss-proxy.lanhuapp.com/SketchPng54f6a84bdea045ccb4b36af9c95278f80ff586db4730a3206826c56a9a1ba606",
+          "format_hint": null,
+          "source_field": "ddsImage.imageUrl"
+        }
+      ],
+      "source_size": {
+        "height": 44,
+        "width": 44
+      },
+      "source_point": {
+        "x": 3720,
+        "y": 1555
+      },
+      "pixel_dimensions": null,
+      "pixel_dimensions_status": "requires_download"
+    }
+  ],
+  "gaps": [
+    {
+      "code": "logical_coordinate_conversion_unknown",
+      "message": "Source canvas units are preserved. Export density does not establish CSS pixel scale."
+    }
+  ],
+  "snapshot_id": "06da9ca39751885f7730e0bc415f5a57",
+  "project_id": "e608eb09-c8a6-4fad-be31-594ab6e01f5a",
+  "design_id": "ef3b19c0-2a3c-4c9c-87bd-6167d99ab86a",
+  "design_name": "引导完成-iPad",
+  "resolved_version": "5327828b-6b73-45fe-b049-de1390bdfe0d",
+  "version_label": "版本2",
+  "reference_size": {
+    "width": 1620,
+    "height": 2160
+  },
+  "original_reference_size": {
+    "width": 1620,
+    "height": 2160
+  },
+  "original_reference_url": "https://alipic.lanhuapp.com/SketchCoverbac9f516a41293d3c07ed5784869d6875775d46db85abc40d9d5d451700b51c0",
+  "preview_downsampled": false,
+  "dds_layout": {
+    "style": {
+      "backgroundColor": "rgba(241,240,242,1.000000)",
+      "zIndex": 1,
+      "position": "relative",
+      "left": 0,
+      "top": 0,
+      "width": 810,
+      "height": 1080,
+      "overflow": "hidden",
+      "paddingLeft": 0,
+      "paddingRight": 0,
+      "paddingTop": 0,
+      "paddingBottom": 0
+    },
+    "rowDims": {
+      "left": 0,
+      "top": 0,
+      "width": 810,
+      "height": 1080
+    },
+    "eleName": "col__6666iPad_52086",
+    "id": "col__6666iPad_52086",
+    "layerId": "1B56D937-4AC1-425C-A4F6-2EA1AE9BAB43",
+    "type": "lanhupage",
+    "data": {
+      "value": ""
+    },
+    "uiType": "",
+    "uiTypeProb": {},
+    "designType": "mobile",
+    "isddsAdaptive": true,
+    "needHeight": true,
+    "alignJustify": {},
+    "componentName": "lanhupage",
+    "props": {
+      "className": "page",
+      "style": {
+        "backgroundColor": "rgba(241,240,242,1.000000)",
+        "position": "relative",
+        "width": 810,
+        "height": 1080,
+        "overflow": "hidden",
+        "display": "flex",
+        "flexDirection": "column"
+      }
+    },
+    "children": [
+      {
+        "style": {
+          "borderRadius": "0px 0px 0px 0px",
+          "backgroundImage": "url(https://lanhu-dds-backend.oss-cn-beijing.aliyuncs.com/merge_image/imgs/50a9437b84b84da88df6d39f82203b37_mergeImage.png)",
+          "zIndex": 6,
+          "position": "static",
+          "left": 0,
+          "top": 0,
+          "width": 810,
+          "height": 702,
+          "marginLeft": 0,
+          "marginRight": 0,
+          "display": "flex",
+          "flexDirection": "row"
+        },
+        "rowDims": {
+          "left": 0,
+          "top": 0,
+          "width": 810,
+          "height": 702
+        },
+        "eleName": "Block__99_818",
+        "id": "Block__99_818",
+        "layerId": "E3EF26CC-05A6-4F0F-8264-052A19CAA2D7",
+        "type": "lanhublock",
+        "data": {
+          "value": ""
+        },
+        "uiType": "",
+        "uiTypeProb": {},
+        "heightAuto": true,
+        "widthAuto": true,
+        "parentCol": true,
+        "alignJustify": {},
+        "componentName": "lanhublock",
+        "children": [
+          {
+            "style": {
+              "zIndex": 11,
+              "position": "static",
+              "left": 0,
+              "top": 351,
+              "width": 810,
+              "height": 363,
+              "background": "url(https://lanhu-oss-proxy.lanhuapp.com/SketchPngd42b1961093db5770029bf47e2a5c307995cd133a81de2aebead5c7c815313e4) 100% no-repeat",
+              "backgroundSize": "100% 100%",
+              "marginTop": 351,
+              "marginLeft": 0,
+              "marginBottom": -12,
+              "marginRight": 0,
+              "display": "flex",
+              "flexDirection": "row",
+              "paddingTop": 159,
+              "paddingBottom": 99,
+              "paddingLeft": 219,
+              "paddingRight": 219
+            },
+            "rowDims": {
+              "left": 0,
+              "top": 351,
+              "width": 810,
+              "height": 363
+            },
+            "eleName": "row__55_64657",
+            "id": "row__55_64657",
+            "layerId": "E317A02B-CF57-4658-BC90-078910D9B82D",
+            "type": "lanhublock",
+            "data": {
+              "value": ""
+            },
+            "uiType": "",
+            "uiTypeProb": {},
+            "needHeight": true,
+            "heightAuto": true,
+            "widthAuto": true,
+            "parentCol": true,
+            "alignJustify": {},
+            "componentName": "lanhublock",
+            "children": [
+              {
+                "style": {
+                  "zIndex": "auto",
+                  "position": "static",
+                  "left": 219,
+                  "top": 510,
+                  "width": 372,
+                  "height": 105,
+                  "paddingLeft": 0,
+                  "paddingRight": 0,
+                  "paddingTop": 0,
+                  "paddingBottom": 0
+                },
+                "rowDims": {
+                  "left": 219,
+                  "top": 510,
+                  "width": 372,
+                  "height": 105
+                },
+                "eleName": "col_rect_TextGroup66_1_36258",
+                "id": "col_rect_TextGroup66_1_36258",
+                "layerId": "rect_219_510_372_105_229652",
+                "type": "lanhublock",
+                "data": {
+                  "value": ""
+                },
+                "uiType": "TextGroup",
+                "uiTypeProb": {},
+                "heightAuto": true,
+                "widthAuto": true,
+                "parentRow": true,
+                "alignJustify": {},
+                "componentName": "lanhublock",
+                "children": [
+                  {
+                    "style": {
+                      "zIndex": 13,
+                      "position": "static",
+                      "left": 318,
+                      "top": 510,
+                      "width": 174,
+                      "height": 34,
+                      "overflowWrap": "break-word",
+                      "color": "rgba(22,22,22,1)",
+                      "fontSize": 28,
+                      "fontFamily": "AvenirLT-Medium",
+                      "fontWeight": "500",
+                      "textAlign": "right",
+                      "whiteSpace": "nowrap",
+                      "lineHeight": 34,
+                      "alignSelf": "center"
+                    },
+                    "rowDims": {
+                      "left": 318,
+                      "top": 510,
+                      "width": 174,
+                      "height": 34
+                    },
+                    "eleName": "Text_Looksmazing_17780",
+                    "id": "Text_Looksmazing_17780",
+                    "layerId": "C23B30B4-CF51-490A-AFDF-9A6799031504",
+                    "type": "lanhutext",
+                    "data": {
+                      "value": "Looks&nbsp;mazing"
+                    },
+                    "uiType": "",
+                    "uiTypeProb": {},
+                    "heightAuto": true,
+                    "widthAuto": false,
+                    "parentCol": true,
+                    "componentName": "lanhutext",
+                    "children": [],
+                    "props": {
+                      "className": "text_1",
+                      "text": "Looks&nbsp;mazing",
+                      "lines": 1,
+                      "style": {
+                        "overflowWrap": "break-word",
+                        "color": "rgba(22,22,22,1)",
+                        "fontSize": 28,
+                        "fontFamily": "AvenirLT-Medium",
+                        "fontWeight": "500",
+                        "textAlign": "right",
+                        "whiteSpace": "nowrap",
+                        "lineHeight": 34,
+                        "alignSelf": "center"
+                      }
+                    }
+                  },
+                  {
+                    "style": {
+                      "zIndex": 12,
+                      "position": "static",
+                      "left": 219,
+                      "top": 547,
+                      "width": 372,
+                      "height": 68,
+                      "overflowWrap": "break-word",
+                      "color": "rgba(22,22,22,1)",
+                      "fontSize": 28,
+                      "fontFamily": "AvenirLT-Black",
+                      "fontWeight": "normal",
+                      "textAlign": "right",
+                      "lineHeight": 34,
+                      "marginLeft": 0,
+                      "marginRight": 0,
+                      "marginTop": 3
+                    },
+                    "rowDims": {
+                      "left": 219,
+                      "top": 547,
+                      "width": 372,
+                      "height": 68
+                    },
+                    "eleName": "Text_PopColorArtisnow_15368",
+                    "id": "Text_PopColorArtisnow_15368",
+                    "layerId": "4A2D4C99-3FA2-444B-A5FD-D8DF3F659A41",
+                    "type": "lanhutext",
+                    "data": {
+                      "value": "Pop&nbsp;Color&nbsp;Art&nbsp;&nbsp;is&nbsp;now&nbsp;ready<br/>for&nbsp;you!"
+                    },
+                    "uiType": "",
+                    "uiTypeProb": {},
+                    "heightAuto": true,
+                    "widthAuto": true,
+                    "parentCol": true,
+                    "componentName": "lanhutext",
+                    "children": [],
+                    "props": {
+                      "className": "paragraph_1",
+                      "text": "Pop&nbsp;Color&nbsp;Art&nbsp;&nbsp;is&nbsp;now&nbsp;ready<br/>for&nbsp;you!",
+                      "lines": 1,
+                      "style": {
+                        "width": 372,
+                        "height": 68,
+                        "overflowWrap": "break-word",
+                        "color": "rgba(22,22,22,1)",
+                        "fontSize": 28,
+                        "fontFamily": "AvenirLT-Black",
+                        "fontWeight": "normal",
+                        "textAlign": "right",
+                        "lineHeight": 34,
+                        "marginTop": 3
+                      }
+                    }
+                  }
+                ],
+                "props": {
+                  "className": "text-group_2",
+                  "style": {
+                    "display": "flex",
+                    "flexDirection": "column"
+                  }
+                }
+              }
+            ],
+            "props": {
+              "className": "box_1",
+              "style": {
+                "height": 363,
+                "background": "url(https://lanhu-oss-proxy.lanhuapp.com/SketchPngd42b1961093db5770029bf47e2a5c307995cd133a81de2aebead5c7c815313e4) 100% no-repeat",
+                "backgroundSize": "100% 100%",
+                "display": "flex",
+                "flexDirection": "row",
+                "margin": "351px 0 -12px 0",
+                "padding": "159px 219px 99px 219px"
+              }
+            }
+          }
+        ],
+        "props": {
+          "className": "block_1",
+          "style": {
+            "backgroundImage": "url(https://lanhu-dds-backend.oss-cn-beijing.aliyuncs.com/merge_image/imgs/50a9437b84b84da88df6d39f82203b37_mergeImage.png)",
+            "display": "flex",
+            "flexDirection": "column"
+          }
+        }
+      },
+      {
+        "style": {
+          "zIndex": 1,
+          "position": "static",
+          "left": 0,
+          "top": 702,
+          "width": 810,
+          "height": 379,
+          "marginLeft": 0,
+          "marginRight": 0,
+          "marginTop": 0,
+          "paddingLeft": 165,
+          "paddingRight": 165,
+          "paddingTop": 13,
+          "paddingBottom": 102
+        },
+        "rowDims": {
+          "left": 0,
+          "top": 702,
+          "width": 810,
+          "height": 379
+        },
+        "eleName": "col___52373",
+        "id": "col___52373",
+        "layerId": "col_0_702_810_379_240316",
+        "type": "lanhublock",
+        "data": {
+          "value": ""
+        },
+        "uiType": "",
+        "uiTypeProb": {},
+        "loopType": false,
+        "heightAuto": true,
+        "widthAuto": true,
+        "parentCol": true,
+        "alignJustify": {},
+        "componentName": "lanhublock",
+        "children": [
+          {
+            "style": {
+              "zIndex": 14,
+              "position": "static",
+              "left": 369,
+              "top": 715,
+              "width": 72,
+              "height": 72,
+              "alignSelf": "center"
+            },
+            "rowDims": {
+              "left": 369,
+              "top": 715,
+              "width": 72,
+              "height": 72
+            },
+            "eleName": "Image_splash_icon_ok_l_13916",
+            "id": "Image_splash_icon_ok_l_13916",
+            "layerId": "20745020-3950-451A-849C-97D5E62C56BC",
+            "type": "lanhuimage",
+            "data": {
+              "value": "https://lanhu-oss-proxy.lanhuapp.com/SketchPngfb6163c84b38543deefd12e4c009b665d04c5091d6d578633612529dbfa9b7db"
+            },
+            "uiType": "",
+            "uiTypeProb": {},
+            "heightAuto": true,
+            "widthAuto": false,
+            "parentCol": true,
+            "componentName": "lanhuimage",
+            "children": [],
+            "props": {
+              "className": "image_1",
+              "src": "https://lanhu-oss-proxy.lanhuapp.com/SketchPngfb6163c84b38543deefd12e4c009b665d04c5091d6d578633612529dbfa9b7db",
+              "style": {
+                "width": 72,
+                "height": 72,
+                "alignSelf": "center"
+              }
+            }
+          },
+          {
+            "style": {
+              "zIndex": 17,
+              "position": "static",
+              "left": 165,
+              "top": 904,
+              "width": 480,
+              "height": 75,
+              "background": "url(https://lanhu-oss-proxy.lanhuapp.com/SketchPng120777ce4f0296a89d8b8c8f0a69e1823f7e34c0d5ac75002e80d5545ce566a6) 100% no-repeat",
+              "backgroundSize": "100% 100%",
+              "marginLeft": 0,
+              "marginRight": 0,
+              "marginTop": 117,
+              "paddingTop": 15,
+              "paddingBottom": 16,
+              "paddingLeft": 225,
+              "paddingRight": 32
+            },
+            "rowDims": {
+              "left": 165,
+              "top": 904,
+              "width": 480,
+              "height": 75
+            },
+            "eleName": "row__11_21160",
+            "id": "row__11_21160",
+            "layerId": "EECAB03E-99A9-4249-98B9-895C51DD3BBC",
+            "type": "lanhublock",
+            "data": {
+              "value": ""
+            },
+            "uiType": "",
+            "uiTypeProb": {},
+            "heightAuto": true,
+            "widthAuto": true,
+            "parentCol": true,
+            "alignJustify": {
+              "justifyContent": "space-between"
+            },
+            "componentName": "lanhublock",
+            "children": [
+              {
+                "style": {
+                  "zIndex": 18,
+                  "position": "static",
+                  "left": 390,
+                  "top": 927,
+                  "width": 86,
+                  "height": 28,
+                  "overflowWrap": "break-word",
+                  "color": "rgba(255,255,255,1)",
+                  "fontSize": 20,
+                  "fontFamily": "PingFangSC-Medium",
+                  "fontWeight": "500",
+                  "textAlign": "right",
+                  "whiteSpace": "nowrap",
+                  "lineHeight": 28,
+                  "marginTop": 8
+                },
+                "rowDims": {
+                  "left": 390,
+                  "top": 927,
+                  "width": 86,
+                  "height": 28
+                },
+                "eleName": "Text_Continue_34259",
+                "id": "Text_Continue_34259",
+                "layerId": "E024AA7A-3B9C-4D73-9AE9-01062A2311BD",
+                "type": "lanhutext",
+                "data": {
+                  "value": "Continue"
+                },
+                "uiType": "",
+                "uiTypeProb": {},
+                "heightAuto": true,
+                "widthAuto": true,
+                "parentRow": true,
+                "componentName": "lanhutext",
+                "children": [],
+                "props": {
+                  "className": "text_2",
+                  "text": "Continue",
+                  "lines": 1,
+                  "style": {
+                    "overflowWrap": "break-word",
+                    "color": "rgba(255,255,255,1)",
+                    "fontSize": 20,
+                    "fontFamily": "PingFangSC-Medium",
+                    "fontWeight": "500",
+                    "textAlign": "right",
+                    "whiteSpace": "nowrap",
+                    "lineHeight": 28,
+                    "marginTop": 8
+                  }
+                }
+              },
+              {
+                "style": {
+                  "zIndex": 19,
+                  "position": "static",
+                  "left": 569,
+                  "top": 919,
+                  "width": 44,
+                  "height": 44,
+                  "marginTop": 0,
+                  "marginBottom": 0
+                },
+                "rowDims": {
+                  "left": 569,
+                  "top": 919,
+                  "width": 44,
+                  "height": 44
+                },
+                "eleName": "Image_paint_icon_close_33133",
+                "id": "Image_paint_icon_close_33133",
+                "layerId": "E66B96AF-8347-4B11-AED9-427DCDA3D22B",
+                "type": "lanhuimage",
+                "data": {
+                  "value": "https://lanhu-oss-proxy.lanhuapp.com/SketchPng54f6a84bdea045ccb4b36af9c95278f80ff586db4730a3206826c56a9a1ba606"
+                },
+                "uiType": "",
+                "uiTypeProb": {},
+                "heightAuto": true,
+                "widthAuto": true,
+                "parentRow": true,
+                "componentName": "lanhuimage",
+                "children": [],
+                "props": {
+                  "className": "label_1",
+                  "src": "https://lanhu-oss-proxy.lanhuapp.com/SketchPng54f6a84bdea045ccb4b36af9c95278f80ff586db4730a3206826c56a9a1ba606",
+                  "style": {
+                    "width": 44,
+                    "height": 44
+                  }
+                }
+              }
+            ],
+            "props": {
+              "className": "group_1",
+              "style": {
+                "width": 480,
+                "background": "url(https://lanhu-oss-proxy.lanhuapp.com/SketchPng120777ce4f0296a89d8b8c8f0a69e1823f7e34c0d5ac75002e80d5545ce566a6) 100% no-repeat",
+                "backgroundSize": "100% 100%",
+                "marginTop": 117,
+                "flexDirection": "row",
+                "display": "flex",
+                "justifyContent": "space-between",
+                "padding": "15px 32px 16px 225px"
+              }
+            }
+          }
+        ],
+        "props": {
+          "className": "box_2",
+          "style": {
+            "display": "flex",
+            "flexDirection": "column",
+            "padding": "13px 165px 102px 165px"
+          }
+        }
+      }
+    ]
+  },
+  "dds_gap": null
+}

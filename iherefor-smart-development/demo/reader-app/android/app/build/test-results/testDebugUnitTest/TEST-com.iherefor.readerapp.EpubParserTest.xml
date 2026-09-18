@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.iherefor.readerapp.EpubParserTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-09-17T14:02:55.752Z" hostname="niukoudeMacBook-Pro-2.local" time="0.002">
+  <properties/>
+  <testcase name="shouldExtractManifestIdHref" classname="com.iherefor.readerapp.EpubParserTest" time="0.0"/>
+  <testcase name="shouldStripHtml" classname="com.iherefor.readerapp.EpubParserTest" time="0.0"/>
+  <testcase name="shouldRejectEmptyFile" classname="com.iherefor.readerapp.EpubParserTest" time="0.001"/>
+  <testcase name="shouldExtractSpineIdrefsOrder" classname="com.iherefor.readerapp.EpubParserTest" time="0.0"/>
+  <testcase name="shouldRejectInvalidZip" classname="com.iherefor.readerapp.EpubParserTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

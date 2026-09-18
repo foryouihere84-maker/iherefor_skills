@@ -2,7 +2,7 @@
   "_comment": "功能分级（tier）定义。依据需求「第一眼可判」的信号，在阶段 0 把功能划入 full（标准）或 lite（轻量）两档，决定闸门数量与产物清单。原则：默认 full、按需 lite，宁可从 full 升级降级一次，也不在判据模糊时硬分。",
   "default_tier": "full",
   "decision_point": "阶段 0（前置依赖检查）末尾，尚未进入阶段 1 之前。判据用入口处即可取得的信号；如需走完 Spec 才能定，则按 full 处理，不提前省事。",
-  "escalate_rule": "阶段 1（Spec）结束时允许升/降级一次：若发现 lite 判据误判（实为跨端共享层/架构方向不明/涉及迁移），升级为 full；反之 full 可降为 lite。变更须在 run-log.jsonl 记录 tier_change 事件。",
+  "escalate_rule": "阶段 1（Spec）结束时允许升/降级一次：若发现 lite 判据误判（实为跨端共享层/架构方向不明/涉及迁移），升级为 full；反之 full 可降为 lite。变更须在 运行日志.jsonl 记录 tier_change 事件。",
   "tiers": {
     "full": {
       "label": "标准档",
@@ -13,7 +13,8 @@
         "涉及持久化、状态管理重构或 schema 迁移",
         "需要新增/替换第三方依赖"
       ],
-      "gates": ["a", "b", "c1", "c2", "d", "delivery"],
+      "gates": ["a", "p", "b", "c1", "c2", "d", "delivery"],
+      "stage2_note": "原型层全跑：多变体（≤5，结构互斥）+ 跨端视觉语言并排（iOS/Android 平台开关）。",
       "note": "所有产物照 templates/ 全套产出，无跳过。"
     },
     "lite": {
@@ -24,17 +25,19 @@
         "不新增第三方依赖",
         "不涉及跨端共享层或 schema 迁移"
       ],
-      "gates": ["a", "b", "d", "delivery"],
-      "merge_rule": "闸门 c1（变更清单）与 c2（tasks 拆分）合并进闸门 b：proposal-draft.md 内同时覆盖「变更清单」与「执行步骤」，只做一次合并确认，不再单独拆 tickets.md。",
+      "gates": ["a", "p", "b", "d", "delivery"],
+      "merge_rule": "闸门 c1（变更清单）与 c2（任务拆分）合并进闸门 b：方案草案.md 内同时覆盖「变更清单」与「执行步骤」，只做一次合并确认，不再单独拆 任务拆分.md。",
+      "stage2_rule": "原型层不省略、只收缩：原型说明.md 与 原型图.html 两份产物仍须产出（界面决策属『约束』不属『仪式』），但收缩为单变体 + 单平台，不做多变体与跨端视觉语言并排。",
       "skip_artifacts": [
-        "01-需求/shared-requirements.md",
-        "02-架构/design-options.md",
-        "02-架构/comparison.md",
-        "02-架构/shared-layer.md",
-        "03-落地计划/architecture-audit.md",
-        "03-落地计划/tickets.md"
+        "01-需求/<批次>/跨端共享需求.md",
+        "03-架构/候选方案.md",
+        "03-架构/方案对比.md",
+        "03-架构/跨端共享层.md",
+        "04-落地计划/<批次>/架构审计.md",
+        "04-落地计划/<批次>/任务拆分.md"
       ],
-      "note": "阶段 2 不做 DESIGN-IT-TWICE 三案；仅当有 L1 官方参照需查证时做一次白名单搜索，否则跳过 search-questions/facts 亦可由编排器按需裁剪。其余必填产物仍照模板产出。"
+      "_skip_artifacts_note": "路径相对 docs/<feature>/，支持 glob（用 fnmatch 匹配）。仅收敛型单例产物可进此清单——追加型产物（需求/用户故事/变更清单/编译·审查·一致性对账·交付报告）不因档位跳过编号，lite 档只是实例通常更少。**批次对齐不因档位放松**：lite 档同样要在 01/02/04/05/06 五阶段建同名批次目录，跳过的只是目录内那几份收敛型文件。",
+      "note": "阶段 3 不做 DESIGN-IT-TWICE 三案；仅当有 L1 官方参照需查证时做一次白名单搜索，否则跳过 待查证问题/事实纪要 亦可由编排器按需裁剪。原型层见 stage2_rule。其余必填产物仍照模板产出。"
     }
   }
 }

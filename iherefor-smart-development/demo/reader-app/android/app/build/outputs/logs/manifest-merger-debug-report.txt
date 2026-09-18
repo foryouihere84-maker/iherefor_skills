@@ -1,0 +1,278 @@
+-- Merging decision tree log ---
+manifest
+ADDED from /Users/niukou/Desktop/iherefor_skills/iherefor-smart-development/demo/reader-app/android/app/src/main/AndroidManifest.xml:1:1-16:12
+INJECTED from /Users/niukou/Desktop/iherefor_skills/iherefor-smart-development/demo/reader-app/android/app/src/main/AndroidManifest.xml:1:1-16:12
+INJECTED from /Users/niukou/Desktop/iherefor_skills/iherefor-smart-development/demo/reader-app/android/app/src/main/AndroidManifest.xml:1:1-16:12
+INJECTED from /Users/niukou/Desktop/iherefor_skills/iherefor-smart-development/demo/reader-app/android/app/src/main/AndroidManifest.xml:1:1-16:12
+MERGED from [androidx.activity:activity:1.9.2] /Users/niukou/.gradle/caches/8.13/transforms/94a58d88630af184897b9535727e3a4a/transformed/activity-1.9.2/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.activity:activity-ktx:1.9.2] /Users/niukou/.gradle/caches/8.13/transforms/0771963e1e26c6539cd961d83a852caf/transformed/activity-ktx-1.9.2/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.material3:material3-android:1.3.0] /Users/niukou/.gradle/caches/8.13/transforms/6f8b60d3989d4a0e76799cd85d01cb0a/transformed/material3-release/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.activity:activity-compose:1.9.2] /Users/niukou/.gradle/caches/8.13/transforms/d4172074c7efbc357b22a2aa20d2ac52/transformed/activity-compose-1.9.2/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.material:material-ripple-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/1a27c0baa7040eb3a093192a4dd9bda6/transformed/material-ripple-release/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.foundation:foundation-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/724fd1f2ef50b5c9161e5a492a07fdb8/transformed/foundation-release/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.animation:animation-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/e232d99bb13bc06d7f503292b62f0d3f/transformed/animation-release/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.foundation:foundation-layout-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/c11867abdc58c23a2ce550b259435a6d/transformed/foundation-layout-release/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.animation:animation-core-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/b14102cf76a2d09979df43fdbe3221f4/transformed/animation-core-release/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.material:material-icons-core-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/9443d98c176dbbda30799f9481548241/transformed/material-icons-core-release/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.ui:ui-unit-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/959f453e8d74c40ac9793e98d2369acb/transformed/ui-unit-release/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.ui:ui-graphics-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/7c36a267a4f89add0ed1fa9fba7f3a53/transformed/ui-graphics-release/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.ui:ui-geometry-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/c3d804ee7d9bc0c0792689d6c46c84b3/transformed/ui-geometry-release/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.ui:ui-util-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/861bf78cc156b2548fc9bb0cdf3c3dfa/transformed/ui-util-release/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.ui:ui-text-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/6b340870b448495b6232c90c3d764473/transformed/ui-text-release/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.ui:ui-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/8c8654b5915aa60cf55825e951446c75/transformed/ui-release/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.autofill:autofill:1.0.0] /Users/niukou/.gradle/caches/8.13/transforms/cad710f0e1334327849d6dfc888e5adb/transformed/autofill-1.0.0/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.emoji2:emoji2:1.3.0] /Users/niukou/.gradle/caches/8.13/transforms/853e65b356368da1dae89c8be86867e1/transformed/emoji2-1.3.0/AndroidManifest.xml:17:1-35:12
+MERGED from [androidx.graphics:graphics-path:1.0.1] /Users/niukou/.gradle/caches/8.13/transforms/39647078749b0689af2c24dca2ad12df/transformed/graphics-path-1.0.1/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.core:core:1.13.1] /Users/niukou/.gradle/caches/8.13/transforms/2f53219e3126066a77c2c39679787cad/transformed/core-1.13.1/AndroidManifest.xml:17:1-30:12
+MERGED from [androidx.customview:customview-poolingcontainer:1.0.0] /Users/niukou/.gradle/caches/8.13/transforms/34ac9dd18dd779e2ab4ad5357c3f8280/transformed/customview-poolingcontainer-1.0.0/AndroidManifest.xml:17:1-23:12
+MERGED from [androidx.savedstate:savedstate-ktx:1.2.1] /Users/niukou/.gradle/caches/8.13/transforms/ce20f99d63d80d45e0977910ceb848ec/transformed/savedstate-ktx-1.2.1/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.savedstate:savedstate:1.2.1] /Users/niukou/.gradle/caches/8.13/transforms/b357ca2279cbf5106f4274fb536f5dbd/transformed/savedstate-1.2.1/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.lifecycle:lifecycle-livedata-core:2.8.3] /Users/niukou/.gradle/caches/8.13/transforms/52bee6c27d3aea7ba5bf251ad9c9189e/transformed/lifecycle-livedata-core-2.8.3/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-android:2.8.3] /Users/niukou/.gradle/caches/8.13/transforms/e2633b0b1f1ee45d76172a382dd9ad4a/transformed/lifecycle-viewmodel-release/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.lifecycle:lifecycle-runtime-ktx-android:2.8.3] /Users/niukou/.gradle/caches/8.13/transforms/93ce36df39258ce4fe46a41aa77e486e/transformed/lifecycle-runtime-ktx-release/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.lifecycle:lifecycle-runtime-android:2.8.3] /Users/niukou/.gradle/caches/8.13/transforms/6ca01de31bbef4312d638c30149143c4/transformed/lifecycle-runtime-release/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.lifecycle:lifecycle-process:2.8.3] /Users/niukou/.gradle/caches/8.13/transforms/51e302ba0d01a13299a23886ed8d7979/transformed/lifecycle-process-2.8.3/AndroidManifest.xml:17:1-35:12
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.3] /Users/niukou/.gradle/caches/8.13/transforms/263bb9a3e7b282bf761bcf44b90b1e1a/transformed/lifecycle-viewmodel-ktx-2.8.3/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.lifecycle:lifecycle-runtime-compose-android:2.8.3] /Users/niukou/.gradle/caches/8.13/transforms/651e5a9c16bcf1ebffa1371b8c22bede/transformed/lifecycle-runtime-compose-release/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-savedstate:2.8.3] /Users/niukou/.gradle/caches/8.13/transforms/5e7f372a7f8b5a772b605c347bfb9c83/transformed/lifecycle-viewmodel-savedstate-2.8.3/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.core:core-ktx:1.13.1] /Users/niukou/.gradle/caches/8.13/transforms/7589e1753ac73f6a66ccfddd8f157882/transformed/core-ktx-1.13.1/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.runtime:runtime-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/794d471338d1c345f76256ec4a35a53c/transformed/runtime-release/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.runtime:runtime-saveable-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/7af13b0b64188f67b0ecf69f40b4dfe5/transformed/runtime-saveable-release/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/niukou/.gradle/caches/8.13/transforms/68d91a65484c1fc6397bad590f098def/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:17:1-27:12
+MERGED from [androidx.annotation:annotation-experimental:1.4.1] /Users/niukou/.gradle/caches/8.13/transforms/14b3a5fc282fbf89f3a95a551f7b0fcb/transformed/annotation-experimental-1.4.1/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.interpolator:interpolator:1.0.0] /Users/niukou/.gradle/caches/8.13/transforms/9fe960dd60e6986b9737006f06f5ed95/transformed/interpolator-1.0.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/niukou/.gradle/caches/8.13/transforms/ae0fd9a894bce5c8fde4d73cd976c5c7/transformed/profileinstaller-1.3.1/AndroidManifest.xml:17:1-55:12
+MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/niukou/.gradle/caches/8.13/transforms/ed7257bf870a74104eb5da11b1714165/transformed/startup-runtime-1.1.1/AndroidManifest.xml:17:1-33:12
+MERGED from [androidx.tracing:tracing:1.0.0] /Users/niukou/.gradle/caches/8.13/transforms/cfe673728a8bf1e6ecba5025096d77f1/transformed/tracing-1.0.0/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.arch.core:core-runtime:2.2.0] /Users/niukou/.gradle/caches/8.13/transforms/ee4ed58cbe4559ae3bff98c0bfc0c7aa/transformed/core-runtime-2.2.0/AndroidManifest.xml:17:1-22:12
+	package
+		INJECTED from /Users/niukou/Desktop/iherefor_skills/iherefor-smart-development/demo/reader-app/android/app/src/main/AndroidManifest.xml
+	android:versionName
+		INJECTED from /Users/niukou/Desktop/iherefor_skills/iherefor-smart-development/demo/reader-app/android/app/src/main/AndroidManifest.xml
+	android:versionCode
+		INJECTED from /Users/niukou/Desktop/iherefor_skills/iherefor-smart-development/demo/reader-app/android/app/src/main/AndroidManifest.xml
+	xmlns:android
+		ADDED from /Users/niukou/Desktop/iherefor_skills/iherefor-smart-development/demo/reader-app/android/app/src/main/AndroidManifest.xml:1:11-69
+application
+ADDED from /Users/niukou/Desktop/iherefor_skills/iherefor-smart-development/demo/reader-app/android/app/src/main/AndroidManifest.xml:2:5-15:19
+INJECTED from /Users/niukou/Desktop/iherefor_skills/iherefor-smart-development/demo/reader-app/android/app/src/main/AndroidManifest.xml:2:5-15:19
+MERGED from [androidx.emoji2:emoji2:1.3.0] /Users/niukou/.gradle/caches/8.13/transforms/853e65b356368da1dae89c8be86867e1/transformed/emoji2-1.3.0/AndroidManifest.xml:23:5-33:19
+MERGED from [androidx.emoji2:emoji2:1.3.0] /Users/niukou/.gradle/caches/8.13/transforms/853e65b356368da1dae89c8be86867e1/transformed/emoji2-1.3.0/AndroidManifest.xml:23:5-33:19
+MERGED from [androidx.core:core:1.13.1] /Users/niukou/.gradle/caches/8.13/transforms/2f53219e3126066a77c2c39679787cad/transformed/core-1.13.1/AndroidManifest.xml:28:5-89
+MERGED from [androidx.core:core:1.13.1] /Users/niukou/.gradle/caches/8.13/transforms/2f53219e3126066a77c2c39679787cad/transformed/core-1.13.1/AndroidManifest.xml:28:5-89
+MERGED from [androidx.lifecycle:lifecycle-process:2.8.3] /Users/niukou/.gradle/caches/8.13/transforms/51e302ba0d01a13299a23886ed8d7979/transformed/lifecycle-process-2.8.3/AndroidManifest.xml:23:5-33:19
+MERGED from [androidx.lifecycle:lifecycle-process:2.8.3] /Users/niukou/.gradle/caches/8.13/transforms/51e302ba0d01a13299a23886ed8d7979/transformed/lifecycle-process-2.8.3/AndroidManifest.xml:23:5-33:19
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/niukou/.gradle/caches/8.13/transforms/68d91a65484c1fc6397bad590f098def/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:24:5-25:19
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/niukou/.gradle/caches/8.13/transforms/68d91a65484c1fc6397bad590f098def/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:24:5-25:19
+MERGED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/niukou/.gradle/caches/8.13/transforms/ae0fd9a894bce5c8fde4d73cd976c5c7/transformed/profileinstaller-1.3.1/AndroidManifest.xml:23:5-53:19
+MERGED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/niukou/.gradle/caches/8.13/transforms/ae0fd9a894bce5c8fde4d73cd976c5c7/transformed/profileinstaller-1.3.1/AndroidManifest.xml:23:5-53:19
+MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/niukou/.gradle/caches/8.13/transforms/ed7257bf870a74104eb5da11b1714165/transformed/startup-runtime-1.1.1/AndroidManifest.xml:25:5-31:19
+MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/niukou/.gradle/caches/8.13/transforms/ed7257bf870a74104eb5da11b1714165/transformed/startup-runtime-1.1.1/AndroidManifest.xml:25:5-31:19
+	android:extractNativeLibs
+		INJECTED from /Users/niukou/Desktop/iherefor_skills/iherefor-smart-development/demo/reader-app/android/app/src/main/AndroidManifest.xml
+	android:appComponentFactory
+		ADDED from [androidx.core:core:1.13.1] /Users/niukou/.gradle/caches/8.13/transforms/2f53219e3126066a77c2c39679787cad/transformed/core-1.13.1/AndroidManifest.xml:28:18-86
+	android:supportsRtl
+		ADDED from /Users/niukou/Desktop/iherefor_skills/iherefor-smart-development/demo/reader-app/android/app/src/main/AndroidManifest.xml:4:9-35
+	android:label
+		ADDED from /Users/niukou/Desktop/iherefor_skills/iherefor-smart-development/demo/reader-app/android/app/src/main/AndroidManifest.xml:3:9-31
+	android:theme
+		ADDED from /Users/niukou/Desktop/iherefor_skills/iherefor-smart-development/demo/reader-app/android/app/src/main/AndroidManifest.xml:5:9-47
+activity#com.iherefor.readerapp.MainActivity
+ADDED from /Users/niukou/Desktop/iherefor_skills/iherefor-smart-development/demo/reader-app/android/app/src/main/AndroidManifest.xml:6:9-14:20
+	android:label
+		ADDED from /Users/niukou/Desktop/iherefor_skills/iherefor-smart-development/demo/reader-app/android/app/src/main/AndroidManifest.xml:9:13-33
+	android:exported
+		ADDED from /Users/niukou/Desktop/iherefor_skills/iherefor-smart-development/demo/reader-app/android/app/src/main/AndroidManifest.xml:8:13-36
+	android:name
+		ADDED from /Users/niukou/Desktop/iherefor_skills/iherefor-smart-development/demo/reader-app/android/app/src/main/AndroidManifest.xml:7:13-41
+intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
+ADDED from /Users/niukou/Desktop/iherefor_skills/iherefor-smart-development/demo/reader-app/android/app/src/main/AndroidManifest.xml:10:13-13:29
+action#android.intent.action.MAIN
+ADDED from /Users/niukou/Desktop/iherefor_skills/iherefor-smart-development/demo/reader-app/android/app/src/main/AndroidManifest.xml:11:17-69
+	android:name
+		ADDED from /Users/niukou/Desktop/iherefor_skills/iherefor-smart-development/demo/reader-app/android/app/src/main/AndroidManifest.xml:11:25-66
+category#android.intent.category.LAUNCHER
+ADDED from /Users/niukou/Desktop/iherefor_skills/iherefor-smart-development/demo/reader-app/android/app/src/main/AndroidManifest.xml:12:17-77
+	android:name
+		ADDED from /Users/niukou/Desktop/iherefor_skills/iherefor-smart-development/demo/reader-app/android/app/src/main/AndroidManifest.xml:12:27-74
+uses-sdk
+INJECTED from /Users/niukou/Desktop/iherefor_skills/iherefor-smart-development/demo/reader-app/android/app/src/main/AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from /Users/niukou/Desktop/iherefor_skills/iherefor-smart-development/demo/reader-app/android/app/src/main/AndroidManifest.xml
+INJECTED from /Users/niukou/Desktop/iherefor_skills/iherefor-smart-development/demo/reader-app/android/app/src/main/AndroidManifest.xml
+MERGED from [androidx.activity:activity:1.9.2] /Users/niukou/.gradle/caches/8.13/transforms/94a58d88630af184897b9535727e3a4a/transformed/activity-1.9.2/AndroidManifest.xml:20:5-44
+MERGED from [androidx.activity:activity:1.9.2] /Users/niukou/.gradle/caches/8.13/transforms/94a58d88630af184897b9535727e3a4a/transformed/activity-1.9.2/AndroidManifest.xml:20:5-44
+MERGED from [androidx.activity:activity-ktx:1.9.2] /Users/niukou/.gradle/caches/8.13/transforms/0771963e1e26c6539cd961d83a852caf/transformed/activity-ktx-1.9.2/AndroidManifest.xml:5:5-44
+MERGED from [androidx.activity:activity-ktx:1.9.2] /Users/niukou/.gradle/caches/8.13/transforms/0771963e1e26c6539cd961d83a852caf/transformed/activity-ktx-1.9.2/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.material3:material3-android:1.3.0] /Users/niukou/.gradle/caches/8.13/transforms/6f8b60d3989d4a0e76799cd85d01cb0a/transformed/material3-release/AndroidManifest.xml:20:5-44
+MERGED from [androidx.compose.material3:material3-android:1.3.0] /Users/niukou/.gradle/caches/8.13/transforms/6f8b60d3989d4a0e76799cd85d01cb0a/transformed/material3-release/AndroidManifest.xml:20:5-44
+MERGED from [androidx.activity:activity-compose:1.9.2] /Users/niukou/.gradle/caches/8.13/transforms/d4172074c7efbc357b22a2aa20d2ac52/transformed/activity-compose-1.9.2/AndroidManifest.xml:5:5-44
+MERGED from [androidx.activity:activity-compose:1.9.2] /Users/niukou/.gradle/caches/8.13/transforms/d4172074c7efbc357b22a2aa20d2ac52/transformed/activity-compose-1.9.2/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.material:material-ripple-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/1a27c0baa7040eb3a093192a4dd9bda6/transformed/material-ripple-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.material:material-ripple-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/1a27c0baa7040eb3a093192a4dd9bda6/transformed/material-ripple-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.foundation:foundation-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/724fd1f2ef50b5c9161e5a492a07fdb8/transformed/foundation-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.foundation:foundation-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/724fd1f2ef50b5c9161e5a492a07fdb8/transformed/foundation-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.animation:animation-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/e232d99bb13bc06d7f503292b62f0d3f/transformed/animation-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.animation:animation-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/e232d99bb13bc06d7f503292b62f0d3f/transformed/animation-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.foundation:foundation-layout-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/c11867abdc58c23a2ce550b259435a6d/transformed/foundation-layout-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.foundation:foundation-layout-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/c11867abdc58c23a2ce550b259435a6d/transformed/foundation-layout-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.animation:animation-core-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/b14102cf76a2d09979df43fdbe3221f4/transformed/animation-core-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.animation:animation-core-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/b14102cf76a2d09979df43fdbe3221f4/transformed/animation-core-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.material:material-icons-core-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/9443d98c176dbbda30799f9481548241/transformed/material-icons-core-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.material:material-icons-core-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/9443d98c176dbbda30799f9481548241/transformed/material-icons-core-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-unit-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/959f453e8d74c40ac9793e98d2369acb/transformed/ui-unit-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-unit-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/959f453e8d74c40ac9793e98d2369acb/transformed/ui-unit-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-graphics-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/7c36a267a4f89add0ed1fa9fba7f3a53/transformed/ui-graphics-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-graphics-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/7c36a267a4f89add0ed1fa9fba7f3a53/transformed/ui-graphics-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-geometry-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/c3d804ee7d9bc0c0792689d6c46c84b3/transformed/ui-geometry-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-geometry-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/c3d804ee7d9bc0c0792689d6c46c84b3/transformed/ui-geometry-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-util-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/861bf78cc156b2548fc9bb0cdf3c3dfa/transformed/ui-util-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-util-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/861bf78cc156b2548fc9bb0cdf3c3dfa/transformed/ui-util-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-text-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/6b340870b448495b6232c90c3d764473/transformed/ui-text-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-text-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/6b340870b448495b6232c90c3d764473/transformed/ui-text-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/8c8654b5915aa60cf55825e951446c75/transformed/ui-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/8c8654b5915aa60cf55825e951446c75/transformed/ui-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.autofill:autofill:1.0.0] /Users/niukou/.gradle/caches/8.13/transforms/cad710f0e1334327849d6dfc888e5adb/transformed/autofill-1.0.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.autofill:autofill:1.0.0] /Users/niukou/.gradle/caches/8.13/transforms/cad710f0e1334327849d6dfc888e5adb/transformed/autofill-1.0.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.emoji2:emoji2:1.3.0] /Users/niukou/.gradle/caches/8.13/transforms/853e65b356368da1dae89c8be86867e1/transformed/emoji2-1.3.0/AndroidManifest.xml:21:5-44
+MERGED from [androidx.emoji2:emoji2:1.3.0] /Users/niukou/.gradle/caches/8.13/transforms/853e65b356368da1dae89c8be86867e1/transformed/emoji2-1.3.0/AndroidManifest.xml:21:5-44
+MERGED from [androidx.graphics:graphics-path:1.0.1] /Users/niukou/.gradle/caches/8.13/transforms/39647078749b0689af2c24dca2ad12df/transformed/graphics-path-1.0.1/AndroidManifest.xml:5:5-44
+MERGED from [androidx.graphics:graphics-path:1.0.1] /Users/niukou/.gradle/caches/8.13/transforms/39647078749b0689af2c24dca2ad12df/transformed/graphics-path-1.0.1/AndroidManifest.xml:5:5-44
+MERGED from [androidx.core:core:1.13.1] /Users/niukou/.gradle/caches/8.13/transforms/2f53219e3126066a77c2c39679787cad/transformed/core-1.13.1/AndroidManifest.xml:20:5-44
+MERGED from [androidx.core:core:1.13.1] /Users/niukou/.gradle/caches/8.13/transforms/2f53219e3126066a77c2c39679787cad/transformed/core-1.13.1/AndroidManifest.xml:20:5-44
+MERGED from [androidx.customview:customview-poolingcontainer:1.0.0] /Users/niukou/.gradle/caches/8.13/transforms/34ac9dd18dd779e2ab4ad5357c3f8280/transformed/customview-poolingcontainer-1.0.0/AndroidManifest.xml:20:5-21:38
+MERGED from [androidx.customview:customview-poolingcontainer:1.0.0] /Users/niukou/.gradle/caches/8.13/transforms/34ac9dd18dd779e2ab4ad5357c3f8280/transformed/customview-poolingcontainer-1.0.0/AndroidManifest.xml:20:5-21:38
+MERGED from [androidx.savedstate:savedstate-ktx:1.2.1] /Users/niukou/.gradle/caches/8.13/transforms/ce20f99d63d80d45e0977910ceb848ec/transformed/savedstate-ktx-1.2.1/AndroidManifest.xml:20:5-44
+MERGED from [androidx.savedstate:savedstate-ktx:1.2.1] /Users/niukou/.gradle/caches/8.13/transforms/ce20f99d63d80d45e0977910ceb848ec/transformed/savedstate-ktx-1.2.1/AndroidManifest.xml:20:5-44
+MERGED from [androidx.savedstate:savedstate:1.2.1] /Users/niukou/.gradle/caches/8.13/transforms/b357ca2279cbf5106f4274fb536f5dbd/transformed/savedstate-1.2.1/AndroidManifest.xml:20:5-44
+MERGED from [androidx.savedstate:savedstate:1.2.1] /Users/niukou/.gradle/caches/8.13/transforms/b357ca2279cbf5106f4274fb536f5dbd/transformed/savedstate-1.2.1/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-livedata-core:2.8.3] /Users/niukou/.gradle/caches/8.13/transforms/52bee6c27d3aea7ba5bf251ad9c9189e/transformed/lifecycle-livedata-core-2.8.3/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-livedata-core:2.8.3] /Users/niukou/.gradle/caches/8.13/transforms/52bee6c27d3aea7ba5bf251ad9c9189e/transformed/lifecycle-livedata-core-2.8.3/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-android:2.8.3] /Users/niukou/.gradle/caches/8.13/transforms/e2633b0b1f1ee45d76172a382dd9ad4a/transformed/lifecycle-viewmodel-release/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-android:2.8.3] /Users/niukou/.gradle/caches/8.13/transforms/e2633b0b1f1ee45d76172a382dd9ad4a/transformed/lifecycle-viewmodel-release/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-runtime-ktx-android:2.8.3] /Users/niukou/.gradle/caches/8.13/transforms/93ce36df39258ce4fe46a41aa77e486e/transformed/lifecycle-runtime-ktx-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-runtime-ktx-android:2.8.3] /Users/niukou/.gradle/caches/8.13/transforms/93ce36df39258ce4fe46a41aa77e486e/transformed/lifecycle-runtime-ktx-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-runtime-android:2.8.3] /Users/niukou/.gradle/caches/8.13/transforms/6ca01de31bbef4312d638c30149143c4/transformed/lifecycle-runtime-release/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-runtime-android:2.8.3] /Users/niukou/.gradle/caches/8.13/transforms/6ca01de31bbef4312d638c30149143c4/transformed/lifecycle-runtime-release/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-process:2.8.3] /Users/niukou/.gradle/caches/8.13/transforms/51e302ba0d01a13299a23886ed8d7979/transformed/lifecycle-process-2.8.3/AndroidManifest.xml:21:5-44
+MERGED from [androidx.lifecycle:lifecycle-process:2.8.3] /Users/niukou/.gradle/caches/8.13/transforms/51e302ba0d01a13299a23886ed8d7979/transformed/lifecycle-process-2.8.3/AndroidManifest.xml:21:5-44
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.3] /Users/niukou/.gradle/caches/8.13/transforms/263bb9a3e7b282bf761bcf44b90b1e1a/transformed/lifecycle-viewmodel-ktx-2.8.3/AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.3] /Users/niukou/.gradle/caches/8.13/transforms/263bb9a3e7b282bf761bcf44b90b1e1a/transformed/lifecycle-viewmodel-ktx-2.8.3/AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-runtime-compose-android:2.8.3] /Users/niukou/.gradle/caches/8.13/transforms/651e5a9c16bcf1ebffa1371b8c22bede/transformed/lifecycle-runtime-compose-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-runtime-compose-android:2.8.3] /Users/niukou/.gradle/caches/8.13/transforms/651e5a9c16bcf1ebffa1371b8c22bede/transformed/lifecycle-runtime-compose-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-savedstate:2.8.3] /Users/niukou/.gradle/caches/8.13/transforms/5e7f372a7f8b5a772b605c347bfb9c83/transformed/lifecycle-viewmodel-savedstate-2.8.3/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-savedstate:2.8.3] /Users/niukou/.gradle/caches/8.13/transforms/5e7f372a7f8b5a772b605c347bfb9c83/transformed/lifecycle-viewmodel-savedstate-2.8.3/AndroidManifest.xml:20:5-44
+MERGED from [androidx.core:core-ktx:1.13.1] /Users/niukou/.gradle/caches/8.13/transforms/7589e1753ac73f6a66ccfddd8f157882/transformed/core-ktx-1.13.1/AndroidManifest.xml:5:5-44
+MERGED from [androidx.core:core-ktx:1.13.1] /Users/niukou/.gradle/caches/8.13/transforms/7589e1753ac73f6a66ccfddd8f157882/transformed/core-ktx-1.13.1/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.runtime:runtime-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/794d471338d1c345f76256ec4a35a53c/transformed/runtime-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.runtime:runtime-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/794d471338d1c345f76256ec4a35a53c/transformed/runtime-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.runtime:runtime-saveable-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/7af13b0b64188f67b0ecf69f40b4dfe5/transformed/runtime-saveable-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.runtime:runtime-saveable-android:1.7.2] /Users/niukou/.gradle/caches/8.13/transforms/7af13b0b64188f67b0ecf69f40b4dfe5/transformed/runtime-saveable-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/niukou/.gradle/caches/8.13/transforms/68d91a65484c1fc6397bad590f098def/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/niukou/.gradle/caches/8.13/transforms/68d91a65484c1fc6397bad590f098def/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.annotation:annotation-experimental:1.4.1] /Users/niukou/.gradle/caches/8.13/transforms/14b3a5fc282fbf89f3a95a551f7b0fcb/transformed/annotation-experimental-1.4.1/AndroidManifest.xml:5:5-44
+MERGED from [androidx.annotation:annotation-experimental:1.4.1] /Users/niukou/.gradle/caches/8.13/transforms/14b3a5fc282fbf89f3a95a551f7b0fcb/transformed/annotation-experimental-1.4.1/AndroidManifest.xml:5:5-44
+MERGED from [androidx.interpolator:interpolator:1.0.0] /Users/niukou/.gradle/caches/8.13/transforms/9fe960dd60e6986b9737006f06f5ed95/transformed/interpolator-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.interpolator:interpolator:1.0.0] /Users/niukou/.gradle/caches/8.13/transforms/9fe960dd60e6986b9737006f06f5ed95/transformed/interpolator-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/niukou/.gradle/caches/8.13/transforms/ae0fd9a894bce5c8fde4d73cd976c5c7/transformed/profileinstaller-1.3.1/AndroidManifest.xml:21:5-44
+MERGED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/niukou/.gradle/caches/8.13/transforms/ae0fd9a894bce5c8fde4d73cd976c5c7/transformed/profileinstaller-1.3.1/AndroidManifest.xml:21:5-44
+MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/niukou/.gradle/caches/8.13/transforms/ed7257bf870a74104eb5da11b1714165/transformed/startup-runtime-1.1.1/AndroidManifest.xml:21:5-23:41
+MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/niukou/.gradle/caches/8.13/transforms/ed7257bf870a74104eb5da11b1714165/transformed/startup-runtime-1.1.1/AndroidManifest.xml:21:5-23:41
+MERGED from [androidx.tracing:tracing:1.0.0] /Users/niukou/.gradle/caches/8.13/transforms/cfe673728a8bf1e6ecba5025096d77f1/transformed/tracing-1.0.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.tracing:tracing:1.0.0] /Users/niukou/.gradle/caches/8.13/transforms/cfe673728a8bf1e6ecba5025096d77f1/transformed/tracing-1.0.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.arch.core:core-runtime:2.2.0] /Users/niukou/.gradle/caches/8.13/transforms/ee4ed58cbe4559ae3bff98c0bfc0c7aa/transformed/core-runtime-2.2.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.arch.core:core-runtime:2.2.0] /Users/niukou/.gradle/caches/8.13/transforms/ee4ed58cbe4559ae3bff98c0bfc0c7aa/transformed/core-runtime-2.2.0/AndroidManifest.xml:20:5-44
+	android:targetSdkVersion
+		INJECTED from /Users/niukou/Desktop/iherefor_skills/iherefor-smart-development/demo/reader-app/android/app/src/main/AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from /Users/niukou/Desktop/iherefor_skills/iherefor-smart-development/demo/reader-app/android/app/src/main/AndroidManifest.xml
+provider#androidx.startup.InitializationProvider
+ADDED from [androidx.emoji2:emoji2:1.3.0] /Users/niukou/.gradle/caches/8.13/transforms/853e65b356368da1dae89c8be86867e1/transformed/emoji2-1.3.0/AndroidManifest.xml:24:9-32:20
+MERGED from [androidx.lifecycle:lifecycle-process:2.8.3] /Users/niukou/.gradle/caches/8.13/transforms/51e302ba0d01a13299a23886ed8d7979/transformed/lifecycle-process-2.8.3/AndroidManifest.xml:24:9-32:20
+MERGED from [androidx.lifecycle:lifecycle-process:2.8.3] /Users/niukou/.gradle/caches/8.13/transforms/51e302ba0d01a13299a23886ed8d7979/transformed/lifecycle-process-2.8.3/AndroidManifest.xml:24:9-32:20
+MERGED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/niukou/.gradle/caches/8.13/transforms/ae0fd9a894bce5c8fde4d73cd976c5c7/transformed/profileinstaller-1.3.1/AndroidManifest.xml:24:9-32:20
+MERGED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/niukou/.gradle/caches/8.13/transforms/ae0fd9a894bce5c8fde4d73cd976c5c7/transformed/profileinstaller-1.3.1/AndroidManifest.xml:24:9-32:20
+MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/niukou/.gradle/caches/8.13/transforms/ed7257bf870a74104eb5da11b1714165/transformed/startup-runtime-1.1.1/AndroidManifest.xml:26:9-30:34
+MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/niukou/.gradle/caches/8.13/transforms/ed7257bf870a74104eb5da11b1714165/transformed/startup-runtime-1.1.1/AndroidManifest.xml:26:9-30:34
+	tools:node
+		ADDED from [androidx.emoji2:emoji2:1.3.0] /Users/niukou/.gradle/caches/8.13/transforms/853e65b356368da1dae89c8be86867e1/transformed/emoji2-1.3.0/AndroidManifest.xml:28:13-31
+	android:authorities
+		ADDED from [androidx.emoji2:emoji2:1.3.0] /Users/niukou/.gradle/caches/8.13/transforms/853e65b356368da1dae89c8be86867e1/transformed/emoji2-1.3.0/AndroidManifest.xml:26:13-68
+	android:exported
+		ADDED from [androidx.emoji2:emoji2:1.3.0] /Users/niukou/.gradle/caches/8.13/transforms/853e65b356368da1dae89c8be86867e1/transformed/emoji2-1.3.0/AndroidManifest.xml:27:13-37
+	android:name
+		ADDED from [androidx.emoji2:emoji2:1.3.0] /Users/niukou/.gradle/caches/8.13/transforms/853e65b356368da1dae89c8be86867e1/transformed/emoji2-1.3.0/AndroidManifest.xml:25:13-67
+meta-data#androidx.emoji2.text.EmojiCompatInitializer
+ADDED from [androidx.emoji2:emoji2:1.3.0] /Users/niukou/.gradle/caches/8.13/transforms/853e65b356368da1dae89c8be86867e1/transformed/emoji2-1.3.0/AndroidManifest.xml:29:13-31:52
+	android:value
+		ADDED from [androidx.emoji2:emoji2:1.3.0] /Users/niukou/.gradle/caches/8.13/transforms/853e65b356368da1dae89c8be86867e1/transformed/emoji2-1.3.0/AndroidManifest.xml:31:17-49
+	android:name
+		ADDED from [androidx.emoji2:emoji2:1.3.0] /Users/niukou/.gradle/caches/8.13/transforms/853e65b356368da1dae89c8be86867e1/transformed/emoji2-1.3.0/AndroidManifest.xml:30:17-75
+permission#${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+ADDED from [androidx.core:core:1.13.1] /Users/niukou/.gradle/caches/8.13/transforms/2f53219e3126066a77c2c39679787cad/transformed/core-1.13.1/AndroidManifest.xml:22:5-24:47
+	android:protectionLevel
+		ADDED from [androidx.core:core:1.13.1] /Users/niukou/.gradle/caches/8.13/transforms/2f53219e3126066a77c2c39679787cad/transformed/core-1.13.1/AndroidManifest.xml:24:9-44
+	android:name
+		ADDED from [androidx.core:core:1.13.1] /Users/niukou/.gradle/caches/8.13/transforms/2f53219e3126066a77c2c39679787cad/transformed/core-1.13.1/AndroidManifest.xml:23:9-81
+permission#com.iherefor.readerapp.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+ADDED from [androidx.core:core:1.13.1] /Users/niukou/.gradle/caches/8.13/transforms/2f53219e3126066a77c2c39679787cad/transformed/core-1.13.1/AndroidManifest.xml:22:5-24:47
+	android:protectionLevel
+		ADDED from [androidx.core:core:1.13.1] /Users/niukou/.gradle/caches/8.13/transforms/2f53219e3126066a77c2c39679787cad/transformed/core-1.13.1/AndroidManifest.xml:24:9-44
+	android:name
+		ADDED from [androidx.core:core:1.13.1] /Users/niukou/.gradle/caches/8.13/transforms/2f53219e3126066a77c2c39679787cad/transformed/core-1.13.1/AndroidManifest.xml:23:9-81
+uses-permission#${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+ADDED from [androidx.core:core:1.13.1] /Users/niukou/.gradle/caches/8.13/transforms/2f53219e3126066a77c2c39679787cad/transformed/core-1.13.1/AndroidManifest.xml:26:5-97
+	android:name
+		ADDED from [androidx.core:core:1.13.1] /Users/niukou/.gradle/caches/8.13/transforms/2f53219e3126066a77c2c39679787cad/transformed/core-1.13.1/AndroidManifest.xml:26:22-94
+uses-permission#com.iherefor.readerapp.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+ADDED from [androidx.core:core:1.13.1] /Users/niukou/.gradle/caches/8.13/transforms/2f53219e3126066a77c2c39679787cad/transformed/core-1.13.1/AndroidManifest.xml:26:5-97
+	android:name
+		ADDED from [androidx.core:core:1.13.1] /Users/niukou/.gradle/caches/8.13/transforms/2f53219e3126066a77c2c39679787cad/transformed/core-1.13.1/AndroidManifest.xml:26:22-94
+meta-data#androidx.lifecycle.ProcessLifecycleInitializer
+ADDED from [androidx.lifecycle:lifecycle-process:2.8.3] /Users/niukou/.gradle/caches/8.13/transforms/51e302ba0d01a13299a23886ed8d7979/transformed/lifecycle-process-2.8.3/AndroidManifest.xml:29:13-31:52
+	android:value
+		ADDED from [androidx.lifecycle:lifecycle-process:2.8.3] /Users/niukou/.gradle/caches/8.13/transforms/51e302ba0d01a13299a23886ed8d7979/transformed/lifecycle-process-2.8.3/AndroidManifest.xml:31:17-49
+	android:name
+		ADDED from [androidx.lifecycle:lifecycle-process:2.8.3] /Users/niukou/.gradle/caches/8.13/transforms/51e302ba0d01a13299a23886ed8d7979/transformed/lifecycle-process-2.8.3/AndroidManifest.xml:30:17-78
+meta-data#androidx.profileinstaller.ProfileInstallerInitializer
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/niukou/.gradle/caches/8.13/transforms/ae0fd9a894bce5c8fde4d73cd976c5c7/transformed/profileinstaller-1.3.1/AndroidManifest.xml:29:13-31:52
+	android:value
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/niukou/.gradle/caches/8.13/transforms/ae0fd9a894bce5c8fde4d73cd976c5c7/transformed/profileinstaller-1.3.1/AndroidManifest.xml:31:17-49
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/niukou/.gradle/caches/8.13/transforms/ae0fd9a894bce5c8fde4d73cd976c5c7/transformed/profileinstaller-1.3.1/AndroidManifest.xml:30:17-85
+receiver#androidx.profileinstaller.ProfileInstallReceiver
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/niukou/.gradle/caches/8.13/transforms/ae0fd9a894bce5c8fde4d73cd976c5c7/transformed/profileinstaller-1.3.1/AndroidManifest.xml:34:9-52:20
+	android:enabled
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/niukou/.gradle/caches/8.13/transforms/ae0fd9a894bce5c8fde4d73cd976c5c7/transformed/profileinstaller-1.3.1/AndroidManifest.xml:37:13-35
+	android:exported
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/niukou/.gradle/caches/8.13/transforms/ae0fd9a894bce5c8fde4d73cd976c5c7/transformed/profileinstaller-1.3.1/AndroidManifest.xml:38:13-36
+	android:permission
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/niukou/.gradle/caches/8.13/transforms/ae0fd9a894bce5c8fde4d73cd976c5c7/transformed/profileinstaller-1.3.1/AndroidManifest.xml:39:13-57
+	android:directBootAware
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/niukou/.gradle/caches/8.13/transforms/ae0fd9a894bce5c8fde4d73cd976c5c7/transformed/profileinstaller-1.3.1/AndroidManifest.xml:36:13-44
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/niukou/.gradle/caches/8.13/transforms/ae0fd9a894bce5c8fde4d73cd976c5c7/transformed/profileinstaller-1.3.1/AndroidManifest.xml:35:13-76
+intent-filter#action:name:androidx.profileinstaller.action.INSTALL_PROFILE
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/niukou/.gradle/caches/8.13/transforms/ae0fd9a894bce5c8fde4d73cd976c5c7/transformed/profileinstaller-1.3.1/AndroidManifest.xml:40:13-42:29
+action#androidx.profileinstaller.action.INSTALL_PROFILE
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/niukou/.gradle/caches/8.13/transforms/ae0fd9a894bce5c8fde4d73cd976c5c7/transformed/profileinstaller-1.3.1/AndroidManifest.xml:41:17-91
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/niukou/.gradle/caches/8.13/transforms/ae0fd9a894bce5c8fde4d73cd976c5c7/transformed/profileinstaller-1.3.1/AndroidManifest.xml:41:25-88
+intent-filter#action:name:androidx.profileinstaller.action.SKIP_FILE
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/niukou/.gradle/caches/8.13/transforms/ae0fd9a894bce5c8fde4d73cd976c5c7/transformed/profileinstaller-1.3.1/AndroidManifest.xml:43:13-45:29
+action#androidx.profileinstaller.action.SKIP_FILE
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/niukou/.gradle/caches/8.13/transforms/ae0fd9a894bce5c8fde4d73cd976c5c7/transformed/profileinstaller-1.3.1/AndroidManifest.xml:44:17-85
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/niukou/.gradle/caches/8.13/transforms/ae0fd9a894bce5c8fde4d73cd976c5c7/transformed/profileinstaller-1.3.1/AndroidManifest.xml:44:25-82
+intent-filter#action:name:androidx.profileinstaller.action.SAVE_PROFILE
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/niukou/.gradle/caches/8.13/transforms/ae0fd9a894bce5c8fde4d73cd976c5c7/transformed/profileinstaller-1.3.1/AndroidManifest.xml:46:13-48:29
+action#androidx.profileinstaller.action.SAVE_PROFILE
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/niukou/.gradle/caches/8.13/transforms/ae0fd9a894bce5c8fde4d73cd976c5c7/transformed/profileinstaller-1.3.1/AndroidManifest.xml:47:17-88
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/niukou/.gradle/caches/8.13/transforms/ae0fd9a894bce5c8fde4d73cd976c5c7/transformed/profileinstaller-1.3.1/AndroidManifest.xml:47:25-85
+intent-filter#action:name:androidx.profileinstaller.action.BENCHMARK_OPERATION
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/niukou/.gradle/caches/8.13/transforms/ae0fd9a894bce5c8fde4d73cd976c5c7/transformed/profileinstaller-1.3.1/AndroidManifest.xml:49:13-51:29
+action#androidx.profileinstaller.action.BENCHMARK_OPERATION
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/niukou/.gradle/caches/8.13/transforms/ae0fd9a894bce5c8fde4d73cd976c5c7/transformed/profileinstaller-1.3.1/AndroidManifest.xml:50:17-95
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/niukou/.gradle/caches/8.13/transforms/ae0fd9a894bce5c8fde4d73cd976c5c7/transformed/profileinstaller-1.3.1/AndroidManifest.xml:50:25-92

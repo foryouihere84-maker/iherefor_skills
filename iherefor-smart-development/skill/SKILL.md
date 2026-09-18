@@ -4,9 +4,11 @@
 本 skill 是**编排器**——只负责路由、闸门判据与状态管理，在节点上**通过 Skill 工具点名调用**已有 skill，  
 被点名 skill 的规则以其自身 SKILL.md 为准，本 skill 不复制、不改写任何被点名 skill 的正文。
 
-分层对齐 Spec Kit 五层模型（Constitution → Spec → Plan → Tasks → Implementation），每层向下移交前都需上一层人工确认。
+分层对齐 Spec Kit 五层模型（Constitution → Spec → Plan → Tasks → Implementation），并**在 Spec 与 Plan 之间增补原型层**，
+每层向下移交前都需上一层人工确认。
 
-**分级（tier）**：按需求规模分 `full`（标准）与 `lite`（轻量）两档，判据与闸门收缩在 `config/tier.json`——lite 档把 c1/c2 合并进 b，仅保留 a/b/d + 交付门，少出部分产物。默认 full、按需 lite，见「阶段 0」。
+**分级（tier）**：按需求规模分 `full`（标准）与 `lite`（轻量）两档，判据与闸门收缩在 `config/tier.json`——lite 档把 c1/c2 合并进 b，
+仅保留 a/p/b/d + 交付门，少出部分产物。默认 full、按需 lite，见「阶段 0」。
 
 ## 何时使用
 
@@ -15,24 +17,39 @@
 
 ## 硬约束（违反即停）
 
-1. **前置依赖未就绪，不得开始**：进入六阶段闭环前，必须先跑「阶段 0 — 前置依赖检查」，  
+1. **前置依赖未就绪，不得开始**：进入闭环前，必须先跑「阶段 0 — 前置依赖检查」，  
    确认被点名 skill 已安装（见 `config/dependencies.json`）；缺失则先安装。  
    未落地不得开工。只有到某个阶段时才被用到的依赖，可以推迟到该阶段前再检查，但**该阶段开始前必须已就绪**。
-2. **多道闸门全卡、且卡在写生产代码之前**：闸门 a（Spec 需求）、b（Plan 方案，最重）、c1（Plan 变更清单）、  
-   c2（Tasks 拆分）、d（Implementation 实现），任一道未获用户明确确认，**不得**越过进入下一阶段。
+2. **多道闸门全卡、且卡在写生产代码之前**：闸门 a（Spec 需求）、**p（原型）**、b（Plan 方案，最重）、  
+   c1（Plan 变更清单）、c2（Tasks 拆分）、d（Implementation 实现），任一道未获用户明确确认，**不得**越过进入下一阶段。
 3. **web 搜索优先读取白名单内的地址**：读 `config/trusted-sources.json`，子 agent 只允许搜 L1（官方文档）+ L2（教学站）；  
    L3（社区帖）仅用于查 bug 反例，禁止作为架构决策依据。结论必须附「一手来源引用」。
 4. **跨端两端都要时，共享层先行**：先定共享层（需求 / 领域模型 / 数据契约），再各自分叉落地层。  
    不得两端各自独立开发、互不引用。
 5. **编译是硬门槛**：iOS（Xcode）与 Android（Gradle）**分别编译通过**，不得用一端通过推断另一端。编译 0 error 才可交付。
-6. **移动端 TDD 约定**以 `config/mobile-tdd.json` 与 `references/ios-tdd.md` / `references/android-tdd.md` 为准，  
+6. **移动端 TDD 约定**以 `config/mobile-tdd.json` 与 `references/iOS测试约定.md` / `references/Android测试约定.md` 为准，  
    不得沿用语言无关的测试假设（如 Node/TS 生态的默认）。
+7. **原型先于架构**：需求确认后必须先在阶段 2 出**视觉稿 + 交互原型**并经闸门 p 确认，  
+   才可进入架构设计。不允许跳过原型直接谈模块划分——界面与流程未达成共识时，架构讨论没有依据。
+8. **产物按「批次层 + 产物层」两级组织，且一律中文命名**：`docs/<feature>/` 下先按「一次需求 = 一个批次目录 `<NN-需求名>`」分层，  
+   批次目录出现在 `01-需求/`、`02-原型/`、`04-落地计划/`、`05-实现与测试/`、`06-交付/` 五处且**必须同名对齐**；`03-架构/`、`00-入口/`、`99-来源与日志/` 为**全局单例**、不随需求分叉。  
+   批次内产物分两类——**收敛型**（当前真相，单例原地更新，如 `领域模型.md`）与**追加型**（事件流，  
+   `类型-NN-<短名>.md`，NN 从 00 起连续，**每次新增即新建下一个编号文件、历史文件不可变**，如 `需求-01-书架批量管理.md`）。  
+   目录名、产物文件名、原型屏 id 全部中文且语义正确，禁止英文名与序号/缩写兜底。  
+   详见 `templates/模板说明.md` 第 1/3 节、`references/任务拆解.md` 第 0.1 节与 `references/原型绘制.md` 第 8 节。
+9. **`03-架构/` 是「项目总体架构约束层」，必须全局共享 + 增量更新**：它不是「阶段 3 的产出物堆」，  
+   而是**全项目唯一的架构真相**——跨批次共享、**不随需求分叉、不因批次新建**。  
+   - **双向同步**：① 本层变更 → 同步 文档 + 代码 + **所有活跃批次**的相关产物；  
+     ② 别处（代码 / `01-需求` / `02-原型` / `04-落地计划` / 本目录其他档）改动触及本层内容 →  
+     **本层必须同步增量修订**：只改受影响条目、**不整篇重写**，并在文末「增量更新记录」**追加一行台账**。  
+   - 架构层一旦失真会**同时毒化所有批次**，故这是比单批次文档更强的义务；未登记的架构改动由交付门 `一致性对账` 报出。  
+   - 详见 `templates/模板说明.md` 第 1.2 节、`references/代码文档同步.md` 第 2.1 节。
 
 ## 阶段 0 — 前置依赖检查（进入闭环前的硬闸）
 
 本 skill 是编排器，依赖一批被点名的 skill。**开始任何开发前，先核对依赖清单是否落地，并加载全局约束。**
 
-1. **先读 `references/constitution.md`**：这是全局工程约束层（Constitution），所有后续决策都回到它；  
+1. **先读 `references/全局约束.md`**：这是全局工程约束层（Constitution），所有后续决策都回到它；  
    它承载「原则」，可配置值仍以 `config/` 下 json 为准。
 2. 读 `config/dependencies.json`，得到「必需 / 可选」两类被点名 skill 清单，以及每个 skill 负责的阶段。
 3. 逐个检查是否已安装（Skill 工具的可用 skill 列表中有该 `name`；或检查 `~/.workbuddy-ai/skills/<name>/SKILL.md` 存在）。
@@ -48,39 +65,71 @@
 8. **读 `config/tier.json` 并判定分级**：用需求「第一眼可判」的信号把本功能划入 `full` 或 `lite`，并向用户确认。
    - **判据**：见 `tier.json` 的 `triggers`。单一改动点/有现成参照/无新依赖/不涉跨端共享层 → 倾向 `lite`；  
      新领域/跨端共享层/架构方向不明/涉及迁移/新增依赖 → `full`。默认 `full`，不确定就 full。
-   - **lite 档的收缩**：闸门只剩 a / b / d / 交付门（c1、c2 合并进 b）；产物跳过 `tier.json` 的 `skip_artifacts` 清单；  
-     阶段 2 不做 DESIGN-IT-TWICE 三案，仅在有 L1 官方参照需查证时做一次白名单搜索。
-   - 阶段 1 结束时允许升/降级一次（`escalate_rule`），变更记入 `run-log.jsonl` 的 `tier_change` 事件。
+   - **lite 档的收缩**：闸门只剩 a / p / b / d / 交付门（c1、c2 合并进 b）；产物跳过 `tier.json` 的 `skip_artifacts` 清单；  
+     阶段 3 不做 DESIGN-IT-TWICE 三案，仅在有 L1 官方参照需查证时做一次白名单搜索。
+   - 阶段 1 结束时允许升/降级一次（`escalate_rule`），变更记入 `运行日志.jsonl` 的 `tier_change` 事件。
    - 分级确定后，后续每个闸门、每份产物都按该档位执行；校验器 `scan-artifacts.py --tier <full|lite>` 据此核验。
 
-## 五层闭环
+## 分层闭环
 
 ```
-[Constitution 全局约束] ─▶ [1 Spec 需求理清] --🔒a--> [2 Plan 架构设计] --🔒b(最重)--> [3 Plan 变更清单] --🔒c1--> [Tasks 拆分] --🔒c2-->
-                                                                                                                        [4 TDD 落地] --🔒d--> [5 交付] --> [6 反馈 → 回跳]
+[全局约束 Constitution] ─▶ [1 需求 Spec] --🔒a--> [2 原型 Prototype] --🔒p--> [3 架构设计 Plan] --🔒b(最重)-->
+      [4 落地计划 Plan 变更清单] --🔒c1--> [Tasks 拆分] --🔒c2--> [5 TDD 落地] --🔒d--> [6 交付] --> [7 反馈 → 回跳]
 ```
 
-> **满配链路（full 档）如上**。`lite` 档把 `--🔒c1-->`、`--🔒c2-->` 两步合并进 `🔒b`：proposal-draft 内同载「变更清单 + 执行步骤」，  
-> 只做一次合并确认，不单独拆 tickets；闸门序列变为 `a → b → d → 交付门`。
+> **为什么原型独立成一层**：需求描述「文字上的行为」，架构描述「代码上的结构」，两者之间缺一层**看得见的共识物**。
+> 不先把「界面长什么样、屏怎么走」钉死，架构就只能靠脑补。原型层产出**视觉稿 + 交互原型**，闸门 p 确认后才谈模块划分。
+>
+> **满配链路（full 档）如上**。`lite` 档把 `--🔒c1-->`、`--🔒c2-->` 两步合并进 `🔒b`：方案草案内同载「变更清单 + 执行步骤」，  
+> 只做一次合并确认，不单独拆任务；闸门序列变为 `a → p → b → d → 交付门`。
 
 > **阶段内部不是黑箱**：每层拆成多个明确任务，任务级契约（做什么 / 输入 / 产出物路径 / 可机检 DoD / 点名 skill）  
-> 全部定义在 `references/task-breakdown.md`，本 SKILL.md 只保留层骨架与闸门。  
-> 产出物统一落到目标工程 `docs/<feature>/`，按「分类目录 + 入口导航」组织（见 `templates/README.md`），  
-> 每个产物**照 `templates/` 同名模板填空**，可用 `scripts/scan-artifacts.py` 机器核验章节闭环。  
-> `Plan`（怎么做）与 `Tasks`（分几步做）是两个独立闸门 c1 / c2——对齐 Spec Kit 的「第三个必须停下点」。
+> 全部定义在 `references/任务拆解.md`，本 SKILL.md 只保留层骨架与闸门。  
+> 产出物统一落到目标工程 `docs/<feature>/`，按「**批次层 + 阶段分类目录 + 入口导航**」组织（见 `templates/模板说明.md`）。  
+> **两级结构**：第一级是**批次层**——每做一次需求就新建一个 `<NN-需求名>` 批次目录（如 `01-阅读进度续读`），它是一个可整体追溯的闭环单元；  
+> 第二级是**产物层**——批次内的 `类型-NN-<短名>.md`（追加型）或 `类型.md`（收敛型）。  
+> 批次目录在 `01-需求/ 02-原型/ 04-落地计划/ 05-实现与测试/ 06-交付/` 五处**同名对齐**（校验器核验对齐性）；`03-架构/` 是**全局共享的单一真相**，  
+> 不随需求分叉——架构一旦改动，必须同步文档 + 代码 + 所有活跃批次的相关产物，由交付门 `一致性对账` 卡住。  
+> 每个产物**照 `templates/` 下同路径模板填空**，可用 `scripts/scan-artifacts.py` 机器核验章节闭环与批次对齐。  
+> `方案`（怎么做）与 `任务`（分几步做）是两个独立闸门 c1 / c2——对齐 Spec Kit 的「第三个必须停下点」。
 
 ### 阶段 1 — 需求理清（Spec）
 
-> 任务级契约见 `references/task-breakdown.md` 阶段 1（1.1~1.5）。完成前先读，按「产出物 + 可机检 DoD」逐项执行。
+> 任务级契约见 `references/任务拆解.md` 阶段 1（1.1~1.5）。完成前先读，按「产出物 + 可机检 DoD」逐项执行。
 
 - 用 Skill 工具点名 `grilling`：追问到共享理解；需求模糊就 grill，知识在他人手上就点名 `to-questionnaire`。
 - 领域术语固化时点名 `domain-modeling`，沉淀进项目 `CONTEXT.md`。
 - 产出：确认后的需求 + 领域模型 + 用户故事；**重点补 Out of Scope 与边界案例**（防 Agent 擅自扩范围）。
+- **两端都要开发时，抽跨端共享需求**（`01-需求/<批次>/跨端共享需求.md`）：共享/分叉边界 + 统一术语表 +
+  命名规范（含**双端字面映射**）+ 共享接口规范（方法名/入参/出参/失败）+ 共享数据契约（字段名/类型口径/可选性/约束/默认值）+
+  枚举取值与未知值处理 + 口径铁律（时间/单位/精度/文本/空值）+ 错误语义。**契约必须精确到字面**，凡两端字面差异须显式登记。
+  规则集与出处见 `references/跨端共享.md`（对齐 Google AIP 与 Swift/Kotlin 官方规范）。
 - 🔒 **闸门 a**：向用户确认「需求理解正确」，获明确 positive 回复才继续。
 
-### 阶段 2 — 架构设计（Plan，本 skill 的增值核心）
+### 阶段 2 — 原型设计（Prototype，本 skill 的增值环节）
 
-> 任务级契约见 `references/task-breakdown.md` 阶段 2（2.1~2.7）。
+> 任务级契约见 `references/任务拆解.md` 阶段 2（2.1~2.3）；**细则务必先读 `references/原型绘制.md`**。
+
+产出**视觉稿 + 交互原型**，两者缺一不可：
+
+- **视觉稿**：真实配色、字号层级、间距、圆角、图标、真实中文文案；观感接近成品，**不是灰盒线框**。
+- **交互原型**：屏内主操作、列表项、返回入口都真的能点，走通完整流程（含空态、错误态、拒绝路径）。
+
+落地方式：单个 `原型图.html`，**零依赖、零构建、双击即开**，含屏列表导航、变体切换、两端都要时的平台视觉语言开关。
+产物落 `docs/<feature>/02-原型/<批次>/`（`原型说明.md` + `原型图.html`，`<批次>` 与 `01-需求/<批次>/` **同名对齐**），照 `templates/` 同路径模板填空。
+
+- **倒查纪律**：每屏必须能倒查到 `01-需求/<批次>/用户故事-*.md` 的某条验收场景；有场景无屏 = 漏画，有屏无场景 = 范围蔓延。
+- **状态覆盖**：逐屏过空态 / 加载中 / 有数据 / 错误拒绝 / 边界越界 / 极值，不适用的写明理由。
+- **命名**：屏 id 与产物名一律**中文语义**（如 `书架-空态`、`阅读器-正文`），禁止 `screen1` / 英文兜底。
+- 方向未定时出 3 个**结构互斥**的变体（上限 5），胜出后在「设计取舍」写清理由并收束落选变体。
+
+- 🔒 **闸门 p（原型门）**：页面清单、视觉观感、屏间流程获用户确认后，才进入阶段 3 架构设计。不通过 → 回 2.1/2.2 重画。
+
+> **lite 档**：两份产物仍须产出（界面决策属"约束"不属"仪式"），只收缩为**单变体 + 单平台**。
+
+### 阶段 3 — 架构设计（Plan，本 skill 的增值核心）
+
+> 任务级契约见 `references/任务拆解.md` 阶段 3（3.1~3.7）。
 
 **先搜事实、再并出多案，两步是前后关系，每轮方案设计前都要跑一次搜索。**
 
@@ -88,59 +137,66 @@
    搜「该功能在 iOS/Android 的最佳实践 / 官方推荐写法」，产出一份带一手来源引用的**事实纪要**。
 2. **并行多案择优**（设计决策）：基于事实纪要，用 `codebase-design` 的 **DESIGN-IT-TWICE** 模式派 3+ 子 agent  
    各出一套**截然不同**的接口/模块设计，再按 depth / locality / seam placement 对比，给出带立场的推荐（可给混合方案）。
-3. **跨端共享层**：两端都要时，先在此阶段定共享层（领域模型、数据契约、不变量），落地层才分叉。
+3. **跨端共享层**：两端都要时，在此阶段定**共享层的工程组织**（模块边界、依赖方向、契约落点、
+   序列化与持久化实现、可替换 seam、变更同步机制），落地层才分叉。
+   **契约本体不在此定义**——领域语义在阶段 1 的 `领域模型.md`，跨端约束在阶段 1 的 `跨端共享需求.md`；
+   本阶段只登记「这些契约落在哪个模块、怎么实现」，**不重抄条文**。
+4. **以原型为输入**：原型的页面清单 → 页面/组件划分，交互状态 → 状态模型，跨端一致的视觉语言 → 共享层契约候选。
 
-- 🔒 **闸门 b（最重）**：落地方案草案**必须人工确认**。不通过 → 回到本阶段重搜 / 重设计，不得进入阶段 3。
+- 🔒 **闸门 b（最重）**：落地方案草案**必须人工确认**。不通过 → 回到本阶段重搜 / 重设计，不得进入阶段 4。
 
-> **lite 档**：跳过 2.4~~2.5 的 DESIGN-IT-TWICE 三案；仅在有 L1 官方参照需查证时做一次 2.1~~2.2 搜索，否则直接进 2.7 出方案草案；  
-> 不产出 `design-options.md` / `comparison.md` / `shared-layer.md`（见 `tier.json` 的 `skip_artifacts`）。
+> **lite 档**：跳过 3.4~~3.5 的 DESIGN-IT-TWICE 三案；仅在有 L1 官方参照需查证时做一次 3.1~~3.2 搜索，否则直接进 3.7 出方案草案；  
+> 不产出 `候选方案.md` / `方案对比.md` / `跨端共享层.md`（见 `tier.json` 的 `skip_artifacts`）。
 
-### 阶段 3 — 工程落地计划（Plan 变更清单 → Tasks）
+### 阶段 4 — 工程落地计划（Plan 变更清单 → Tasks）
 
-> 任务级契约见 `references/task-breakdown.md` 阶段 3（3.1~3.4）。
+> 任务级契约见 `references/任务拆解.md` 阶段 4（4.1~4.4）。
 
 - 点名 `improve-codebase-architecture` 扫描既有架构摩擦；结合 `research` 审计现有工程（导航 / 依赖 / 资源 / 状态 / 测试）。
 - 产出**变更清单**：动哪些文件、加哪些依赖、改哪些签名/导航/资源、回滚方式。
 - 🔒 **闸门 c1（Plan 变更清单）**：变更清单**批准后**才可拆 Tasks。
-- 从变更清单切出**可独立执行的 tickets**。
-- 🔒 **闸门 c2（Tasks 拆分）**：确认 tickets 覆盖了 Spec 的边界案例、无遗漏，才进入实现。
+- 从变更清单切出**可独立执行的任务**。
+- 🔒 **闸门 c2（Tasks 拆分）**：确认任务覆盖了需求的边界案例与原型的状态覆盖、无遗漏，才进入实现。
 
-> **lite 档**：c1、c2 合并进闸门 b——`proposal-draft.md` 内同载「变更清单 + 执行步骤」，只做一次合并确认；  
-> 不单独产出 `change-list.md` 的独立审批、不产出 `tickets.md` / `architecture-audit.md`（见 `tier.json`）。
+> **lite 档**：c1、c2 合并进闸门 b——`方案草案.md` 内同载「变更清单 + 执行步骤」，只做一次合并确认；  
+> 不单独产出 `变更清单-*.md` 的独立审批、不产出 `任务拆分.md` / `架构审计.md`（见 `tier.json`）。
 
-### 阶段 4 — TDD 落地
+### 阶段 5 — TDD 落地
 
-> 任务级契约见 `references/task-breakdown.md` 阶段 4（4.1~4.4）。
+> 任务级契约见 `references/任务拆解.md` 阶段 5（5.1~5.4）。
 
-- 读 `config/mobile-tdd.json` 定测试栈与 seam 深度；细则读 `references/ios-tdd.md` / `android-tdd.md`。
-- 用 Skill 工具点名 `tdd`（red→green 循环）、`implement`（按 spec/ticket 实现）、`prototype`（状态模型拿不准时先跑丢代码原型）。
-- **改代码 = 回写文档**：实现中每改一处代码，按 `references/code-doc-sync.md` 第 2 节映射表回写对应文档章节，  
-  不允许只改代码不改文档。这一条是硬纪律。
+- 读 `config/mobile-tdd.json` 定测试栈与 seam 深度；细则读 `references/iOS测试约定.md` / `Android测试约定.md`。
+- 用 Skill 工具点名 `tdd`（red→green 循环）、`implement`（按 spec/任务实现）、`prototype`（状态模型拿不准时先跑丢代码原型）。
+- **界面实现依据原型**：以 `02-原型/<批次>/原型图.html` 的视觉规格与交互为准（token 照抄、流程照走），  
+  但**不得直接把原型代码抄进生产**——原型在无真实数据/无错误处理/无无障碍的约束下写成，须按架构重写。
+- **改代码 = 回写文档**：实现中每改一处代码，按 `references/代码文档同步.md` 第 2 节映射表回写对应文档章节，  
+  **含原型文档**（改了页面结构/屏数/交互状态/视觉 token 须回写 `原型说明.md`）。不允许只改代码不改文档。这一条是硬纪律。
 - 🔒 **闸门 d**：实现符合预期确认后，才进编译/测试闸门。
 
-### 阶段 5 — 编译 · 测试 · 审查 · 交付
+### 阶段 6 — 编译 · 测试 · 审查 · 交付
 
-> 任务级契约见 `references/task-breakdown.md` 阶段 5（5.1~5.3）。
+> 任务级契约见 `references/任务拆解.md` 阶段 6（6.1~6.4）。
 
-- **硬门槛**：两端分别编译通过；iOS 探测 `.xcworkspace/.xcodeproj`+scheme+destination（可参考 `iherefor-html-otherui` 的 `references/ios-environment.md`），Android 用 `./gradlew test`。
+- **硬门槛**：两端分别编译通过；iOS 探测 `.xcworkspace/.xcodeproj`+scheme+destination，Android 用 `./gradlew test`。
 - 用 Skill 工具点名 `code-review`：Standards × Spec 双轴并行子 agent。
-- **代码↔文档对账（交付门前必做）**：按 `references/code-doc-sync.md` 逐项核「文档宣称 ↔ 代码实现」，  
-  产出 `05-交付/一致性对账.md`；漂移项要么回写文档、要么回退代码，**不允许带漂移交付**。
+- **代码↔文档对账（交付门前必做）**：按 `references/代码文档同步.md` 逐项核「文档宣称 ↔ 代码实现」，  
+  产出 `06-交付/<批次>/一致性对账-NN-<短名>.md`；漂移项要么回写文档、要么回退代码，**不允许带漂移交付**。对账范围含 `02-原型/<批次>/`。
 - 产出交付报告。
 
 #### code-review 的前提与降级（实测坑，必读）
 
 `code-review` 依赖 `git diff <fixed-point>...HEAD`，**需要 git 历史与可解析的 diff 基线**。以下场景不适用，应降级：
 
-1. **绿地工程（无 commit 基线 / 全新未 git 跟踪的目录）**：`git rev-parse` 无基线、diff 为空。→ 降级为**轻量 Standards 轴人工审查**（直接读领域代码，按 Fowler 代码味道 + 本 skill 的移动端约定评估），不做 Spec 轴（spec 即 shared-layer.md，作者本人刚实现，偏离自查即可）。
-2. **共享大仓库 + 不属本功能的改动混杂**（如上层仓库里夹着别的 skill 的 testUIProject 改动）：commit 会污染他人仓库。→ 不做 git commit，直接人工审查。
+1. **绿地工程（无 commit 基线 / 全新未 git 跟踪的目录）**：`git rev-parse` 无基线、diff 为空。→ 降级为**轻量 Standards 轴人工审查**（直接读领域代码，按 Fowler 代码味道 + 本 skill 的移动端约定评估），不做 Spec 轴（spec 即共享层文档，作者本人刚实现，偏离自查即可）。
+2. **共享大仓库 + 不属本功能的改动混杂**（如上层仓库里夹着别的 testUIProject 改动）：commit 会污染他人仓库。→ 不做 git commit，直接人工审查。
 3. **绿地小代码 + 作者本人刚 TDD 写完**：code-review 边际价值低。→ 可跳过，但必须在交付报告里说明"跳过 code-review 及原因"。
 
 **降级不是省略**：降级时仍要列出发现的问题（若有一并写进交付报告），只是不依赖 git diff 与双子 agent。判断是否降级由编排器看场景决定，并向用户说明。
 
-### 阶段 6 — 反馈闭环
+### 阶段 7 — 反馈闭环
 
 - 编译失败 / 测试失败 / 任一闸门驳回 → **回到对应阶段重跑**，不要从头来。
+- **回跳常见归属**：实现发现流程走不通 → 回退到**阶段 2 原型**重画（而不是硬改代码）；需求有歧义 → 回阶段 1。
 
 ## 与已有 skill 的点名契约
 
@@ -148,27 +204,30 @@
 | -- | --------------------------------------------------- | --------------------------------------------------- |
 | 0  | `install-local-skill` / `setup-matt-pocock-skills`  | 依赖核对 + 安装                                           |
 | 1  | `grilling` / `to-questionnaire` / `domain-modeling` | 需求模糊→grill；知识在他人→questionnaire；术语固化→domain-modeling |
-| 2  | `research` + `codebase-design`(DESIGN-IT-TWICE)     | 白名单搜事实 → 并出多案                                       |
-| 3  | `improve-codebase-architecture` / `to-tickets`      | 既有工程先审计 / 拆 tickets（c2 前）                           |
-| 4  | `tdd` / `implement` / `prototype`                   | red→green 循环                                        |
-| 5  | `code-review`                                       | Standards+Spec 双轴                                   |
+| 2  | （无外部依赖）                                             | 原型由本流程自带规范 + HTML 模板产出（见 `原型绘制.md`）                  |
+| 3  | `research` + `codebase-design`(DESIGN-IT-TWICE)     | 白名单搜事实 → 并出多案                                       |
+| 4  | `improve-codebase-architecture` / `to-tickets`      | 既有工程先审计 / 拆任务（c2 前）                                |
+| 5  | `tdd` / `implement` / `prototype`                   | red→green 循环                                        |
+| 6  | `code-review`                                       | Standards+Spec 双轴                                   |
 | 换手 | `handoff`                                           | 上下文压缩/多 session                                     |
 
 > 只点名、不复制。被点名 skill 缺失时，走「阶段 0」安装流程（`install-local-skill`），而非内联其规则。
 
 ## 参考文件索引（按需读取，勿凭记忆）
 
-- `references/constitution.md` — **全局工程约束层（Constitution）**，阶段 0 必读；承载原则，可配置值以 config/ 为准
-- `references/task-breakdown.md` — **五层任务级拆解**（每任务的目标/输入/产出物/可机检 DoD/点名 skill），阶段开始时必读
-- `templates/README.md` — **文档模板体系总则**（分类目录 + 每个产物模板清单 + 校验规则）
-- `templates/` — 每个阶段产物的 `.md` 模板，生成产物时照模板填空
+- `references/全局约束.md` — **全局工程约束层（Constitution）**，阶段 0 必读；承载原则，可配置值以 config/ 为准
+- `references/任务拆解.md` — **任务级拆解**（每任务的目标/输入/产出物/可机检 DoD/点名 skill），阶段开始时必读
+- `references/原型绘制.md` — **原型绘制规范**（保真度档位 / 设计 token / 跨端视觉语言 / 命名规范 / 反模式），阶段 2 必读
+- `templates/模板说明.md` — **文档模板体系总则**（产物二分类 + 阶段分类目录 + **架构层＝项目总体架构约束层**（全局共享 + 增量更新） + 每个产物模板清单 + 校验规则）
+- `templates/` — 按阶段分子目录的产物模板（与 `docs/<feature>/` 同构），生成产物时照同路径模板填空（原型层含 `02-原型/<批次>/原型图.html`）
 - `config/dependencies.json` — 被点名 skill 依赖清单（必需/可选 + 负责阶段），阶段 0 开始前必读
 - `config/tier.json` — **功能分级定义**（full/lite 判据 + 闸门收缩 + 可跳过产物），阶段 0 判定分级时必读
 - `config/trusted-sources.json` — web 可信源白名单（L1 官方 / L2 教学站 / L3 社区佐证），搜索前必读
-- `config/mobile-tdd.json` — 移动端测试栈 + seam 深度默认值（可覆盖），阶段 4 前必读
-- `references/ios-tdd.md` — iOS XCTest / Swift Testing 的 seam 与测试约定
-- `references/android-tdd.md` — Android JUnit / MockK / Turbine 的 seam 与测试约定
-- `references/code-doc-sync.md` — **代码 ↔ 文档同步契约**（同步点映射 + 交付门对账），实现阶段与交付门前必读
-- `references/cross-platform-sharing.md` — 跨端共享层规范（需求/领域/契约如何共享、落地如何分叉）
-- `references/example-project-scaffold.md` — 实例工程脚手架（xcodegen / Gradle 自举 / AndroidX 与镜像坑）
+- `config/mobile-tdd.json` — 移动端测试栈 + seam 深度默认值（可覆盖），阶段 5 前必读
+- `references/iOS测试约定.md` — iOS XCTest / Swift Testing 的 seam 与测试约定
+- `references/Android测试约定.md` — Android JUnit / MockK / Turbine 的 seam 与测试约定
+- `references/代码文档同步.md` — **代码 ↔ 文档同步契约**（同步点映射 + **`03-架构/` 双向同步与增量更新** + 交付门对账），实现阶段与交付门前必读
+- `references/跨端共享.md` — **跨端共享层规范**（什么共享/什么分叉 + 命名与接口契约规则集 + 口径铁律 + 契约变更影响面），阶段 1 与阶段 3 必读
+- `references/实例工程脚手架.md` — 实例工程脚手架（xcodegen / Gradle 自举 / AndroidX 与镜像坑）
 - `scripts/scan-artifacts.py` — 闭环校验器，扫描 `<工程>/docs/<feature>/` 按模板必填章节核验产物四态并出 HTML 报告（`python3 scan-artifacts.py <工程根> [--tier <full|lite>]`）
+- `scripts/check-consistency.py` — **四份同源文件一致性核验器**（DEF ↔ `templates/` ↔ `模板说明.md` ↔ `任务拆解.md`），改完契约必跑

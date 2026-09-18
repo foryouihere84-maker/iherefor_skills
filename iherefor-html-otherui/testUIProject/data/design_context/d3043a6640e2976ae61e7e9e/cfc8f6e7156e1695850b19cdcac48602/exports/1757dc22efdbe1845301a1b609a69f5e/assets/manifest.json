@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "status": "complete",
+  "assets": [
+    {
+      "asset_id": "1CBCE945-A539-4266-9D5C-95B256A9F896:image",
+      "node_id": "1CBCE945-A539-4266-9D5C-95B256A9F896",
+      "kind": "exported_asset",
+      "format": "png",
+      "is_vector": false,
+      "actual_pixel_size": {
+        "width": 224,
+        "height": 224
+      },
+      "has_alpha": true,
+      "has_transparency": true,
+      "content_bbox": {
+        "x": 0,
+        "y": 0,
+        "width": 224,
+        "height": 224
+      },
+      "frame_count": 1,
+      "sha256": "e76515639602a560da2ef09e5e5f8d148799d236f857f9f177dc11d5041a2d6c",
+      "bytes": 8446,
+      "relative_path": "assets/8c2956b8cb6a5d398269b8fb8e1c57e95f41dcb9004b56f2b601e2c8896a6373.png",
+      "effective_density": {
+        "x": 4.0,
+        "y": 4.0
+      },
+      "resolution_limited": false,
+      "target_dpr": 2.0,
+      "cached": false
+    }
+  ],
+  "failed": [],
+  "counts": {
+    "requested": 1,
+    "succeeded": 1,
+    "failed": 0,
+    "cached": 0
+  }
+}

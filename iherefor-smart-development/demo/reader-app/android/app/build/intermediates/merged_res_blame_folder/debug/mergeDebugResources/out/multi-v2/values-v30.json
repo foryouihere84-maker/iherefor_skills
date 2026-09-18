@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.iherefor.readerapp-mergeDebugResources-39:/values-v30/values-v30.xml",
+            "map": [
+                {
+                    "source": "/Users/niukou/.gradle/caches/8.13/transforms/6f8b60d3989d4a0e76799cd85d01cb0a/transformed/material3-release/res/values-v30/values-v30.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "72",
+                        "endOffsets": "123"
+                    }
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,35 @@
+{"ts": "2026-09-17T18:21:00+08:00", "stage": 0, "task": "0", "event": "init", "feature": "reader-app", "tier": "full", "端": "iOS+Android", "格式": "EPUB+PDF+TXT", "验证口径": "完整闭环，双端编译过"}
+{"ts": "2026-09-17T18:22:00+08:00", "stage": 0, "task": "0", "event": "deps_ok", "note": "必需 skill 与工具链全部落地；xcodegen/Xcode26/AndroidSDK/gradle 缓存就绪"}
+{"ts": "2026-09-17T18:24:00+08:00", "stage": 0, "task": "0", "event": "scaffold_ok", "note": "双端骨架编译通过：iOS BUILD SUCCEEDED / Android BUILD SUCCESSFUL"}
+{"ts": "2026-09-17T18:25:30+08:00", "event": "new_batch", "feature": "reader-app", "batch": "01-多格式书架与续读", "tier": "full", "note": "首个批次：多格式书架与续读。批次目录在 01-需求/02-原型/04-落地计划/05-实现与测试/06-交付 五阶段同名对齐"}
+{"ts": "2026-09-17T18:26:00+08:00", "stage": 1, "task": "1.1", "event": "done", "artifact": "00-入口/文档导航.md", "ok": true}
+{"ts": "2026-09-17T18:27:00+08:00", "stage": 1, "task": "1.2", "batch": "01-多格式书架与续读", "event": "done", "artifact": "01-需求/01-多格式书架与续读/需求-00-多格式书架与续读.md", "ok": true}
+{"ts": "2026-09-17T18:27:00+08:00", "stage": 1, "task": "1.3", "batch": "01-多格式书架与续读", "event": "done", "artifact": "01-需求/01-多格式书架与续读/领域模型.md", "ok": true}
+{"ts": "2026-09-17T18:27:00+08:00", "stage": 1, "task": "1.4", "batch": "01-多格式书架与续读", "event": "done", "artifact": "01-需求/01-多格式书架与续读/用户故事-00-多格式书架与续读.md", "ok": true}
+{"ts": "2026-09-17T18:27:00+08:00", "stage": 1, "task": "1.5", "batch": "01-多格式书架与续读", "event": "done", "artifact": "01-需求/01-多格式书架与续读/跨端共享需求.md", "ok": true}
+{"ts": "2026-09-17T18:28:00+08:00", "stage": 1, "task": "gate-a", "batch": "01-多格式书架与续读", "event": "gate_submitted", "note": "闸门 a 提交确认：范围克制/去重键/删除策略"}
+{"ts": "2026-09-17T23:05:00+08:00", "stage": 2, "task": "2.1", "batch": "01-多格式书架与续读", "event": "done", "artifact": "02-原型/01-多格式书架与续读/原型说明.md", "ok": true, "backfill": true, "note": "原型层为链路改造后回溯补产：5 屏（书架-加载中/书架-空态/书架-有数据/阅读器-正文/导入-格式被拒）、2 变体（列表式为胜出变体）"}
+{"ts": "2026-09-17T23:31:00+08:00", "stage": 2, "task": "2.2", "batch": "01-多格式书架与续读", "event": "done", "artifact": "02-原型/01-多格式书架与续读/原型图.html", "ok": true, "backfill": true, "note": "单文件零依赖视觉稿+可点击交互原型；双端视觉语言开关（iOS/Android）；屏 id 全部中文语义名"}
+{"ts": "2026-09-17T23:36:00+08:00", "stage": 2, "task": "2.3", "batch": "01-多格式书架与续读", "event": "done", "artifact": "02-原型/01-多格式书架与续读/原型说明.md", "ok": true, "backfill": true, "note": "走查四问通过；状态覆盖补到 5 屏 12 态"}
+{"ts": "2026-09-17T18:30:00+08:00", "stage": 3, "task": "3.1", "event": "done", "artifact": "03-架构/待查证问题.md", "ok": true}
+{"ts": "2026-09-17T18:31:00+08:00", "stage": 3, "task": "3.2", "event": "done", "artifact": "03-架构/事实纪要.md", "ok": true, "note": "Readium双端toolkit/PDFKit/PdfRenderer/fileImporter/SAF"}
+{"ts": "2026-09-17T18:32:00+08:00", "stage": 3, "task": "3.3", "event": "done", "artifact": "03-架构/设计约束.md", "ok": true}
+{"ts": "2026-09-17T18:33:00+08:00", "stage": 3, "task": "3.4", "event": "done", "artifact": "03-架构/候选方案.md", "ok": true}
+{"ts": "2026-09-17T18:34:00+08:00", "stage": 3, "task": "3.5", "event": "done", "artifact": "03-架构/方案对比.md", "ok": true, "recommend": "方案3混合"}
+{"ts": "2026-09-17T18:35:00+08:00", "stage": 3, "task": "3.6", "event": "done", "artifact": "03-架构/跨端共享层.md", "ok": true}
+{"ts": "2026-09-17T18:36:00+08:00", "stage": 3, "task": "3.7", "event": "done", "artifact": "03-架构/方案草案.md", "ok": true}
+{"ts": "2026-09-17T18:36:30+08:00", "stage": 3, "task": "gate-b", "event": "gate_submitted", "note": "闸门 b 提交确认：方案3混合（自研 EPUB/TXT + 系统 PDF API），零第三方业务依赖"}
+{"ts": "2026-09-17T18:37:00+08:00", "stage": 4, "task": "4.1", "batch": "01-多格式书架与续读", "event": "done", "artifact": "04-落地计划/01-多格式书架与续读/架构审计.md", "ok": true, "note": "绿地工程无既有架构"}
+{"ts": "2026-09-17T18:38:00+08:00", "stage": 4, "task": "4.2", "batch": "01-多格式书架与续读", "event": "done", "artifact": "04-落地计划/01-多格式书架与续读/变更清单-00-首版落地.md", "ok": true, "note": "零第三方依赖"}
+{"ts": "2026-09-17T18:38:00+08:00", "stage": 4, "task": "4.3", "batch": "01-多格式书架与续读", "event": "done", "artifact": "04-落地计划/01-多格式书架与续读/回滚方案.md", "ok": true}
+{"ts": "2026-09-17T18:39:00+08:00", "stage": 4, "task": "4.4", "batch": "01-多格式书架与续读", "event": "done", "artifact": "04-落地计划/01-多格式书架与续读/任务拆分.md", "ok": true, "note": "8 条 tracer-bullet tickets"}
+{"ts": "2026-09-17T18:40:00+08:00", "stage": 5, "task": "5.1", "batch": "01-多格式书架与续读", "event": "done", "artifact": "05-实现与测试/01-多格式书架与续读/测试计划.md", "ok": true}
+{"ts": "2026-09-17T18:44:00+08:00", "stage": 5, "task": "5.2", "batch": "01-多格式书架与续读", "event": "done", "note": "iOS/Android 双端 red→green 测试写入"}
+{"ts": "2026-09-17T18:45:00+08:00", "stage": 5, "task": "5.3", "batch": "01-多格式书架与续读", "event": "done", "note": "iOS 24 tests passed (TEST SUCCEEDED)"}
+{"ts": "2026-09-17T18:46:00+08:00", "stage": 5, "task": "5.4", "batch": "01-多格式书架与续读", "event": "done", "note": "Android 24 tests passed (BUILD SUCCESSFUL, 0 failures)"}
+{"ts": "2026-09-17T18:50:00+08:00", "stage": 6, "task": "6.1", "batch": "01-多格式书架与续读", "event": "done", "artifact": "06-交付/01-多格式书架与续读/编译报告-00-首版.md", "ok": true, "note": "双端 0 error"}
+{"ts": "2026-09-17T18:51:00+08:00", "stage": 6, "task": "6.2", "batch": "01-多格式书架与续读", "event": "done", "artifact": "06-交付/01-多格式书架与续读/审查报告-00-首版.md", "ok": true, "note": "绿地降级为轻量人工审查"}
+{"ts": "2026-09-17T18:52:00+08:00", "stage": 6, "task": "6.3", "batch": "01-多格式书架与续读", "event": "done", "artifact": "06-交付/01-多格式书架与续读/一致性对账-00-首版.md", "ok": true, "note": "无漂移项"}
+{"ts": "2026-09-17T18:53:00+08:00", "stage": 6, "task": "6.4", "batch": "01-多格式书架与续读", "event": "done", "artifact": "06-交付/01-多格式书架与续读/交付报告-00-首版.md", "ok": true}
+{"ts": "2026-09-17T22:05:00+08:00", "stage": 7, "task": "7.2", "batch": "01-多格式书架与续读", "event": "fix", "note": "修复书架/阅读链路：新增 BookReaderService 按格式分派解析，打开书真正渲染内容（iOS/Android 对称）；Android 加 BackHandler 返回栈；补 BookReaderServiceTest 3 测试，两端各 27 测试全绿", "drift_fixed": ["阅读器内容未解析填充", "阅读界面返回栈缺失"], "回写": {"05-实现与测试/01-多格式书架与续读/测试计划.md": "新增 BookReaderService seam 与 3 条用例", "06-交付/01-多格式书架与续读/一致性对账-00-首版.md": "同步点补记"}}
+{"ts": "2026-09-17T23:40:00+08:00", "stage": 7, "task": "7.1", "batch": "01-多格式书架与续读", "event": "note", "note": "原型层为链路改造（Spec 与 Plan 之间新增原型层 + 闸门 p）后回溯补产；Demo 工程与文档已按新分层重排目录、产物名全面中文化，并跑校验器复核"}
